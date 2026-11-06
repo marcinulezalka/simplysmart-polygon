@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+#
+# Część serwerowa wdrożenia (wysyłana przez `vendor/bin/deploy <projekt>` albo uruchamiana ręcznie
+# w katalogu aplikacji):
+#   1. Composer 2.8+ w ~/bin/composer (instaluje, gdy go nie ma; oficjalny instalator ze sprawdzeniem sumy),
+#   2. .env (kopia .env.production leżącego na serwerze w katalogu aplikacji — deploy nie wysyła środowiska; APP_KEY
+#      serwera zostaje, gdy plik go nie podaje; bez .env.production .env zostaje bez zmian), git pull --ff-only,
+#   3. token GitHub dla Composera (GITHUB_TOKEN, jeśli podany),
+#   4. paczki z composer.lock (--no-dev),
+#   5. APP_KEY, migracje, cache konfiguracji, tras i widoków.
+# Z DEPLOY_KEEP_ENV=1 (przed-produkcja na komputerze deweloperskim) .env zostaje bez zmian, a bez COMPOSER_BIN
+# i ~/bin/composer skrypt bierze composer z PATH zamiast go instalować.
+# Zatrzymuje się przy pierwszym błędzie.
+#
+# Użycie na serwerze:
+#   cd ~/moja-domena.pl && DEPLOY_PHP=php84 bash remote.sh
+
+set -euo pipefail
+
+# PHP przekazuje vendor/bin/deploy (domyślne wartości: ProjectConfig); przy ręcznym uruchomieniu podaj DEPLOY_PHP.
+php_bin="${DEPLOY_PHP:?Ustaw DEPLOY_PHP na polecenie PHP 8.4 (np. DEPLOY_PHP=php84 bash remote.sh).}"
+# Plik Composera na serwerze: COMPOSER_BIN (np. composer.phar w katalogu aplikacji), domyślnie ~/bin/composer.
+composer_bin="${COMPOSER_BIN:-$HOME/bin/composer}"
+keep_env="${DEPLOY_KEEP_ENV:-}"
+
+fail() { echo "BŁĄD: $*" >&2; exit 1; }
+step() { echo "--> $*"; }
+
+command -v "$php_bin" >/dev/null || fail "Brak $php_bin. Ustaw DEPLOY_PHP na polecenie PHP 8.4 na serwerze."
+"$php_bin" -r 'exit(PHP_VERSION_ID >= 80400 ? 0 : 1);' || fail "$php_bin to nie PHP 8.4 ($("$php_bin" -r 'echo PHP_VERSION;'))."
+[[ -f artisan && -f composer.json ]] || fail "Uruchom w katalogu aplikacji (brak artisan / composer.json w $(pwd))."
+
+if [[ ! -f "$composer_bin" && "$keep_env" == 1 && -z "${COMPOSER_BIN:-}" ]] && command -v composer >/dev/null; then
+    composer_bin="$(command -v composer)"
+fi
+if [[ ! -f "$composer_bin" ]]; then
+    step "Instaluję Composera w $composer_bin"
+    mkdir -p "$(dirname "$composer_bin")"
+    setup="$(mktemp)"
+    "$php_bin" -r "copy('https://getcomposer.org/installer', '$setup');" || fail "Nie udało się pobrać instalatora Composera."
+    expected="$("$php_bin" -r "echo trim(file_get_contents('https://composer.github.io/installer.sig'));")"
+    actual="$("$php_bin" -r "echo hash_file('sha384', '$setup');")"
+    [[ -n "$expected" && "$expected" == "$actual" ]] || { rm -f "$setup"; fail "Błędna suma kontrolna instalatora Composera."; }
+    "$php_bin" "$setup" --quiet --install-dir="$(dirname "$composer_bin")" --filename="$(basename "$composer_bin")"
+    rm -f "$setup"
+fi
+composer=("$php_bin" "$composer_bin")
+if ! "${composer[@]}" --version --no-ansi 2>/dev/null | grep -qE 'version (2\.(8|9|[1-9][0-9])|[3-9])\.'; then
+    step "Aktualizuję Composera (wymagany 2.8+ dla PHP 8.4)"
+    "${composer[@]}" self-update --2 --no-interaction 2>/dev/null || fail "Nie udało się zaktualizować Composera ($composer_bin)."
+fi
+step "$("${composer[@]}" --version --no-ansi 2>/dev/null | head -n1)"
+
+rm -f .env.deploy
+if [[ "$keep_env" == 1 ]]; then
+    step "Przed-produkcja: .env zostaje bez zmian"
+elif [[ -f .env.production ]]; then
+    step "Kopiuję .env.production serwera jako .env"
+    # Plik bez APP_KEY dostaje klucz z obecnego .env: nowy klucz unieważniłby sesje i zaszyfrowane dane.
+    env_new="$(mktemp .env.XXXXXX)"
+    if [[ -f .env ]]; then chmod --reference=.env "$env_new"; else chmod 600 "$env_new"; fi
+    if ! grep -qE '^APP_KEY=.+' .env.production && [[ -f .env ]] && grep -qE '^APP_KEY=.+' .env; then
+        grep -vE '^APP_KEY=' .env.production > "$env_new" || true
+        grep -E '^APP_KEY=.+' .env | tail -n1 >> "$env_new"
+    else
+        cat .env.production > "$env_new"
+    fi
+    mv -f "$env_new" .env
+else
+    step "Brak .env.production na serwerze — .env zostaje bez zmian"
+fi
+
+[[ -f .env ]] || fail "Brak .env. Skopiuj .env.example jako .env i uzupełnij (baza, APP_URL, poczta)."
+
+step "Pobieram kod aplikacji (git pull)"
+git pull --ff-only || fail "git pull się nie udał (zmiany lokalne na serwerze albo brak gałęzi śledzonej) — popraw i uruchom ponownie."
+
+# Katalogi, których git nie przenosi (puste), a Laravel ich wymaga (widoki aplikacji, cache, logi).
+mkdir -p resources/views storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+
+if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+    step "Zapisuję token GitHub w konfiguracji Composera"
+    "${composer[@]}" config --global github-oauth.github.com "$GITHUB_TOKEN"
+fi
+
+step "Instaluję paczki (composer.lock, bez narzędzi deweloperskich)"
+if ! grep -qE '^APP_KEY=.+' .env; then
+    # Aplikacja nie uruchomi się bez APP_KEY, więc klucz powstaje bez artisana (losowe 32 bajty, base64).
+    step "Generuję APP_KEY"
+    key="base64:$("$php_bin" -r 'echo base64_encode(random_bytes(32));')"
+    if grep -qE '^APP_KEY=' .env; then
+        sed -i -E "s|^APP_KEY=.*|APP_KEY=${key}|" .env
+    else
+        printf '\nAPP_KEY=%s\n' "$key" >> .env
+    fi
+fi
+"${composer[@]}" install --no-dev --optimize-autoloader --no-interaction
+[[ -f vendor/autoload.php ]] || fail "Instalacja nie utworzyła vendor/autoload.php."
+
+step "Migracje"
+# Config bez cache, żeby migracje czytały bieżący .env, a nie konfigurację z poprzedniego wdrożenia.
+"$php_bin" artisan config:clear >/dev/null
+"$php_bin" artisan migrate --force
+
+step "Cache konfiguracji, tras i widoków"
+"$php_bin" artisan optimize:clear >/dev/null
+"$php_bin" artisan config:cache
+"$php_bin" artisan route:cache
+"$php_bin" artisan view:cache
+
+step "Wdrożenie zakończone: $("$php_bin" artisan --version)"

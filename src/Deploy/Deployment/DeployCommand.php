@@ -1,0 +1,187 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * This file is part of simplysmart/polygon.
+ *
+ * Copyright (c) 2026 Marcin Ulezalka <marcin.ulezalka@simplysmart.pl>
+ *
+ * Licensed under the Simplysmart Restricted Source License 1.0.
+ * See the LICENSE file distributed with this source code.
+ */
+
+namespace Simplysmart\Polygon\Deploy\Deployment;
+
+use Simplysmart\Polygon\Deploy\Console\Confirmation;
+use Simplysmart\Polygon\Deploy\Console\ExitCode;
+use Simplysmart\Polygon\Deploy\Console\Output;
+use Simplysmart\Polygon\Deploy\Process\ProcessException;
+use Simplysmart\Polygon\Deploy\Process\ProcessRunner;
+
+/**
+ * Polecenie `vendor/bin/deploy <projekt>`, uruchamiane na komputerze deweloperskim w repozytorium projektu: sprawdza, czy projekt jest wypchnięty,
+ * aktualizuje przed-produkcję (katalog projektu na tym komputerze) skryptem `remote.sh`, a potem — zależnie od
+ * ProductionMode — uruchamia ten sam skrypt na serwerze przez ssh. Błąd przed-produkcji zatrzymuje wdrożenie.
+ *
+ * Środowiska nie wysyła: na serwerze remote.sh kopiuje leżący tam `.env.production` jako `.env`, a `.env`
+ * przed-produkcji zostaje bez zmian. Paczki instaluje `composer install --no-dev` z `composer.lock` z repozytorium.
+ */
+final readonly class DeployCommand
+{
+    public function __construct(
+        private ProcessRunner $processes,
+        private RepositoryCheck $repository,
+        private RemoteScript $script,
+        private Confirmation $confirmation,
+    ) {}
+
+    /**
+     * @param  list<string>  $arguments  Argumenty bez nazwy skryptu.
+     * @param  string  $workingDirectory  Domyślny katalog repozytorium projektu.
+     * @return int Kod wyjścia: ExitCode::SUCCESS, ExitCode::FAILURE albo kod skryptu, który się nie powiódł.
+     */
+    public function run(array $arguments, string $workingDirectory, Output $output): int
+    {
+        try {
+            $options = DeployOptions::fromArguments($arguments, $workingDirectory);
+
+            return $this->deploy(ProjectConfig::load("{$options->root}/" . ProjectConfig::DIRECTORY, $options->project), $options, $output);
+        } catch (DeployException|ProcessException $exception) {
+            $output->error($exception->getMessage());
+
+            return ExitCode::FAILURE;
+        }
+    }
+
+    /**
+     * Wdrożenie projektu: repozytorium, przed-produkcja, decyzja o produkcji i produkcja.
+     *
+     * @throws DeployException|ProcessException
+     */
+    private function deploy(ProjectConfig $project, DeployOptions $options, Output $output): int
+    {
+        if ($options->withPush && ! $options->dryRun) {
+            $output->line('==> Wypycham projekt');
+            $output->line($this->repository->push($options->root) ? 'Wypchnięty.' : 'Nic do wypchnięcia.');
+        }
+
+        if (! $this->repositoryReady($options, $output)) {
+            return ExitCode::FAILURE;
+        }
+
+        if ($options->dryRun) {
+            array_map($output->line(...), (new DeployPlan($project, $options->production))->lines());
+
+            return ExitCode::SUCCESS;
+        }
+
+        $preproduction = $this->preproduction($project, $output);
+
+        if ($preproduction !== ExitCode::SUCCESS) {
+            return $preproduction;
+        }
+
+        if (! $this->productionWanted($project, $options->production)) {
+            $output->line('==> Produkcja pominięta — zaktualizowano tylko przed-produkcję');
+
+            return ExitCode::SUCCESS;
+        }
+
+        $exitCode = $this->runScript(
+            "==> Uruchamiam wdrożenie na {$project->productionTarget()}",
+            $this->script->remoteCommand($project),
+            $this->script->production($project),
+            null,
+            'Wdrożenie na serwerze zakończyło się błędem',
+            $output,
+        );
+
+        if ($exitCode === ExitCode::SUCCESS) {
+            $output->line('==> Gotowe');
+        }
+
+        return $exitCode;
+    }
+
+    /**
+     * Przed-produkcja: remote.sh w jej katalogu (`.env` bez zmian).
+     *
+     * @throws DeployException Gdy katalog nie jest klonem projektu.
+     * @throws ProcessException Gdy basha nie da się uruchomić.
+     */
+    private function preproduction(ProjectConfig $project, Output $output): int
+    {
+        $directory = $project->preproductionPath;
+
+        if (! is_file("{$directory}/artisan") || ! is_dir("{$directory}/.git")) {
+            throw new DeployException("Przed-produkcja {$directory} nie jest projektem (brak artisan albo .git) — popraw " . ProjectConfig::PREPRODUCTION_PATH . '.');
+        }
+
+        return $this->runScript(
+            "==> Aktualizuję przed-produkcję {$directory}",
+            $this->script->localCommand(),
+            $this->script->preproduction($project),
+            $directory,
+            'Aktualizacja przed-produkcji zakończyła się błędem — produkcja nie została wdrożona',
+            $output,
+        );
+    }
+
+    private function productionWanted(ProjectConfig $project, ProductionMode $production): bool
+    {
+        return match ($production) {
+            ProductionMode::Always => true,
+            ProductionMode::Skip => false,
+            ProductionMode::Ask => $this->confirmation->ask("Wdrożyć też na produkcję {$project->productionTarget()}? [t/N] "),
+        };
+    }
+
+    /**
+     * Uruchamia skrypt i zgłasza błąd z kodem wyjścia.
+     *
+     * @param  list<string>  $command  Polecenie, które czyta skrypt ze standardowego wejścia.
+     * @param  string|null  $directory  Katalog roboczy; null — bieżący.
+     *
+     * @throws ProcessException Gdy procesu nie da się uruchomić.
+     */
+    private function runScript(string $title, array $command, string $script, ?string $directory, string $failure, Output $output): int
+    {
+        $output->line($title);
+        $exitCode = $this->processes->run($command, $script, $directory);
+
+        if ($exitCode !== ExitCode::SUCCESS) {
+            $output->error("{$failure} (kod {$exitCode}).");
+        }
+
+        return $exitCode;
+    }
+
+    private function repositoryReady(DeployOptions $options, Output $output): bool
+    {
+        $output->line('==> Sprawdzam, czy projekt jest wypchnięty');
+        $report = $this->repository->check($options->root);
+
+        if ($report->unfetched) {
+            $output->error('Uwaga: nie udało się pobrać stanu z origin — sprawdzam według ostatniego pobrania.');
+        }
+
+        if ($report->uncommitted) {
+            $output->error('Uwaga: projekt ma niezacommitowane zmiany — nie trafią na serwer.');
+        }
+
+        if (! $report->unpushed) {
+            return true;
+        }
+
+        if ($options->withPush && $options->dryRun) {
+            $output->line('Do wypchnięcia (' . DeployOptions::WITH_PUSH . '): projekt.');
+
+            return true;
+        }
+
+        $output->error('Niewypchnięte commity. Zrób git push (albo uruchom z ' . DeployOptions::WITH_PUSH . ') i uruchom ponownie.');
+
+        return false;
+    }
+}

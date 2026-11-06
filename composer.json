@@ -1,0 +1,68 @@
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "simplysmart/polygon",
+    "type": "library",
+    "description": "Polygon: narzędzia deweloperskie aplikacji simplysmart (wydania SemVer, wdrożenia przed-produkcja → produkcja), instalowane tylko jako require-dev.",
+    "keywords": [
+        "simplysmart",
+        "polygon",
+        "dev",
+        "tools",
+        "deploy",
+        "release"
+    ],
+    "homepage": "https://github.com/marcinulezalka/simplysmart-polygon",
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "Marcin Ulezalka",
+            "email": "marcin.ulezalka@simplysmart.pl",
+            "role": "Founder"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/marcinulezalka/simplysmart-polygon/issues",
+        "source": "https://github.com/marcinulezalka/simplysmart-polygon"
+    },
+    "require": {
+        "php": "^8.4",
+        "laravel/framework": "^13.0"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.27",
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^12.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Simplysmart\\Polygon\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Simplysmart\\Polygon\\Tests\\": "tests/"
+        }
+    },
+    "bin": [
+        "bin/deploy",
+        "bin/version-release"
+    ],
+    "scripts": {
+        "lint": "pint --test",
+        "format": "pint",
+        "analyse": "phpstan analyse --memory-limit=512M",
+        "test": "phpunit"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Simplysmart\\Polygon\\PolygonServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

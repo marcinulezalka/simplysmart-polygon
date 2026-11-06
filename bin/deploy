@@ -1,0 +1,45 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Wdrożenie projektu: przed-produkcja na tym komputerze, potem (po potwierdzeniu) produkcja przez ssh.
+ * Konfiguracja: `infrastructure/deploy/vendors/<projekt>.env` w repozytorium projektu
+ * (wzór `resources/deploy/deploy-vendor.env.example` tej paczki).
+ * Uruchamiaj z katalogu repozytorium projektu (albo wskaż je przez --root=).
+ *
+ * Użycie: vendor/bin/deploy <projekt> [--production|--no-production] [--dry-run] [--with-push] [--root=<katalog>]
+ */
+
+use Simplysmart\Polygon\Deploy\Console\CommandLine;
+use Simplysmart\Polygon\Deploy\Console\ExitCode;
+use Simplysmart\Polygon\Deploy\Console\Output;
+use Simplysmart\Polygon\Deploy\Console\TerminalConfirmation;
+use Simplysmart\Polygon\Deploy\Deployment\DeployCommand;
+use Simplysmart\Polygon\Deploy\Deployment\DeployException;
+use Simplysmart\Polygon\Deploy\Deployment\RemoteScript;
+use Simplysmart\Polygon\Deploy\Deployment\RepositoryCheck;
+use Simplysmart\Polygon\Deploy\Process\SystemProcessRunner;
+
+require __DIR__ . '/autoload.php';
+
+$output = Output::standard();
+
+try {
+    $processes = new SystemProcessRunner();
+    $command = new DeployCommand(
+        $processes,
+        new RepositoryCheck($processes),
+        RemoteScript::fromFile(),
+        TerminalConfirmation::standard($output),
+    );
+} catch (DeployException $exception) {
+    $output->error($exception->getMessage());
+
+    exit(ExitCode::FAILURE);
+}
+
+$commandLine = CommandLine::current();
+
+exit($command->run($commandLine->arguments, $commandLine->workingDirectory, $output));

@@ -1,0 +1,28 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Wydanie wersji SemVer z sekcji „[Unreleased]” w CHANGELOG.md: ustala podbicie (MAJOR dla Removed i wpisów
+ * „**BREAKING**”, MINOR dla Added/Deprecated, PATCH dla Changed/Fixed/Security), zapisuje VERSION i zamienia
+ * „[Unreleased]” na datowaną sekcję wydania. MAJOR wymaga --major-confirm.
+ * Uruchamiaj z katalogu projektu z CHANGELOG.md i VERSION (albo wskaż go przez --root=).
+ *
+ * Użycie: vendor/bin/version-release [--root=<katalog>] [--major-confirm] [--dry-run]
+ */
+
+use Simplysmart\Polygon\Deploy\Console\CommandLine;
+use Simplysmart\Polygon\Deploy\Console\Output;
+use Simplysmart\Polygon\Deploy\Release\ReleaseClock;
+use Simplysmart\Polygon\Deploy\Release\ReleasePlanner;
+use Simplysmart\Polygon\Deploy\Release\VersionRelease;
+use Simplysmart\Polygon\Deploy\Release\VersionReleaseCommand;
+
+require __DIR__ . '/autoload.php';
+
+$command = new VersionReleaseCommand(new VersionRelease(new ReleasePlanner(), ReleaseClock::fromEnvironment()));
+
+$commandLine = CommandLine::current();
+
+exit($command->run($commandLine->arguments, $commandLine->workingDirectory, Output::standard()));
