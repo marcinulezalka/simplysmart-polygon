@@ -92,6 +92,20 @@ final class ChangelogTest extends TestCase
         $this->assertStringContainsString("## [Unreleased]\r\n\r\n## [1.1.0] - 2026-10-19\r\n", $promoted);
     }
 
+    #[Test]
+    public function podaje_najnowsza_wydana_wersje(): void
+    {
+        $changelog = new Changelog("# Changelog\n\n## [Unreleased]\n\n### Added\n\n- Nowe.\n\n## [0.2.0] - 2026-11-07\n\n## [0.1.0] - 2026-11-06\n");
+
+        $this->assertSame('0.2.0', (string) $changelog->latestRelease());
+    }
+
+    #[Test]
+    public function bez_wydania_nie_ma_wersji(): void
+    {
+        $this->assertNull((new Changelog("# Changelog\n\n## [Unreleased]\n\n### Added\n\n- Nowe.\n"))->latestRelease());
+    }
+
     private function changelog(string $unreleased): Changelog
     {
         return new Changelog("# Changelog\n\n## [Unreleased]\n\n{$unreleased}\n## [1.0.0] - 2026-01-01\n");

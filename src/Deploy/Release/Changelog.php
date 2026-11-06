@@ -16,12 +16,15 @@ namespace Simplysmart\Polygon\Deploy\Release;
 use DateTimeImmutable;
 
 /**
- * Treść CHANGELOG.md w formacie Keep a Changelog: odczyt sekcji „[Unreleased]”,
+ * Treść CHANGELOG.md w formacie Keep a Changelog: odczyt sekcji „[Unreleased]” i najnowszej wydanej wersji,
  * ustalenie wymaganego podbicia i przeniesienie wpisów do datowanej sekcji wydania.
  */
 final readonly class Changelog
 {
     public const string UNRELEASED_TITLE = '[Unreleased]';
+
+    /** Tytuł sekcji wydania: „[x.y.z]”, opcjonalnie z datą („[0.2.0] - 2026-11-06”). */
+    private const string RELEASE_TITLE_PATTERN = '/^\[(\d+\.\d+\.\d+)\](?:\s|$)/';
 
     private const string BREAKING_PATTERN = '/^[ \t]*[-*][ \t]+(?:\*\*BREAKING\*\*|BREAKING(?: CHANGE)?:)/m';
 
@@ -45,6 +48,25 @@ final readonly class Changelog
 
         return $sections[self::UNRELEASED_TITLE]
             ?? throw new ReleaseException('W CHANGELOG.md brakuje sekcji „## ' . self::UNRELEASED_TITLE . '”.');
+    }
+
+    /**
+     * Najnowsza wydana wersja: pierwszy nagłówek „## [x.y.z]” (sekcje wydań idą od najnowszej), z pominięciem
+     * „[Unreleased]” i nagłówków, które nie są wersją SemVer.
+     *
+     * @return SemanticVersion|null Wersja albo null, gdy changelog nie ma jeszcze żadnego wydania.
+     */
+    public function latestRelease(): ?SemanticVersion
+    {
+        [, $sections] = self::splitByHeading($this->contents, 2);
+
+        foreach (array_keys($sections) as $title) {
+            if (preg_match(self::RELEASE_TITLE_PATTERN, (string) $title, $matches) === 1) {
+                return SemanticVersion::parse($matches[1]);
+            }
+        }
+
+        return null;
     }
 
     /**
