@@ -14,22 +14,20 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Install;
 
 use Illuminate\Database\ConnectionInterface;
-use Simplysmart\Polygon\Auth\AccountColumns;
 use Simplysmart\Polygon\Auth\CreateAccount;
-use Simplysmart\Polygon\Auth\EmailAddress;
-use Simplysmart\Polygon\Contracts\BlindIndex;
 use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Database\IdSlots;
 use Simplysmart\Polygon\Models\Permissions\Permission;
 use Simplysmart\Polygon\Models\Permissions\Role;
 use Simplysmart\Polygon\Models\PolygonAccount;
-use Simplysmart\Polygon\Permissions\RequiredRole;
+use Simplysmart\Polygon\Permissions\PermissionTables;
+use Simplysmart\Polygon\Queries\Accounts\ZoneAccounts;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
- * Domyślna konfiguracja systemu z plików instalacji (InstallFiles): najpierw waliduje wszystkie pliki i łączy strefy
- * (uprawnienia sumowane, rola z późniejszego pliku zastępuje wcześniejszą, konta dopisywane; root `hero` zawsze ze
- * wszystkimi uprawnieniami strefy; każda strefa z rolami obowiązkowymi RequiredRole), potem w jednej transakcji zakłada uprawnienia i role guarda strefy (role dostają dokładnie uprawnienia z pliku) oraz konta startowe
+ * Domyślna konfiguracja systemu z plików instalacji (InstallFiles): najpierw waliduje wszystkie pliki
+ * (InstallFileParser) i łączy strefy (ZoneInstallMerger), potem w jednej transakcji zakłada uprawnienia i role guarda
+ * strefy (role dostają dokładnie uprawnienia z pliku) oraz konta startowe
  * (tylko brakujące, przez Auth\CreateAccount; losowe id z puli seederów przy `"id": "random"`), dopisując im role
  * z pliku. Idempotentny: wolno go uruchomić ponownie i na produkcji; uprawnień i ról spoza plików nie usuwa.
  */
@@ -38,9 +36,10 @@ final readonly class Installer
     public function __construct(
         private InstallFiles $files,
         private InstallFileParser $parser,
+        private ZoneInstallMerger $merger,
         private ConnectionInterface $db,
         private CreateAccount $accounts,
-        private BlindIndex $index,
+        private ZoneAccounts $zoneAccounts,
         private IdSlots $slots,
         private PermissionRegistrar $permissions,
     ) {}
@@ -58,7 +57,7 @@ final readonly class Installer
             $parsed = [...$parsed, ...$this->parser->parse($path)];
         }
 
-        $zones = $this->merged($parsed);
+        $zones = $this->merger->merge($parsed);
 
         $report = $this->db->transaction(function () use ($zones): InstallReport {
             $report = new InstallReport();
@@ -75,67 +74,21 @@ final readonly class Installer
         return $report;
     }
 
-    /**
-     * @param list<ZoneInstall> $parsed Strefy w kolejności plików.
-     *
-     * @return list<ZoneInstall>
-     *
-     * @throws InvalidInstallFile Gdy strefie brakuje roli obowiązkowej, konto powtarza się w plikach albo ma rolę
-     *                             nieokreśloną w żadnym pliku.
-     */
-    private function merged(array $parsed): array
-    {
-        $zones = [];
-
-        foreach ($parsed as $zone) {
-            $previous = $zones[$zone->zone] ?? new ZoneInstall($zone->zone, [], [], []);
-            $emails = array_map(static fn(InstallAccount $account): string => $account->email, $previous->accounts);
-
-            foreach ($zone->accounts as $account) {
-                if (in_array($account->email, $emails, true)) {
-                    throw InvalidInstallFile::in('install files', "account [{$account->email}] of zone [{$zone->zone}] is defined twice.");
-                }
-            }
-
-            $zones[$zone->zone] = new ZoneInstall(
-                $zone->zone,
-                array_values(array_unique([...$previous->permissions, ...$zone->permissions])),
-                [...$previous->roles, ...$zone->roles],
-                [...$previous->accounts, ...$zone->accounts],
-            );
-        }
-
-        return array_values(array_map(static function (ZoneInstall $zone): ZoneInstall {
-            foreach (RequiredRole::cases() as $required) {
-                if (! array_key_exists($required->value, $zone->roles)) {
-                    throw InvalidInstallFile::in('install files', "zone [{$zone->zone}] must define the role [{$required->value}].");
-                }
-            }
-
-            foreach ($zone->accounts as $account) {
-                foreach (array_diff($account->roles, array_keys($zone->roles)) as $missing) {
-                    throw InvalidInstallFile::in('install files', "account [{$account->email}] of zone [{$zone->zone}] has the undefined role [{$missing}].");
-                }
-            }
-
-            return new ZoneInstall($zone->zone, $zone->permissions, [...$zone->roles, RequiredRole::ROOT->value => $zone->permissions], $zone->accounts);
-        }, $zones));
-    }
-
     private function installZone(ZoneInstall $zone, InstallReport $report): void
     {
         foreach ($zone->permissions as $name) {
-            $this->permission($name, $zone->zone);
+            $this->entry(Permission::class, $name, $zone->zone);
         }
 
+        // Spatie szuka uprawnień ról w cache rejestru: nowe uprawnienia muszą być w nim przed syncPermissions().
         $this->permissions->forgetCachedPermissions();
 
         foreach ($zone->roles as $name => $permissions) {
-            $this->role($name, $zone->zone)->syncPermissions($permissions);
+            $this->entry(Role::class, $name, $zone->zone)->syncPermissions($permissions);
         }
 
         foreach ($zone->accounts as $account) {
-            $existing = PolygonAccount::withTrashed()->where(AccountColumns::EMAIL_HASH, $this->index->hash(EmailAddress::normalize($account->email)))->first();
+            $existing = $this->zoneAccounts->findByEmail($account->email);
 
             if ($existing === null) {
                 $id = $account->randomId ? $this->slots->random(PolygonAccount::TABLE) : null;
@@ -150,25 +103,23 @@ final readonly class Installer
         }
     }
 
-    private function permission(string $name, string $guard): Permission
+    /**
+     * Uprawnienie albo rola guarda o tej nazwie (także usunięte, bo nazwa zostaje zajęta); brakujące zakłada aktywne.
+     *
+     * @template TModel of Permission|Role
+     *
+     * @param class-string<TModel> $model
+     *
+     * @return TModel
+     */
+    private function entry(string $model, string $name, string $guard): Permission|Role
     {
-        $permission = Permission::withTrashed()->where(ColumnNames::NAME, $name)->where('guard_name', $guard)->first() ?? new Permission();
+        $entry = $model::withTrashed()->where(ColumnNames::NAME, $name)->where(PermissionTables::GUARD_NAME, $guard)->first() ?? new $model();
 
-        if (! $permission->exists) {
-            $permission->forceFill([ColumnNames::NAME => $name, 'guard_name' => $guard, ColumnNames::IS_ACTIVE => true])->save();
+        if (! $entry->exists) {
+            $entry->forceFill([ColumnNames::NAME => $name, PermissionTables::GUARD_NAME => $guard, ColumnNames::IS_ACTIVE => true])->save();
         }
 
-        return $permission;
-    }
-
-    private function role(string $name, string $guard): Role
-    {
-        $role = Role::withTrashed()->where(ColumnNames::NAME, $name)->where('guard_name', $guard)->first() ?? new Role();
-
-        if (! $role->exists) {
-            $role->forceFill([ColumnNames::NAME => $name, 'guard_name' => $guard, ColumnNames::IS_ACTIVE => true])->save();
-        }
-
-        return $role;
+        return $entry;
     }
 }

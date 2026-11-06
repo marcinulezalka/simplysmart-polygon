@@ -15,6 +15,7 @@ namespace Simplysmart\Polygon\Localization;
 
 use Illuminate\Container\Container;
 use Simplysmart\Polygon\Contracts\TextTranslator;
+use Simplysmart\Polygon\Translation\CascadeTextTranslator;
 
 /**
  * Teksty paczki w przestrzeni `polygon::` (lang/<locale>/*.php, zarejestrowane przez PolygonServiceProvider) przez
@@ -24,7 +25,7 @@ use Simplysmart\Polygon\Contracts\TextTranslator;
  */
 final class PackageText
 {
-    public const string NAMESPACE = 'polygon';
+    public const string NAMESPACE = CascadeTextTranslator::CORE_NAMESPACE;
 
     /**
      * Tekst `polygon::<klucz>`; brak tłumaczenia zwraca klucz bez przestrzeni.

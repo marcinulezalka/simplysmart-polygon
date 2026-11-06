@@ -78,7 +78,7 @@ if (! function_exists('text_email')) {
 
 if (! function_exists('local_money')) {
     /**
-     * Kwota z walutą sformatowana według języka; bez waluty używa config('polygon.locale.currency').
+     * Kwota z walutą sformatowana według języka; bez waluty używa `APP_CURRENCY` (PolygonConfig::CURRENCY).
      */
     function local_money(int|float $amount, ?string $currency = null, ?string $locale = null): string
     {

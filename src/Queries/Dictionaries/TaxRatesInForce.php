@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Queries\Dictionaries;
 
+use Simplysmart\Polygon\PolygonConfig;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Config\Repository;
@@ -64,7 +65,7 @@ final readonly class TaxRatesInForce
     {
         $rate = $this->standard($this->defaults->country(), $on)?->rate;
 
-        return $rate ?? $this->config->string('polygon.localization.vat_percent');
+        return $rate ?? $this->config->string(PolygonConfig::VAT_PERCENT);
     }
 
     /**

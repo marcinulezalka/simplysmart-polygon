@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Database\Seeders;
 
+use Simplysmart\Polygon\PolygonConfig;
 use Simplysmart\Polygon\Database\CodeColumns;
 use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Models\Dictionaries\Country;
@@ -31,7 +32,7 @@ final class CountriesSeeder extends DictionarySeeder
 {
     public function run(): void
     {
-        $default = strtoupper($this->config->string('polygon.localization.country'));
+        $default = strtoupper($this->config->string(PolygonConfig::COUNTRY));
         $leading = array_values(array_unique([$default, ...LocalizationData::LEADING_COUNTRIES]));
         $hasDefault = Country::query()->where(ColumnNames::IS_DEFAULT, true)->exists();
         $currencies = Currency::query()->get()->mapWithKeys(static fn(Currency $currency): array => [$currency->alpha_code_3 => $currency->id])->all();

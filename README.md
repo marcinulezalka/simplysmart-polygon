@@ -12,7 +12,7 @@ Paczka Composer: `simplysmart/polygon`, namespace `Simplysmart\Polygon\`.
 
 - PHP ^8.4 z rozszerzeniami `intl` (dane ICU słowników) i `bcmath` (przeliczenia kursów), Laravel 13
 - MySQL 8 / MariaDB (triggery historii: uprawnienie `TRIGGER`, przy binlogu `log_bin_trust_function_creators = 1`) albo SQLite
-- provider `Simplysmart\Polygon\PolygonServiceProvider` rejestruje się sam (auto-discovery)
+- provider `Simplysmart\Polygon\PolygonServiceProvider` rejestruje się sam (auto-discovery) i dokłada providery obszarów z `src/Providers/` (baza danych, tłumaczenia, konta, uprawnienia); klucze configu paczki są stałymi `PolygonConfig`
 
 ## Instalacja w projekcie
 

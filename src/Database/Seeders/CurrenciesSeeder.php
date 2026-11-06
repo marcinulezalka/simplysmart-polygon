@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Database\Seeders;
 
+use Simplysmart\Polygon\PolygonConfig;
 use Simplysmart\Polygon\Database\CodeColumns;
 use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Models\Dictionaries\Currency;
@@ -25,7 +26,7 @@ final class CurrenciesSeeder extends DictionarySeeder
 {
     public function run(): void
     {
-        $default = strtoupper($this->config->string('polygon.locale.currency'));
+        $default = strtoupper($this->config->string(PolygonConfig::CURRENCY));
         $active = array_values(array_unique([$default, ...LocalizationData::ACTIVE_CURRENCIES]));
         $hasDefault = Currency::query()->where(ColumnNames::IS_DEFAULT, true)->exists();
 

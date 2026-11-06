@@ -1,7 +1,7 @@
 # Pliki instalacji (domyślna konfiguracja systemu)
 
 Domyślną konfigurację systemu — strefy, uprawnienia, role i konta startowe — opisują pliki JSON. Stosuje je
-`Install\Installer`:
+`Install\Installer` (pliki czyta `InstallFileParser`, łączy `ZoneInstallMerger`):
 
 ```bash
 php artisan polygon:install     # same pliki instalacji

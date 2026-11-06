@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Localization;
 
+use Simplysmart\Polygon\PolygonConfig;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Contracts\Config\Repository;
@@ -24,7 +25,7 @@ use Simplysmart\Polygon\Contracts\LocalFormatter;
 
 /**
  * Formatowanie regionalne przez intl (Number) i Carbon; bieżący język bierze z translatora,
- * a domyślną walutę z config('polygon.locale.currency').
+ * a domyślną walutę z `APP_CURRENCY` (PolygonConfig::CURRENCY).
  */
 final readonly class IntlLocalFormatter implements LocalFormatter
 {
@@ -42,8 +43,6 @@ final readonly class IntlLocalFormatter implements LocalFormatter
      * Poniedziałek odniesienia: dzień ISO n to ta data plus n - 1 dni.
      */
     private const string REFERENCE_MONDAY = '2024-01-01';
-
-    private const string CURRENCY_CONFIG = 'polygon.locale.currency';
 
     public function __construct(
         private Translator $translator,
@@ -100,10 +99,10 @@ final readonly class IntlLocalFormatter implements LocalFormatter
      */
     private function defaultCurrency(): string
     {
-        $currency = $this->config->get(self::CURRENCY_CONFIG);
+        $currency = $this->config->get(PolygonConfig::CURRENCY);
 
         if (! is_string($currency) || $currency === '') {
-            throw new InvalidArgumentException('Ustaw walutę w ' . self::CURRENCY_CONFIG . ' (APP_CURRENCY).');
+            throw new InvalidArgumentException('Ustaw walutę w ' . PolygonConfig::CURRENCY . ' (APP_CURRENCY).');
         }
 
         return $currency;

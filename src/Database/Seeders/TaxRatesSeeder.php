@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Database\Seeders;
 
+use Simplysmart\Polygon\PolygonConfig;
 use Illuminate\Config\Repository;
 use Simplysmart\Polygon\Database\IdSlots;
 use Simplysmart\Polygon\Enums\TaxRateType;
@@ -42,7 +43,7 @@ final class TaxRatesSeeder extends DictionarySeeder
     {
         $withRates = TaxRate::withTrashed()->get()->map(static fn(TaxRate $rate): ?int => $rate->country_id)->all();
         $query = Country::query();
-        $query->where(Country::codeColumn(), strtoupper($this->config->string('polygon.localization.country')));
+        $query->where(Country::codeColumn(), strtoupper($this->config->string(PolygonConfig::COUNTRY)));
         $query->whereIn(Country::codeColumn(), array_keys(LocalizationData::VAT_RATES));
         $countries = $query->get();
 

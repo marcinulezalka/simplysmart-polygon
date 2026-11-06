@@ -25,7 +25,7 @@ interface LocalFormatter
     /**
      * Kwota z walutą, np. "1 234,50 zł" (pl) albo "PLN 1,234.50" (en).
      *
-     * @param  string|null  $currency  kod ISO 4217; null = waluta domyślna z config('polygon.locale.currency')
+     * @param  string|null  $currency  kod ISO 4217; null = waluta domyślna z `APP_CURRENCY` (PolygonConfig::CURRENCY)
      */
     public function money(int|float $amount, ?string $currency = null, ?string $locale = null): string;
 

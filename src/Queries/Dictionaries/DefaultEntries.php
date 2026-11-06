@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Queries\Dictionaries;
 
+use Simplysmart\Polygon\PolygonConfig;
 use Illuminate\Config\Repository;
 use Simplysmart\Polygon\Contracts\DictionaryEntry;
 use Simplysmart\Polygon\Database\ColumnNames;
@@ -33,7 +34,7 @@ final readonly class DefaultEntries
 
     public function country(): ?Country
     {
-        return $this->find(Country::class, strtoupper($this->configured('polygon.localization.country')));
+        return $this->find(Country::class, strtoupper($this->configured(PolygonConfig::COUNTRY)));
     }
 
     public function language(): ?Language
@@ -43,7 +44,7 @@ final readonly class DefaultEntries
 
     public function currency(): ?Currency
     {
-        return $this->find(Currency::class, strtoupper($this->configured('polygon.locale.currency')));
+        return $this->find(Currency::class, strtoupper($this->configured(PolygonConfig::CURRENCY)));
     }
 
     /**

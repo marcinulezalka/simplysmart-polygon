@@ -14,9 +14,9 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Auth;
 
 use Illuminate\Database\ConnectionInterface;
-use Simplysmart\Polygon\Contracts\BlindIndex;
 use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Models\PolygonAccount;
+use Simplysmart\Polygon\Queries\Accounts\ZoneAccounts;
 use Simplysmart\Polygon\Zones\PolygonZone;
 use Spatie\Permission\Exceptions\RoleDoesNotExist;
 
@@ -29,7 +29,7 @@ final readonly class CreateAccount
 {
     public function __construct(
         private ConnectionInterface $db,
-        private BlindIndex $index,
+        private ZoneAccounts $accounts,
     ) {}
 
     /**
@@ -42,9 +42,7 @@ final readonly class CreateAccount
      */
     public function handle(string $name, string $email, array $roles = [], ?int $id = null): PolygonAccount
     {
-        $hash = $this->index->hash(EmailAddress::normalize($email));
-
-        if (PolygonAccount::withTrashed()->where(AccountColumns::EMAIL_HASH, $hash)->exists()) {
+        if ($this->accounts->findByEmail($email) !== null) {
             throw AccountAlreadyExists::inZone(PolygonZone::NAME);
         }
 

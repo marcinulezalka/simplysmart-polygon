@@ -16,11 +16,11 @@ namespace Simplysmart\Polygon\Auth\Concerns;
 use Illuminate\Container\Container;
 use Simplysmart\Polygon\Auth\AccountColumns;
 use Simplysmart\Polygon\Auth\EmailAddress;
-use Simplysmart\Polygon\Contracts\BlindIndex;
+use Simplysmart\Polygon\Auth\EmailIndex;
 
 /**
  * Kolumny konta strefy (Database\ZoneTables) w modelu, jak w admiro: e-mail szyfrowany, przy zapisie normalizowany
- * i indeksowany w `email_hash` (BlindIndex), IP ostatniego logowania i adres zapasowy szyfrowane, liczniki z wartością
+ * i indeksowany w `email_hash` (Auth\EmailIndex), IP ostatniego logowania i adres zapasowy szyfrowane, liczniki z wartością
  * domyślną w bazie także w nowym modelu (checksum, docs/baza-danych.md §5). Remember-me jest wyłączone.
  *
  * @method static void saving(\Closure|string $callback) Metoda modelu Eloquent.
@@ -41,7 +41,7 @@ trait HasZoneAccountColumns
 
             $email = EmailAddress::normalize($account->emailAddress());
             $account->setAttribute(AccountColumns::EMAIL, $email);
-            $account->setAttribute(AccountColumns::EMAIL_HASH, Container::getInstance()->make(BlindIndex::class)->hash($email));
+            $account->setAttribute(AccountColumns::EMAIL_HASH, Container::getInstance()->make(EmailIndex::class)->of($email));
         });
     }
 

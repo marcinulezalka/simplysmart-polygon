@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Localization;
 
+use Simplysmart\Polygon\PolygonConfig;
 use Illuminate\Config\Repository;
 
 /**
@@ -37,7 +38,7 @@ final readonly class DictionaryLocales
      */
     public function interfaceLocales(): array
     {
-        $enabled = array_filter($this->config->array('polygon.locale.enabled', []), is_string(...));
+        $enabled = array_filter($this->config->array(PolygonConfig::LOCALES, []), is_string(...));
 
         return array_values(array_unique([$this->defaultLocale(), ...$enabled]));
     }

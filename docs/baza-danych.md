@@ -12,7 +12,7 @@ Silniki: MySQL 8 / MariaDB i SQLite (testy, lokalnie). Zasady obowiązują każd
 
 ## 1. Jedno miejsce schematu
 
-- Migracje **wszystkich** tabel bazowych leżą w paczce: `database/migrations/`, ładowane przez `PolygonServiceProvider`
+- Migracje **wszystkich** tabel bazowych leżą w paczce: `database/migrations/`, ładowane przez `Providers\DatabaseServiceProvider`
   (`loadMigrationsFrom`) — także stockowe migracje Laravela (`create_users_table`, `create_cache_table`,
   `create_jobs_table`, nazwy jak w szkielecie, więc istniejące bazy uznają je za wykonane). Projekt nie ma własnych
   `database/migrations/` ani `database/seeders/`; tabelę `migrations` tworzy sam Laravel.
@@ -24,7 +24,8 @@ Silniki: MySQL 8 / MariaDB i SQLite (testy, lokalnie). Zasady obowiązują każd
   (`create_polygon_tables`). Konta (`<strefa>_accounts`) mają pełny standard tabel danych.
 - **Dwa rodzaje kont:** `polygon_accounts` — konta strefy `polygon` (jak `admiro_accounts` w admiro: model
   `Models\PolygonAccount`, guard i provider `polygon` / `polygon_accounts` dopisywane do config/auth przez
-  `Zones\PolygonZone`, e-mail szyfrowany z `email_hash` = HMAC z `APP_KEY` (`Contracts\BlindIndex`), bez hasła — PIN
+  `Zones\PolygonZone`, e-mail szyfrowany z `email_hash` = HMAC z `APP_KEY` adresu w postaci kanonicznej (`Auth\EmailIndex`,
+  `Contracts\BlindIndex`; konto po adresie: `Queries\Accounts\ZoneAccounts::findByEmail()`), bez hasła — PIN
   przy pierwszym logowaniu, role spatie w guardzie `polygon`); `users` — konta frontendu (`Models\User`, guard `web`).
   Konto strefy zakłada `php artisan polygon:account:create {email} {name} [--role=*] [--skip-existing]`
   (akcja `Auth\CreateAccount`, jedna transakcja z rolami; adres zajęty także przez konto usunięte).
