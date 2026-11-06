@@ -31,6 +31,8 @@ use Simplysmart\Polygon\Deploy\Process\ProcessRunner;
  * przed-produkcji zostaje bez zmian. Paczki instaluje `composer install --no-dev`: z manifestu wdrożeniowego
  * (DeployLock — paczki z repozytoriów path, także prywatne, z ich repozytoriów git), który deploy buduje na nowo,
  * kopiuje do przed-produkcji i wysyła na serwer (scp), a projekt bez paczek z repozytoriów path — z `composer.lock`.
+ * Plik instalacji projektu (`<projekt>.json` obok `<projekt>.env`: konta, role, uprawnienia; docs/instalacja.md) trafia
+ * tak samo do `storage/app/<projekt>.install.json` obu środowisk, a remote.sh stosuje go `polygon:install`.
  */
 final readonly class DeployCommand
 {
@@ -96,7 +98,9 @@ final readonly class DeployCommand
 
         $files = $private->existingDeployFiles();
         $manifest = $files === [] ? null : PrivatePackages::DEPLOY_MANIFEST;
-        $preproduction = $this->preproduction($project, $files, $manifest, $output);
+        $installSource = $project->installSource("{$options->root}/" . ProjectConfig::DIRECTORY);
+        $installTarget = $installSource === null ? null : $project->installTarget();
+        $preproduction = $this->preproduction($project, $files, $manifest, $installSource, $output);
 
         if ($preproduction !== ExitCode::SUCCESS) {
             return $preproduction;
@@ -112,10 +116,14 @@ final readonly class DeployCommand
             $this->upload($project, $files, $output);
         }
 
+        if ($installSource !== null) {
+            $this->uploadInstallFile($project, $installSource, $output);
+        }
+
         $exitCode = $this->runScript(
             "==> Uruchamiam wdrożenie na {$project->productionTarget()}",
             $this->script->remoteCommand($project),
-            $this->script->production($project, $manifest),
+            $this->script->production($project, $manifest, $installTarget),
             null,
             'Wdrożenie na serwerze zakończyło się błędem',
             $output,
@@ -133,12 +141,13 @@ final readonly class DeployCommand
      *
      * @param  list<string>  $files  Pliki manifestu wdrożeniowego; pusta lista — paczki z `composer.lock`.
      * @param  string|null  $manifest  Nazwa manifestu dla remote.sh.
+     * @param  string|null  $installSource  Plik instalacji projektu; null — bez pliku.
      *
      * @throws DeployException Gdy katalog nie jest klonem projektu albo manifestu nie da się skopiować.
      * @throws ProcessException Gdy basha nie da się uruchomić.
      * @throws PrivatePackagesException Gdy starego manifestu nie da się usunąć.
      */
-    private function preproduction(ProjectConfig $project, array $files, ?string $manifest, Output $output): int
+    private function preproduction(ProjectConfig $project, array $files, ?string $manifest, ?string $installSource, Output $output): int
     {
         $directory = $project->preproductionPath;
 
@@ -154,10 +163,14 @@ final readonly class DeployCommand
             }
         }
 
+        if ($installSource !== null) {
+            $this->copyInstallFile($installSource, "{$directory}/{$project->installTarget()}");
+        }
+
         return $this->runScript(
             "==> Aktualizuję przed-produkcję {$directory}",
             $this->script->localCommand(),
-            $this->script->preproduction($project, $manifest),
+            $this->script->preproduction($project, $manifest, $installSource === null ? null : $project->installTarget()),
             $directory,
             'Aktualizacja przed-produkcji zakończyła się błędem — produkcja nie została wdrożona',
             $output,
@@ -178,6 +191,35 @@ final readonly class DeployCommand
 
         if ($this->processes->run(['scp', '-q', ...$files, "{$project->productionTarget()}/"]) !== ExitCode::SUCCESS) {
             throw new DeployException("Nie udało się wysłać manifestu wdrożeniowego na {$project->productionTarget()}.");
+        }
+    }
+
+    /**
+     * Kopia pliku instalacji do przed-produkcji z prawami tylko dla właściciela (dane kont).
+     *
+     * @throws DeployException Gdy kopii nie da się zapisać.
+     */
+    private function copyInstallFile(string $source, string $target): void
+    {
+        $directory = dirname($target);
+
+        if ((! is_dir($directory) && ! mkdir($directory, 0o775, true)) || ! copy($source, $target) || ! chmod($target, 0o600)) {
+            throw new DeployException('Nie udało się skopiować pliku instalacji do ' . $target . '.');
+        }
+    }
+
+    /**
+     * Wysyła plik instalacji do katalogu aplikacji na serwerze (scp).
+     *
+     * @throws DeployException Gdy wysyłka się nie powiodła.
+     * @throws ProcessException Gdy scp nie da się uruchomić.
+     */
+    private function uploadInstallFile(ProjectConfig $project, string $source, Output $output): void
+    {
+        $output->line("==> Wysyłam plik instalacji na {$project->productionTarget()}");
+
+        if ($this->processes->run(['scp', '-q', $source, "{$project->productionTarget()}/{$project->installTarget()}"]) !== ExitCode::SUCCESS) {
+            throw new DeployException("Nie udało się wysłać pliku instalacji na {$project->productionTarget()}.");
         }
     }
 

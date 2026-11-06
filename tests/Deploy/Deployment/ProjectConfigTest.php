@@ -113,6 +113,21 @@ final class ProjectConfigTest extends TestCase
         $this->assertSame(['blog', 'shop'], ProjectConfig::available($this->directory));
     }
 
+    #[Test]
+    public function the_install_file_sits_next_to_the_project_config(): void
+    {
+        $this->write('shop', "PREPRODUCTION_PATH=/pp\nDEPLOY_SSH=s\nDEPLOY_PATH=/app\n");
+        $config = ProjectConfig::load($this->directory, 'shop');
+
+        $this->assertNull($config->installSource($this->directory));
+
+        file_put_contents("{$this->directory}/shop.json", '{}');
+
+        $this->assertSame("{$this->directory}/shop.json", $config->installSource($this->directory));
+        $this->assertSame('storage/app/shop.install.json', $config->installTarget());
+        $this->assertSame(['shop'], ProjectConfig::available($this->directory));
+    }
+
     private function write(string $name, string $contents): void
     {
         file_put_contents("{$this->directory}/{$name}.env", $contents);

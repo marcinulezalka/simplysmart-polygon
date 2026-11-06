@@ -20,11 +20,13 @@ final readonly class InstallAccount
 {
     /**
      * @param list<string> $roles
+     * @param list<string> $organizations Klucze organizacji z plików instalacji, których konto jest członkiem (personel).
      */
     public function __construct(
         public string $email,
         public string $name,
         public array $roles,
         public bool $randomId,
+        public array $organizations = [],
     ) {}
 }

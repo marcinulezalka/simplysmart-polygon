@@ -14,6 +14,8 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Install;
 
 use JsonException;
+use Simplysmart\Polygon\Database\ColumnNames;
+use Simplysmart\Polygon\Models\Organization;
 use Simplysmart\Polygon\Permissions\RequiredRole;
 use Simplysmart\Polygon\Contracts\ZoneRegistry;
 
@@ -44,6 +46,21 @@ final readonly class InstallFileParser
 
     private const string ROLE_PATTERN = '/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/';
 
+    /** Klucz organizacji w plikach instalacji (kebab-case, jak role). */
+    private const string KEY_PATTERN = self::ROLE_PATTERN;
+
+    /** Kod typu jednostki (`organization_unit_types.code`, np. `placowka`). */
+    private const string UNIT_TYPE_PATTERN = '/^[a-z][a-z0-9_]*$/';
+
+    private const string PARENT = 'parent';
+
+    private const string UNIT_TYPE = 'unit_type';
+
+    private const int NAME_MAX_LENGTH = 255;
+
+    /** Pola organizacji poza danymi firmy. */
+    private const array ORGANIZATION_FIELDS = [ColumnNames::NAME, Organization::SHORT_NAME, self::PARENT, self::UNIT_TYPE, Organization::IS_DEPARTMENT];
+
     public function __construct(
         private ZoneRegistry $zones,
     ) {}
@@ -55,8 +72,8 @@ final readonly class InstallFileParser
     {
         $data = $this->decode($path);
 
-        if (! array_key_exists('zones', $data) && ! array_key_exists('roles', $data)) {
-            throw InvalidInstallFile::in($path, 'the file needs "roles" or "zones".');
+        if (! array_key_exists('zones', $data) && ! array_key_exists('roles', $data) && ! array_key_exists('organizations', $data)) {
+            throw InvalidInstallFile::in($path, 'the file needs "roles", "zones" or "organizations".');
         }
 
         $zones = $data['zones'] ?? [];
@@ -71,7 +88,125 @@ final readonly class InstallFileParser
             $result[] = $this->zone($path, (string) $zone, $definition);
         }
 
-        return new InstallFile($this->catalog($path, $data['roles'] ?? []), $result);
+        return new InstallFile($this->catalog($path, $data['roles'] ?? []), $result, $this->organizations($path, $data['organizations'] ?? []));
+    }
+
+    /**
+     * Organizacje: klucz => `name` (wymagana), opcjonalnie `short_name`, `parent` (klucz), `unit_type` (kod typu
+     * jednostki), `is_department` i dane firmy (Organization::DETAIL_LENGTHS); inne pola to błąd.
+     *
+     * @return list<InstallOrganization>
+     */
+    private function organizations(string $path, mixed $organizations): array
+    {
+        if (! is_array($organizations) || ($organizations !== [] && array_is_list($organizations))) {
+            throw InvalidInstallFile::in($path, '"organizations" must be an object of organization keys.');
+        }
+
+        $result = [];
+
+        foreach ($organizations as $key => $definition) {
+            $key = (string) $key;
+            $where = "organizations.{$key}";
+
+            if (preg_match(self::KEY_PATTERN, $key) !== 1) {
+                throw InvalidInstallFile::in($path, "{$where}: the key must be kebab-case.");
+            }
+
+            if (! is_array($definition) || array_is_list($definition)) {
+                throw InvalidInstallFile::in($path, "{$where} must be an object.");
+            }
+
+            $unknown = array_diff(array_keys($definition), [...self::ORGANIZATION_FIELDS, ...array_keys(Organization::DETAIL_LENGTHS)]);
+
+            if ($unknown !== []) {
+                throw InvalidInstallFile::in($path, "{$where} has unknown fields: " . implode(', ', $unknown) . '.');
+            }
+
+            $result[] = new InstallOrganization(
+                $key,
+                $this->text($path, $definition, ColumnNames::NAME, $where, self::NAME_MAX_LENGTH) ?? throw InvalidInstallFile::in($path, "{$where} needs a \"name\"."),
+                $this->text($path, $definition, Organization::SHORT_NAME, $where, Organization::SHORT_NAME_MAX_LENGTH),
+                $this->reference($path, $definition, self::PARENT, $where, self::KEY_PATTERN),
+                $this->reference($path, $definition, self::UNIT_TYPE, $where, self::UNIT_TYPE_PATTERN),
+                $this->flag($path, $definition, Organization::IS_DEPARTMENT, $where),
+                $this->details($path, $definition, $where),
+            );
+        }
+
+        return $result;
+    }
+
+    /**
+     * Dane firmy organizacji: kolumna => wartość (tylko podane).
+     *
+     * @param array<array-key, mixed> $definition
+     *
+     * @return array<string, string>
+     */
+    private function details(string $path, array $definition, string $where): array
+    {
+        $details = [];
+
+        foreach (Organization::DETAIL_LENGTHS as $column => $length) {
+            $value = $this->text($path, $definition, $column, $where, $length);
+
+            if ($value !== null) {
+                $details[$column] = $value;
+            }
+        }
+
+        return $details;
+    }
+
+    /**
+     * Opcjonalny niepusty tekst do $length znaków.
+     *
+     * @param array<array-key, mixed> $definition
+     */
+    private function text(string $path, array $definition, string $field, string $where, int $length): ?string
+    {
+        if (! array_key_exists($field, $definition)) {
+            return null;
+        }
+
+        $value = $definition[$field];
+
+        if (! is_string($value) || trim($value) === '' || mb_strlen(trim($value)) > $length) {
+            throw InvalidInstallFile::in($path, "{$where}.{$field} must be a non-empty text of at most {$length} characters.");
+        }
+
+        return trim($value);
+    }
+
+    /**
+     * Opcjonalne odwołanie (klucz organizacji, kod typu) zgodne z $pattern.
+     *
+     * @param array<array-key, mixed> $definition
+     */
+    private function reference(string $path, array $definition, string $field, string $where, string $pattern): ?string
+    {
+        $value = $definition[$field] ?? null;
+
+        if ($value === null) {
+            return null;
+        }
+
+        if (! is_string($value) || preg_match($pattern, $value) !== 1) {
+            throw InvalidInstallFile::in($path, "{$where}.{$field} is not a valid reference.");
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param array<array-key, mixed> $definition
+     */
+    private function flag(string $path, array $definition, string $field, string $where): bool
+    {
+        $value = $definition[$field] ?? false;
+
+        return is_bool($value) ? $value : throw InvalidInstallFile::in($path, "{$where}.{$field} must be true or false.");
     }
 
     /**
@@ -238,7 +373,13 @@ final readonly class InstallFileParser
             }
 
             $emails[] = $email;
-            $result[] = new InstallAccount($email, $name, $this->names($path, $account['roles'] ?? [], "{$where}.roles", self::ROLE_PATTERN), $id === self::RANDOM_ID);
+            $result[] = new InstallAccount(
+                $email,
+                $name,
+                $this->names($path, $account['roles'] ?? [], "{$where}.roles", self::ROLE_PATTERN),
+                $id === self::RANDOM_ID,
+                $this->names($path, $account['organizations'] ?? [], "{$where}.organizations", self::KEY_PATTERN),
+            );
         }
 
         return $result;

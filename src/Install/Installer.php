@@ -14,10 +14,13 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Install;
 
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\Eloquent\Model;
 use Simplysmart\Polygon\Auth\CreateZoneAccount;
 use Simplysmart\Polygon\Contracts\ZoneRegistry;
 use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Database\IdSlots;
+use Simplysmart\Polygon\Models\Organization;
+use Simplysmart\Polygon\Models\OrganizationUnitType;
 use Simplysmart\Polygon\Models\Permissions\Permission;
 use Simplysmart\Polygon\Models\Permissions\Role;
 use Simplysmart\Polygon\Organizations\OrganizationMembership;
@@ -27,13 +30,21 @@ use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Domyślna konfiguracja systemu z plików instalacji (InstallFiles): najpierw waliduje wszystkie pliki
- * (InstallFileParser) i łączy strefy (ZoneInstallMerger), potem w jednej transakcji zakłada uprawnienia i role guarda
- * strefy (role dostają dokładnie uprawnienia z pliku) oraz konta startowe
+ * (InstallFileParser) i łączy strefy (ZoneInstallMerger) oraz organizacje (InstallOrganizations), potem w jednej
+ * transakcji zakłada brakujące organizacje (po kluczu z pliku, organizacja nadrzędna przed podrzędną; istniejących nie
+ * zmienia), uprawnienia i role guarda strefy (role dostają dokładnie uprawnienia z pliku) oraz konta startowe
  * (tylko brakujące, modelem strefy przez Auth\CreateZoneAccount; losowe id z puli seederów przy `"id": "random"`), dopisując im role
- * z pliku (konto z rolą hero zostaje członkiem organizacji hero). Idempotentny: wolno go uruchomić ponownie i na produkcji; uprawnień i ról spoza plików nie usuwa.
+ * i członkostwa organizacji z pliku (konto z rolą hero zostaje też członkiem organizacji hero). Idempotentny: wolno go uruchomić ponownie i na produkcji; uprawnień, ról i członkostw spoza plików nie usuwa.
  */
 final readonly class Installer
 {
+    /** Klucz organizacji z pliku instalacji w `json_attributes` organizacji. */
+    public const string INSTALL_KEY = 'install_key';
+
+    private const string UNIT_TYPE_CODE = 'code';
+
+    private const string SOURCE = 'install files';
+
     public function __construct(
         private InstallFiles $files,
         private InstallFileParser $parser,
@@ -45,6 +56,7 @@ final readonly class Installer
         private IdSlots $slots,
         private PermissionRegistrar $permissions,
         private OrganizationMembership $membership,
+        private InstallOrganizations $organizations,
     ) {}
 
     /**
@@ -54,13 +66,16 @@ final readonly class Installer
      */
     public function install(): InstallReport
     {
-        $zones = $this->merger->merge(array_map($this->parser->parse(...), $this->files->all()));
+        $files = array_map($this->parser->parse(...), $this->files->all());
+        $zones = $this->merger->merge($files);
+        $organizations = $this->organizations->merge($files, $zones);
 
-        $report = $this->db->transaction(function () use ($zones): InstallReport {
+        $report = $this->db->transaction(function () use ($zones, $organizations): InstallReport {
             $report = new InstallReport();
+            $installed = $this->installOrganizations($organizations, $report);
 
             foreach ($zones as $zone) {
-                $this->installZone($zone, $report);
+                $this->installZone($zone, $report, $installed);
             }
 
             return $report;
@@ -71,7 +86,75 @@ final readonly class Installer
         return $report;
     }
 
-    private function installZone(ZoneInstall $zone, InstallReport $report): void
+    /**
+     * Organizacje z plików, rozpoznawane po kluczu (`json_attributes.install_key`, także w koszu): brakująca powstaje
+     * aktywna, istniejąca zostaje bez zmian (zmiany z aplikacji nie są cofane).
+     *
+     * @param list<InstallOrganization> $organizations Organizacja nadrzędna przed podrzędną (InstallOrganizations).
+     *
+     * @return array<string, Organization> Klucz => organizacja.
+     *
+     * @throws InvalidInstallFile Gdy typu jednostki o podanym kodzie nie ma (transakcja jest wycofywana).
+     */
+    private function installOrganizations(array $organizations, InstallReport $report): array
+    {
+        $installed = [];
+
+        foreach ($organizations as $organization) {
+            $existing = Organization::withTrashed()->where(ColumnNames::JSON_ATTRIBUTES . '->' . self::INSTALL_KEY, $organization->key)->first();
+
+            if ($existing !== null) {
+                $installed[$organization->key] = $existing;
+                $report->organizationsKept[] = $existing->name;
+
+                continue;
+            }
+
+            $created = new Organization();
+            $created->forceFill([
+                ColumnNames::NAME => $organization->name,
+                ColumnNames::IS_ACTIVE => true,
+                ColumnNames::PARENT_ID => $organization->parent === null ? null : $installed[$organization->parent]->getKey(),
+                Organization::SHORT_NAME => $organization->shortName,
+                Organization::IS_DEPARTMENT => $organization->isDepartment,
+                Organization::UNIT_TYPE_ID => $organization->unitType === null ? null : $this->unitType($organization),
+                ColumnNames::JSON_ATTRIBUTES => [self::INSTALL_KEY => $organization->key],
+                ...$organization->details,
+            ])->save();
+
+            $installed[$organization->key] = $created;
+            $report->organizationsCreated[] = $organization->name;
+        }
+
+        return $installed;
+    }
+
+    /**
+     * @throws InvalidInstallFile Gdy typu jednostki o tym kodzie nie ma.
+     */
+    private function unitType(InstallOrganization $organization): int
+    {
+        $id = OrganizationUnitType::query()->where(self::UNIT_TYPE_CODE, $organization->unitType)->value(ColumnNames::ID);
+
+        return is_int($id) ? $id : throw InvalidInstallFile::in(self::SOURCE, "organization [{$organization->key}] has the unknown unit type [{$organization->unitType}].");
+    }
+
+    /**
+     * Konto staje się członkiem (personelem) organizacji z pliku; członkostw spoza plików instalacja nie odbiera.
+     *
+     * @param array<string, Organization> $installed
+     */
+    private function joinOrganizations(Model $account, InstallAccount $definition, array $installed): void
+    {
+        foreach ($definition->organizations as $key) {
+            $this->membership->add($account, $installed[$key]);
+        }
+    }
+
+    /**
+     * @param array<string, Organization> $installed Organizacje z plików (klucz => organizacja).
+     */
+    private function installZone(ZoneInstall $zone, InstallReport $report, array $installed): void
     {
         foreach ($zone->permissions as $name) {
             $this->entry(Permission::class, $name, $zone->zone);
@@ -92,7 +175,8 @@ final readonly class Installer
 
             if ($existing === null) {
                 $id = $account->randomId ? $this->slots->random((new $model())->getTable()) : null;
-                $this->accounts->handle($definition, $account->name, $account->email, $account->roles, $id);
+                $created = $this->accounts->handle($definition, $account->name, $account->email, $account->roles, $id);
+                $this->joinOrganizations($created, $account, $installed);
                 $report->created[] = $account->email;
 
                 continue;
@@ -100,6 +184,7 @@ final readonly class Installer
 
             $existing->assignRole($account->roles);
             $this->membership->joinHeroOrganization($existing, $account->roles);
+            $this->joinOrganizations($existing, $account, $installed);
             $report->kept[] = $account->email;
         }
     }

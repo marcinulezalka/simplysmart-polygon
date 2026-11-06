@@ -279,7 +279,7 @@ i zarządzanie organizacjami dodaje paczka strefy.
 - **Departament** (`is_department`, `isDepartment()`): wewnętrzna agregacja — dział jednostki (organizacji bez flagi)
   z własnymi członkami, bez własnych danych; nazwa „Jednostka · Departament” z `contextName()`. Reguły drzewa
   (departament bezpośrednio pod jednostką, bez organizacji pod sobą) egzekwuje paczka zarządzająca organizacjami.
-- **Typy jednostek:** słownik z typami domyślnymi (placówka, filia, poradnia, oddział, departament, pracownia, zakład,
+- **Typy jednostek:** słownik z typami domyślnymi (siedziba, placówka, filia, poradnia, oddział, departament, pracownia, zakład,
   rejestracja, jednostka ogólna, dział administracyjny, dział wewnętrzny) w slotach 1–999 z polami podorganizacji
   (`OrganizationUnitType::fields()`), z `Database\Seeders\OrganizationUnitTypeSeeder` (w `OrganizationsSeeder`);
   `displayNumber()` dokleja `number_prefix`. Usunięcie typu zostawia jednostkę bez typu (`nullOnDelete`).

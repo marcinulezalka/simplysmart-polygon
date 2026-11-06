@@ -236,6 +236,46 @@ final class DeployCommandTest extends TestCase
         $this->assertStringContainsString('Nie udało się wysłać manifestu wdrożeniowego', $stderr);
     }
 
+    #[Test]
+    public function the_install_file_goes_to_both_environments_and_the_script(): void
+    {
+        file_put_contents("{$this->root}/" . ProjectConfig::DIRECTORY . '/shop.json', '{"zones": {}}');
+
+        [$exitCode, $stdout, $stderr] = $this->deploy(['shop', '--production']);
+
+        $this->assertSame(ExitCode::SUCCESS, $exitCode, $stderr);
+        $this->assertSame(['bash', 'scp', 'ssh'], $this->processes->programs());
+        $this->assertFileEquals("{$this->root}/" . ProjectConfig::DIRECTORY . '/shop.json', "{$this->preproduction}/storage/app/shop.install.json");
+        $this->assertSame('600', substr(sprintf('%o', fileperms("{$this->preproduction}/storage/app/shop.install.json")), -3));
+        $this->assertSame(['scp', '-q', "{$this->root}/" . ProjectConfig::DIRECTORY . '/shop.json', 'shop@prod:~/shop.pl/storage/app/shop.install.json'], $this->processes->runs[1]['command']);
+        $this->assertStringContainsString("DEPLOY_INSTALL_FILE='storage/app/shop.install.json'", (string) $this->processes->runs[0]['input']);
+        $this->assertStringContainsString("DEPLOY_INSTALL_FILE='storage/app/shop.install.json'", (string) $this->processes->runs[2]['input']);
+        $this->assertStringContainsString('Wysyłam plik instalacji', $stdout);
+    }
+
+    #[Test]
+    public function without_an_install_file_nothing_is_sent_and_the_script_gets_no_path(): void
+    {
+        $this->deploy(['shop', '--production']);
+
+        $this->assertSame(['bash', 'ssh'], $this->processes->programs());
+        $this->assertStringNotContainsString('DEPLOY_INSTALL_FILE', (string) $this->processes->runs[1]['input']);
+        $this->assertFileDoesNotExist("{$this->preproduction}/storage/app/shop.install.json");
+    }
+
+    #[Test]
+    public function a_failed_install_file_upload_stops_before_the_server_script(): void
+    {
+        file_put_contents("{$this->root}/" . ProjectConfig::DIRECTORY . '/shop.json', '{}');
+        $this->processes->exitCodes = ['scp' => 1];
+
+        [$exitCode, , $stderr] = $this->deploy(['shop', '--production']);
+
+        $this->assertSame(ExitCode::FAILURE, $exitCode);
+        $this->assertSame(['bash', 'scp'], $this->processes->programs());
+        $this->assertStringContainsString('Nie udało się wysłać pliku instalacji', $stderr);
+    }
+
     /**
      * Projekt z repozytorium path `packages/*\/*` i wymaganą paczką acme/core z `origin`.
      */

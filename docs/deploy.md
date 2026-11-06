@@ -59,8 +59,19 @@ Oba pliki dodaj do `.gitignore` projektu.
 
 1. Sprawdza, czy repozytorium jest wypchnięte. Niewypchnięte commity zatrzymują wdrożenie, chyba że podasz `--with-push`.
 2. Buduje świeży manifest wdrożeniowy (jak `composer-private --deploy`; `--dry-run` tylko wymienia paczki). Błąd zatrzymuje wdrożenie.
-3. Aktualizuje przed-produkcję (`PREPRODUCTION_PATH`, klon repozytorium na tym komputerze): kopiuje do niej manifest i uruchamia `remote.sh`: `git pull`, `composer install --no-dev` z manifestu (bez niego z `composer.lock`), migracje, cache. Jej `.env` zostaje bez zmian.
+3. Aktualizuje przed-produkcję (`PREPRODUCTION_PATH`, klon repozytorium na tym komputerze): kopiuje do niej manifest (i plik instalacji, niżej) i uruchamia `remote.sh`: `git pull`, `composer install --no-dev` z manifestu (bez niego z `composer.lock`), migracje, `polygon:install`, cache. Jej `.env` zostaje bez zmian.
 4. Pyta, czy wdrożyć produkcję (bez terminala odpowiedź to „nie”; `--production` / `--no-production` pomija pytanie), wysyła manifest do `DEPLOY_PATH` (`scp`) i uruchamia ten sam skrypt na serwerze przez `ssh`. Skrypt dostaje nazwę manifestu w `DEPLOY_COMPOSER_MANIFEST`; bez niej (ręczne uruchomienie) instaluje z `composer.lock`.
+
+### Plik instalacji projektu
+
+Gdy obok `infrastructure/deploy/vendors/<projekt>.env` leży `<projekt>.json` (format z [instalacja.md](instalacja.md):
+konta, role, uprawnienia stref — np. z prawdziwymi adresami personelu, więc poza repozytorium), deploy kopiuje go do
+przed-produkcji i wysyła na serwer (`scp`) jako `storage/app/<projekt>.install.json` (zawartość `storage/app/` jest poza
+gitem, prawa `600`). `remote.sh` po migracjach uruchamia `php artisan polygon:organizations:seed` (brakujące typy jednostek i organizacja hero, idempotentnie) i `php artisan polygon:install` z plikami z `POLYGON_INSTALL_FILES`
+w `.env` i tym plikiem (`DEPLOY_INSTALL_FILE`), bez wpisywania go do `.env`. Instalacja uruchamia się przy każdym
+wdrożeniu (także bez pliku projektu), więc nowe uprawnienia i role z plików paczek trafiają do bazy bez ręcznego seeda;
+jest idempotentna — tworzy tylko brakujące uprawnienia, role i konta, a istniejącym kontom niczego nie odbiera. Słowników
+deploy nie seeduje (pierwsza instalacja: `php artisan db:seed --force`).
 
 Błąd przed-produkcji zatrzymuje wdrożenie. Na serwerze musi istnieć klon repozytorium z `.env.production`, który skrypt kopiuje jako `.env` (APP_KEY serwera zostaje, gdy plik go nie podaje). Konfiguracja projektu: `infrastructure/deploy/vendors/<projekt>.env` w repozytorium projektu (ignorowana przez git), wzór `resources/deploy/deploy-vendor.env.example`.
 

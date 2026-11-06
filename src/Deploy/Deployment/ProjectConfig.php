@@ -55,6 +55,12 @@ final readonly class ProjectConfig
 
     private const string EXTENSION = '.env';
 
+    /** Plik instalacji projektu obok jego konfiguracji: `<projekt>.json` (docs/instalacja.md). */
+    private const string INSTALL_EXTENSION = '.json';
+
+    /** Plik instalacji na serwerze i w przed-produkcji, względem katalogu aplikacji (zawartość storage/app jest poza gitem). */
+    private const string INSTALL_TARGET = 'storage/app/%s.install.json';
+
     /** Nazwa projektu: małe litery, cyfry, kropki, myślniki i podkreślenia — bez ścieżek. */
     private const string NAME = '/^[a-z0-9][a-z0-9._-]*$/';
 
@@ -159,6 +165,27 @@ final readonly class ProjectConfig
     /**
      * Cel produkcji w formacie ssh: `konto:katalog`.
      */
+    /**
+     * Plik instalacji projektu w katalogu konfiguracji (`<projekt>.json`), jeśli istnieje.
+     *
+     * @param  string  $directory  Katalog konfiguracji projektów (`<repozytorium>/` . DIRECTORY).
+     * @return string|null Ścieżka pliku albo null, gdy projekt go nie ma.
+     */
+    public function installSource(string $directory): ?string
+    {
+        $file = "{$directory}/{$this->name}" . self::INSTALL_EXTENSION;
+
+        return is_file($file) ? $file : null;
+    }
+
+    /**
+     * Ścieżka pliku instalacji w katalogu aplikacji (przed-produkcja i serwer), np. `storage/app/shop.install.json`.
+     */
+    public function installTarget(): string
+    {
+        return sprintf(self::INSTALL_TARGET, $this->name);
+    }
+
     public function productionTarget(): string
     {
         return "{$this->ssh}:{$this->path}";

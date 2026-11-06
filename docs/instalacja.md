@@ -15,9 +15,12 @@ php artisan db:seed             # słowniki, organizacje (hero), pliki instalacj
    `$this->callAfterResolving(InstallFiles::class, static fn(InstallFiles $files) => $files->add($path))`.
 3. Pliki projektu z `.env`: `POLYGON_INSTALL_FILES=install/strefy.json,install/konta.json` (`polygon.install.files`,
    ścieżki względem katalogu projektu albo absolutne), w podanej kolejności.
+4. Przy wdrożeniu `vendor/bin/deploy <projekt>`: plik `infrastructure/deploy/vendors/<projekt>.json` z komputera
+   deweloperskiego, przesłany jako `storage/app/<projekt>.install.json` i dopisany na końcu ([deploy.md](deploy.md)).
 
 Pliki są łączone per strefa: uprawnienia się sumują, rola z pliku stosowanego później zastępuje rolę o tej samej nazwie,
-konta są dopisywane (ten sam adres w dwóch plikach to błąd). Plik projektu może więc dodać do strefy tylko nowe
+konta są dopisywane (ten sam adres w dwóch plikach to błąd). Organizacje (sekcja główna `organizations`) są wspólne dla
+stref: organizacja z pliku stosowanego później zastępuje organizację o tym samym kluczu. Plik projektu może więc dodać do strefy tylko nowe
 uprawnienia, role i konta, bez powtarzania ról paczki.
 
 ## Katalog ról
@@ -80,6 +83,24 @@ pozostałe — nic. Test projektu pilnuje zgodności enumów z plikiem.
 }
 ```
 
+Organizacje i personel (np. w pliku projektu albo `infrastructure/deploy/vendors/<projekt>.json`):
+
+```json
+{
+    "organizations": {
+        "clinic": { "name": "Centrum Medyczne", "short_name": "CM", "unit_type": "placowka", "nip": "1234567890", "city": "Warszawa" },
+        "clinic-desk": { "name": "Rejestracja", "parent": "clinic", "unit_type": "rejestracja", "is_department": true }
+    },
+    "zones": {
+        "shop": {
+            "accounts": [
+                { "email": "anna@example.com", "name": "Anna Nowak", "roles": ["registration"], "organizations": ["clinic", "clinic-desk"] }
+            ]
+        }
+    }
+}
+```
+
 | Klucz | Znaczenie |
 | --- | --- |
 | `roles.<rola>.permissions` (główne) | katalog ról każdej strefy: `[]` albo `"*"` |
@@ -90,6 +111,13 @@ pozostałe — nic. Test projektu pilnuje zgodności enumów z plikiem.
 | `roles.<rola>.inherits` | role, których uprawnienia rola przejmuje (bez cykli) |
 | `accounts[].email`, `name` | konto strefy (adres zapisywany małymi literami, szyfrowany, z `email_hash`) |
 | `accounts[].roles` | role strefy z dowolnego pliku (np. `hero` z pliku paczki); nieznana rola to błąd |
+| `accounts[].organizations` | klucze organizacji z `organizations` (dowolnego pliku), których konto jest członkiem — personelem (`organization_members`); nieznany klucz to błąd |
+| `organizations.<klucz>` | organizacja wspólna dla stref; klucz (kebab-case) to jej identyfikator w plikach, zapisany w `json_attributes.install_key` |
+| `organizations.<klucz>.name` | nazwa (wymagana); opcjonalnie `short_name` |
+| `organizations.<klucz>.parent` | klucz organizacji nadrzędnej (filia, dział); bez cykli |
+| `organizations.<klucz>.unit_type` | kod typu jednostki z `organization_unit_types` (`siedziba`, `placowka`, `filia`, `poradnia`, `oddzial`, `departament`, `pracownia`, `zaklad`, `administracja`, `dzial`, `rejestracja`, `ogolna`); nieznany kod to błąd |
+| `organizations.<klucz>.is_department` | `true` — departament jednostki nadrzędnej (nazwa w przełączniku: „Jednostka · Departament”) |
+| `organizations.<klucz>.<dane firmy>` | `nip`, `regon`, `krs`, `phone`, `mobile_phone`, `email`, `billing_email`, `street`, `postal_code`, `city`, `country_code`, `color` (długości jak w kolumnach); inne pola to błąd |
 | `accounts[].id` | `"random"` — losowe wolne id z puli seederów 1–999 (`IdSlots::random()`, nieprzewidywalne); brak — id od 1000 |
 
 Etykiety uprawnień i ról nie należą do pliku (dodaje je warstwa interfejsu z tłumaczeń).
@@ -99,7 +127,10 @@ Etykiety uprawnień i ról nie należą do pliku (dodaje je warstwa interfejsu z
 - **Najpierw walidacja:** wszystkie pliki są sprawdzane i łączone (role obowiązkowe, root), zanim cokolwiek
   trafi do bazy (`InvalidInstallFile` z nazwą pliku i miejscem błędu); zapis idzie w jednej transakcji.
 - **Idempotentność:** uprawnienia i role powstają tylko brakujące; rola dostaje **dokładnie** uprawnienia z pliku
-  (`syncPermissions`). Konto powstaje tylko, gdy adresu nie ma w strefie (także wśród usuniętych); istniejącemu
+  (`syncPermissions`). Organizacja powstaje tylko, gdy w bazie nie ma organizacji z jej kluczem (także w koszu) —
+  istniejącej instalacja nie zmienia, więc zmiany z aplikacji zostają, a poprawki danych w pliku po pierwszej instalacji
+  nie trafiają do bazy. Członkostwa z pliku są dopisywane kontom nowym i istniejącym, nigdy odbierane. Organizacje
+  wymagają typów jednostek z `OrganizationUnitTypeSeeder` (`db:seed`), jeśli plik podaje `unit_type`. Konto powstaje tylko, gdy adresu nie ma w strefie (także wśród usuniętych); istniejącemu
   kontu instalacja dopisuje brakujące role, niczego nie odbiera. Uprawnień, ról i kont spoza plików nie usuwa.
 - **Konta bez hasła:** konto strefy zakłada `Auth\CreateZoneAccount` modelem strefy (aktywne, bez PIN-u — właściciel ustawia go przy
   pierwszym logowaniu), jak `<strefa>:account:create`.

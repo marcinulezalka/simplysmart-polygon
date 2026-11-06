@@ -37,6 +37,14 @@ final class InstallCommand extends Command
             return self::FAILURE;
         }
 
+        foreach ($report->organizationsCreated as $name) {
+            $this->info("Organizacja założona: {$name}.");
+        }
+
+        foreach ($report->organizationsKept as $name) {
+            $this->line("Organizacja już istnieje: {$name} (bez zmian).");
+        }
+
         foreach ($report->created as $email) {
             $this->info("Konto założone: {$email} (PIN przy pierwszym logowaniu).");
         }

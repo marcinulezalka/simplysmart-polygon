@@ -52,6 +52,25 @@ final class RemoteScriptTest extends TestCase
     }
 
     #[Test]
+    public function an_install_file_is_passed_to_both_environments(): void
+    {
+        $script = new RemoteScript("echo remote\n");
+
+        $this->assertStringContainsString("export DEPLOY_INSTALL_FILE='storage/app/shop.install.json'\n", $script->production($this->config(), null, 'storage/app/shop.install.json'));
+        $this->assertStringContainsString("export DEPLOY_INSTALL_FILE='storage/app/shop.install.json'\n", $script->preproduction($this->config(), null, 'storage/app/shop.install.json'));
+    }
+
+    #[Test]
+    public function the_server_script_applies_install_files_after_migrations(): void
+    {
+        $script = RemoteScript::fromFile()->production($this->config());
+
+        $this->assertGreaterThan((int) strpos($script, 'artisan migrate --force'), (int) strpos($script, 'artisan polygon:organizations:seed'));
+        $this->assertGreaterThan((int) strpos($script, 'artisan polygon:organizations:seed'), (int) strpos($script, 'artisan polygon:install'));
+        $this->assertLessThan((int) strpos($script, 'artisan config:cache'), (int) strpos($script, 'artisan polygon:install'));
+    }
+
+    #[Test]
     public function commands_read_the_script_from_standard_input(): void
     {
         $script = new RemoteScript('');

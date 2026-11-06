@@ -19,7 +19,7 @@ use Simplysmart\Polygon\Database\IdSlots;
 use Simplysmart\Polygon\Models\OrganizationUnitType;
 
 /**
- * Domyślne typy jednostek organizacyjnych w slotach 1–999 (IdSlots::next()): placówka, filia, poradnia, oddział,
+ * Domyślne typy jednostek organizacyjnych w slotach 1–999 (IdSlots::next()): siedziba, placówka, filia, poradnia, oddział,
  * departament, pracownia, zakład, rejestracja, jednostka ogólna oraz struktura wewnętrzna — dział administracyjny i dział
  * wewnętrzny — z polami podorganizacji (FIELDS). Seeder referencyjny, idempotentny po `code`: brakujący typ dodaje, a typu
  * zmienionego przez administratora nie nadpisuje.
@@ -32,6 +32,7 @@ final class OrganizationUnitTypeSeeder extends Seeder
      * @var array<string, array{string, string, string, bool}>
      */
     public const array DEFAULTS = [
+        'siedziba' => ['Siedziba', 'SIE-', 'building', false],
         'placowka' => ['Placówka', 'PLA-', 'building', false],
         'filia' => ['Filia', 'FIL-', 'home', false],
         'poradnia' => ['Poradnia', 'POR-', 'cross', false],
@@ -51,6 +52,7 @@ final class OrganizationUnitTypeSeeder extends Seeder
      * @var array<string, list<string>>
      */
     public const array FIELDS = [
+        'siedziba' => ['Godziny otwarcia'],
         'placowka' => ['Kod resortowy', 'Godziny otwarcia'],
         'filia' => ['Godziny otwarcia'],
         'poradnia' => ['Specjalność', 'Kod resortowy (część VIII)', 'Godziny przyjęć'],

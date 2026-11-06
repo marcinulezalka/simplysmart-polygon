@@ -8,7 +8,8 @@
 #   3. token GitHub dla Composera (GITHUB_TOKEN, jeśli podany),
 #   4. paczki z composer.lock (--no-dev) albo z manifestu wdrożeniowego przesłanego przez deploy
 #      (DEPLOY_COMPOSER_MANIFEST, np. composer.deploy.json z composer.deploy.lock — paczki z repozytoriów git),
-#   5. APP_KEY, migracje, cache konfiguracji, tras i widoków.
+#   5. APP_KEY, migracje, typy jednostek i organizacja hero (polygon:organizations:seed), pliki instalacji (polygon:install: uprawnienia, role i konta z plików paczek, POLYGON_INSTALL_FILES
+#      z .env i pliku przesłanego przez deploy — DEPLOY_INSTALL_FILE), cache konfiguracji, tras i widoków.
 # Z DEPLOY_KEEP_ENV=1 (przed-produkcja na komputerze deweloperskim) .env zostaje bez zmian, a bez COMPOSER_BIN
 # i ~/bin/composer skrypt bierze composer z PATH zamiast go instalować.
 # Zatrzymuje się przy pierwszym błędzie.
@@ -24,6 +25,7 @@ php_bin="${DEPLOY_PHP:?Ustaw DEPLOY_PHP na polecenie PHP 8.4 (np. DEPLOY_PHP=php
 composer_bin="${COMPOSER_BIN:-$HOME/bin/composer}"
 keep_env="${DEPLOY_KEEP_ENV:-}"
 manifest="${DEPLOY_COMPOSER_MANIFEST:-}"
+install_file="${DEPLOY_INSTALL_FILE:-}"
 
 fail() { echo "BŁĄD: $*" >&2; exit 1; }
 step() { echo "--> $*"; }
@@ -110,6 +112,25 @@ step "Migracje"
 # Config bez cache, żeby migracje czytały bieżący .env, a nie konfigurację z poprzedniego wdrożenia.
 "$php_bin" artisan config:clear >/dev/null
 "$php_bin" artisan migrate --force
+
+step "Typy jednostek i organizacja hero (polygon:organizations:seed)"
+# Idempotentny seeder referencyjny: brakujące typy jednostek (np. nowe w paczce) muszą być w bazie, zanim pliki
+# instalacji założą organizacje z `unit_type`.
+"$php_bin" artisan polygon:organizations:seed --no-interaction
+
+step "Pliki instalacji (polygon:install)"
+# Config jest bez cache, więc POLYGON_INSTALL_FILES ze środowiska procesu ma pierwszeństwo przed .env (Dotenv go nie
+# nadpisuje): pliki z .env plus plik przesłany przez deploy, bez powtórzeń.
+install_files="$({ grep -E '^POLYGON_INSTALL_FILES=' .env || true; } | tail -n1 | cut -d= -f2- | sed -E "s/^[\"']//; s/[\"']\s*$//")"
+if [[ -n "$install_file" ]]; then
+    [[ -f "$install_file" ]] || fail "Brak $install_file — deploy nie przesłał pliku instalacji."
+    chmod 600 "$install_file"
+    case ",$install_files," in
+        *",$install_file,"*) ;;
+        *) install_files="${install_files:+$install_files,}$install_file" ;;
+    esac
+fi
+POLYGON_INSTALL_FILES="$install_files" "$php_bin" artisan polygon:install --no-interaction
 
 step "Cache konfiguracji, tras i widoków"
 "$php_bin" artisan optimize:clear >/dev/null
