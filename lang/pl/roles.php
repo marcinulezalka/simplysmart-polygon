@@ -13,11 +13,18 @@ declare(strict_types=1);
 
 return [
 
+    'guest' => 'Gość',
+    'support' => 'Wsparcie techniczne',
+    'owner' => 'Właściciel',
+    'hero' => 'Hero',
+    'registration' => 'Rejestracja',
+    'doctor' => 'Lekarz',
+    'accountant' => 'Księgowość',
+    'analyst' => 'Analityk',
+    'manager' => 'Manager',
+
     'polygon' => [
-        'guest' => 'Gość',
-        'support' => 'Wsparcie techniczne',
         'owner' => 'Właściciel systemu',
-        'hero' => 'Hero',
     ],
 
 ];

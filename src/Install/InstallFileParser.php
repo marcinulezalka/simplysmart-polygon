@@ -20,12 +20,15 @@ use Simplysmart\Polygon\Contracts\ZoneRegistry;
 /**
  * Czyta i waliduje plik instalacji, zanim cokolwiek trafi do bazy (docs/instalacja.md):
  * ```json
- * {"zones": {"polygon": {
+ * {"roles": {"guest": {"permissions": []}, "manager": {"permissions": []}, "hero": {"permissions": "*"}},
+ *  "zones": {"polygon": {
  *     "permissions": ["settings.view", "settings.manage"],
  *     "roles": {"guest": {"permissions": []}, "support": {"permissions": ["settings.view"]},
  *               "owner": {"inherits": ["support"], "permissions": ["settings.manage"]}, "hero": {"permissions": "*"}},
  *     "accounts": [{"email": "support@example.com", "name": "Support", "roles": ["hero"], "id": "random"}]}}}
  * ```
+ * Katalog `roles` to role każdej zarejestrowanej strefy z kontami, z uprawnieniami `[]` albo `"*"` (wszystkie uprawnienia
+ * strefy); strefa ustawia im własne w `zones.<strefa>.roles`. Plik ma co najmniej jedną z sekcji.
  * Sprawdza: strefy zarejestrowane z kontami (Contracts\ZoneRegistry), rolę root `hero` tylko jako `"*"` bez `except` (role obowiązkowe
  * i pełne uprawnienia roota sprawdza Installer po połączeniu plików), nazwy uprawnień `zasób.akcja` i ról w kebab-case, uprawnienia ról
  * i `except` z listy `permissions`, `inherits` do istniejących ról bez cykli, konta z poprawnym adresem, unikalnym
@@ -46,16 +49,19 @@ final readonly class InstallFileParser
     ) {}
 
     /**
-     * @return list<ZoneInstall>
-     *
      * @throws InvalidInstallFile
      */
-    public function parse(string $path): array
+    public function parse(string $path): InstallFile
     {
         $data = $this->decode($path);
-        $zones = $data['zones'] ?? null;
 
-        if (! is_array($zones) || $zones === [] || array_is_list($zones)) {
+        if (! array_key_exists('zones', $data) && ! array_key_exists('roles', $data)) {
+            throw InvalidInstallFile::in($path, 'the file needs "roles" or "zones".');
+        }
+
+        $zones = $data['zones'] ?? [];
+
+        if (! is_array($zones) || ($zones !== [] && array_is_list($zones))) {
             throw InvalidInstallFile::in($path, '"zones" must be an object of zone names.');
         }
 
@@ -65,7 +71,42 @@ final readonly class InstallFileParser
             $result[] = $this->zone($path, (string) $zone, $definition);
         }
 
-        return $result;
+        return new InstallFile($this->catalog($path, $data['roles'] ?? []), $result);
+    }
+
+    /**
+     * Katalog ról: rola => czy ma wszystkie uprawnienia strefy (`"*"`); `[]` — bez uprawnień. Rola root tylko z `"*"`.
+     *
+     * @return array<string, bool>
+     */
+    private function catalog(string $path, mixed $roles): array
+    {
+        if ($roles === []) {
+            return [];
+        }
+
+        if (! is_array($roles) || array_is_list($roles)) {
+            throw InvalidInstallFile::in($path, '"roles" must be an object of role names.');
+        }
+
+        $catalog = [];
+
+        foreach ($roles as $role => $definition) {
+            $role = (string) $role;
+            $permissions = is_array($definition) && count($definition) === 1 && array_key_exists('permissions', $definition) ? $definition['permissions'] : null;
+
+            if (preg_match(self::ROLE_PATTERN, $role) !== 1 || ($permissions !== [] && $permissions !== self::ALL)) {
+                throw InvalidInstallFile::in($path, "catalog role [{$role}] must be kebab-case with \"permissions\": [] or \"*\" only.");
+            }
+
+            if ($role === RequiredRole::ROOT->value && $permissions !== self::ALL) {
+                throw InvalidInstallFile::in($path, "catalog role [{$role}] is the root role: only \"permissions\": \"*\" is allowed.");
+            }
+
+            $catalog[$role] = $permissions === self::ALL;
+        }
+
+        return $catalog;
     }
 
     private function zone(string $path, string $zone, mixed $definition): ZoneInstall

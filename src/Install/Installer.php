@@ -52,13 +52,7 @@ final readonly class Installer
      */
     public function install(): InstallReport
     {
-        $parsed = [];
-
-        foreach ($this->files->all() as $path) {
-            $parsed = [...$parsed, ...$this->parser->parse($path)];
-        }
-
-        $zones = $this->merger->merge($parsed);
+        $zones = $this->merger->merge(array_map($this->parser->parse(...), $this->files->all()));
 
         $report = $this->db->transaction(function () use ($zones): InstallReport {
             $report = new InstallReport();

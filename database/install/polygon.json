@@ -1,4 +1,33 @@
 {
+    "roles": {
+        "guest": {
+            "permissions": []
+        },
+        "support": {
+            "permissions": []
+        },
+        "owner": {
+            "permissions": []
+        },
+        "hero": {
+            "permissions": "*"
+        },
+        "registration": {
+            "permissions": []
+        },
+        "doctor": {
+            "permissions": []
+        },
+        "accountant": {
+            "permissions": []
+        },
+        "analyst": {
+            "permissions": []
+        },
+        "manager": {
+            "permissions": []
+        }
+    },
     "zones": {
         "polygon": {
             "permissions": [
@@ -21,9 +50,6 @@
                 "system.maintenance"
             ],
             "roles": {
-                "guest": {
-                    "permissions": []
-                },
                 "support": {
                     "permissions": [
                         "zones.view",
@@ -41,9 +67,6 @@
                         "heroes.manage",
                         "system.maintenance"
                     ]
-                },
-                "hero": {
-                    "permissions": "*"
                 }
             },
             "accounts": [

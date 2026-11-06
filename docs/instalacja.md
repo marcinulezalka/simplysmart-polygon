@@ -20,38 +20,57 @@ Pliki są łączone per strefa: uprawnienia się sumują, rola z pliku stosowane
 konta są dopisywane (ten sam adres w dwóch plikach to błąd). Plik projektu może więc dodać do strefy tylko nowe
 uprawnienia, role i konta, bez powtarzania ról paczki.
 
-## Role strefy (jak w admiro)
+## Katalog ról
 
-Każda strefa po połączeniu plików musi mieć role obowiązkowe `Permissions\RequiredRole`:
+Sekcja główna `"roles"` to katalog ról **każdej** zarejestrowanej strefy z kontami — także strefy bez własnej sekcji
+w plikach. Rola katalogu ma tylko `"permissions": []` (bez uprawnień) albo `"*"` (wszystkie uprawnienia strefy);
+konkretne uprawnienia nadaje jej strefa w `zones.<strefa>.roles` (rola strefy nadpisuje rolę katalogu niezależnie od
+kolejności plików). Katalog pliku paczki (`Permissions\BaseRole`, etykiety `polygon::roles.<rola>`):
 
-| Rola | Uprawnienia w pliku paczki |
-| --- | --- |
-| `guest` | brak (konto widzi tylko trasy publiczne i dla zalogowanych) |
-| `support` | podgląd: `zones.view`, `accounts.view`, `organizations.view`, `owners.view`, `settings.view`, `dictionaries.view`, `audit.view` |
-| `owner` | wszystko poza `heroes.manage` i `system.maintenance` |
-| `hero` | **root** — zawsze wszystkie uprawnienia strefy, także dodane przez pliki projektu |
+| Rola | Znaczenie | Katalog |
+| --- | --- | --- |
+| `guest` | konto bez uprawnień (trasy publiczne i dla zalogowanych) | `[]` |
+| `support` | wsparcie techniczne | `[]` |
+| `owner` | właściciel strefy | `[]` |
+| `hero` | **root** — zawsze wszystkie uprawnienia strefy, także dodane przez pliki projektu | `"*"` |
+| `registration` | rejestracja | `[]` |
+| `doctor` | lekarz | `[]` |
+| `accountant` | księgowość | `[]` |
+| `analyst` | analityk | `[]` |
+| `manager` | manager | `[]` |
 
-Rola `hero` jest najwyższa: w pliku może wystąpić tylko jako `"permissions": "*"` (bez `except` i `inherits`),
-a instalator nadaje jej uprawnienia całej strefy po połączeniu plików. Uprawnienia strefy `polygon`: zestaw strefy
-administratorów admiro (`zones.view`, `zones.configure`, `accounts.manage`, `organizations.view`, `organizations.manage`,
-`owners.view`, `owners.assign`, `settings.view`, `settings.manage`, `users.manage`, `audit.view`, `heroes.manage`,
-`system.maintenance`) oraz `accounts.view`, `roles.manage`, `dictionaries.view`, `dictionaries.manage`. Nie ma roli
-`admin` — najwyższą rolą (root) jest `hero`. W kodzie odpowiadają im enumy `Zones\PolygonPermission` i `Zones\PolygonRole` (test projektu
-pilnuje zgodności z plikiem), a etykiety są w `lang/<locale>/permissions.php` i `roles.php` (`polygon::permissions.polygon.*`,
-`polygon::roles.polygon.*`).
+Każda strefa po połączeniu plików musi mieć role obowiązkowe `Permissions\RequiredRole` (`guest`, `support`, `owner`,
+`hero`) — katalog paczki je zapewnia. Rola `hero` jest najwyższa: w pliku może wystąpić tylko jako
+`"permissions": "*"` (bez `except` i `inherits`), a instalator nadaje jej uprawnienia całej strefy po połączeniu plików.
+Nie ma roli `admin`. Etykietę roli w strefie daje `ZoneDefinition::roleLabel()`: najpierw `roles.<strefa>.<rola>`
+w tekstach paczki strefy, potem `polygon::roles.<rola>`.
+
+## Strefa `polygon`
+
+Uprawnienia: zestaw strefy administratorów admiro (`zones.view`, `zones.configure`, `accounts.manage`,
+`organizations.view`, `organizations.manage`, `owners.view`, `owners.assign`, `settings.view`, `settings.manage`,
+`users.manage`, `audit.view`, `heroes.manage`, `system.maintenance`) oraz `accounts.view`, `roles.manage`,
+`dictionaries.view`, `dictionaries.manage` (enum `Zones\PolygonPermission`, etykiety `polygon::permissions.polygon.*`).
+Role katalogu dostają w niej: `support` — podgląd (`zones.view`, `accounts.view`, `organizations.view`, `owners.view`,
+`settings.view`, `dictionaries.view`, `audit.view`), `owner` — wszystko poza `heroes.manage` i `system.maintenance`,
+pozostałe — nic. Test projektu pilnuje zgodności enumów z plikiem.
 
 ## Format
 
 ```json
 {
+    "roles": {
+        "guest": { "permissions": [] },
+        "manager": { "permissions": [] },
+        "hero": { "permissions": "*" }
+    },
     "zones": {
         "polygon": {
             "permissions": ["settings.view", "settings.manage"],
             "roles": {
-                "guest": { "permissions": [] },
                 "support": { "permissions": ["settings.view"] },
                 "owner": { "inherits": ["support"], "permissions": ["settings.manage"] },
-                "hero": { "permissions": "*" }
+                "manager": { "permissions": ["settings.view"] }
             },
             "accounts": [
                 { "email": "support@simplysmart.pl", "name": "Simplysmart Support", "roles": ["hero"], "id": "random" }
@@ -63,6 +82,7 @@ pilnuje zgodności z plikiem), a etykiety są w `lang/<locale>/permissions.php` 
 
 | Klucz | Znaczenie |
 | --- | --- |
+| `roles.<rola>.permissions` (główne) | katalog ról każdej strefy: `[]` albo `"*"` |
 | `zones.<strefa>` | strefa zarejestrowana z kontami (`Contracts\ZoneRegistry`, [docs/strefy.md](strefy.md)), np. `polygon` |
 | `permissions` | uprawnienia strefy `zasób.akcja` (kebab-case po obu stronach kropki) |
 | `roles.<rola>.permissions` | lista uprawnień z `permissions` albo `"*"` (wszystkie) |

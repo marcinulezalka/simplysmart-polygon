@@ -13,61 +13,91 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Install;
 
+use Simplysmart\Polygon\Contracts\ZoneRegistry;
 use Simplysmart\Polygon\Permissions\RequiredRole;
 
 /**
- * Łączy strefy ze wszystkich plików instalacji w kolejności plików: uprawnienia się sumują, rola z późniejszego pliku
- * zastępuje wcześniejszą, konta są dopisywane; potem sprawdza role obowiązkowe (RequiredRole), role kont i nadaje
- * rolę root (`hero`) wszystkim uprawnieniom strefy (docs/instalacja.md).
+ * Łączy pliki instalacji w kolejności plików: katalog ról (`roles`, późniejszy plik zastępuje rolę), a w strefach
+ * uprawnienia się sumują, rola z późniejszego pliku zastępuje wcześniejszą, konta są dopisywane. Każda zarejestrowana
+ * strefa z kontami dostaje role katalogu (`"*"` = wszystkie jej uprawnienia, inaczej żadne), które jej własne role
+ * nadpisują; potem sprawdza role obowiązkowe (RequiredRole), role kont i nadaje rolę root (`hero`) wszystkim
+ * uprawnieniom strefy (docs/instalacja.md).
  */
 final readonly class ZoneInstallMerger
 {
     private const string SOURCE = 'install files';
 
+    public function __construct(
+        private ZoneRegistry $registry,
+    ) {}
+
     /**
-     * @param list<ZoneInstall> $parsed Strefy w kolejności plików.
+     * @param list<InstallFile> $files Pliki w kolejności stosowania.
      *
      * @return list<ZoneInstall>
      *
      * @throws InvalidInstallFile Gdy strefie brakuje roli obowiązkowej, konto powtarza się w plikach albo ma rolę
      *                             nieokreśloną w żadnym pliku.
      */
-    public function merge(array $parsed): array
+    public function merge(array $files): array
     {
+        $catalog = [];
         $zones = [];
 
-        foreach ($parsed as $zone) {
-            $previous = $zones[$zone->zone] ?? new ZoneInstall($zone->zone, [], [], []);
-            $emails = array_map(static fn(InstallAccount $account): string => $account->email, $previous->accounts);
-
-            foreach ($zone->accounts as $account) {
-                if (in_array($account->email, $emails, true)) {
-                    throw InvalidInstallFile::in(self::SOURCE, "account [{$account->email}] of zone [{$zone->zone}] is defined twice.");
-                }
+        foreach ($this->registry->all() as $name => $definition) {
+            if ($definition->model !== null) {
+                $zones[$name] = new ZoneInstall($name, [], [], []);
             }
-
-            $zones[$zone->zone] = new ZoneInstall(
-                $zone->zone,
-                array_values(array_unique([...$previous->permissions, ...$zone->permissions])),
-                [...$previous->roles, ...$zone->roles],
-                [...$previous->accounts, ...$zone->accounts],
-            );
         }
 
-        return array_values(array_map(static function (ZoneInstall $zone): ZoneInstall {
-            foreach (RequiredRole::cases() as $required) {
-                if (! array_key_exists($required->value, $zone->roles)) {
-                    throw InvalidInstallFile::in(self::SOURCE, "zone [{$zone->zone}] must define the role [{$required->value}].");
-                }
-            }
+        foreach ($files as $file) {
+            $catalog = [...$catalog, ...$file->catalog];
 
-            foreach ($zone->accounts as $account) {
-                foreach (array_diff($account->roles, array_keys($zone->roles)) as $missing) {
-                    throw InvalidInstallFile::in(self::SOURCE, "account [{$account->email}] of zone [{$zone->zone}] has the undefined role [{$missing}].");
-                }
+            foreach ($file->zones as $zone) {
+                $zones[$zone->zone] = $this->combine($zones[$zone->zone] ?? new ZoneInstall($zone->zone, [], [], []), $zone);
             }
+        }
 
-            return new ZoneInstall($zone->zone, $zone->permissions, [...$zone->roles, RequiredRole::ROOT->value => $zone->permissions], $zone->accounts);
-        }, $zones));
+        return array_values(array_map(fn(ZoneInstall $zone): ZoneInstall => $this->complete($zone, $catalog), $zones));
+    }
+
+    private function combine(ZoneInstall $previous, ZoneInstall $zone): ZoneInstall
+    {
+        $emails = array_map(static fn(InstallAccount $account): string => $account->email, $previous->accounts);
+
+        foreach ($zone->accounts as $account) {
+            if (in_array($account->email, $emails, true)) {
+                throw InvalidInstallFile::in(self::SOURCE, "account [{$account->email}] of zone [{$zone->zone}] is defined twice.");
+            }
+        }
+
+        return new ZoneInstall(
+            $zone->zone,
+            array_values(array_unique([...$previous->permissions, ...$zone->permissions])),
+            [...$previous->roles, ...$zone->roles],
+            [...$previous->accounts, ...$zone->accounts],
+        );
+    }
+
+    /**
+     * @param array<string, bool> $catalog
+     */
+    private function complete(ZoneInstall $zone, array $catalog): ZoneInstall
+    {
+        $roles = [...array_map(static fn(bool $all): array => $all ? $zone->permissions : [], $catalog), ...$zone->roles];
+
+        foreach (RequiredRole::cases() as $required) {
+            if (! array_key_exists($required->value, $roles)) {
+                throw InvalidInstallFile::in(self::SOURCE, "zone [{$zone->zone}] must define the role [{$required->value}].");
+            }
+        }
+
+        foreach ($zone->accounts as $account) {
+            foreach (array_diff($account->roles, array_keys($roles)) as $missing) {
+                throw InvalidInstallFile::in(self::SOURCE, "account [{$account->email}] of zone [{$zone->zone}] has the undefined role [{$missing}].");
+            }
+        }
+
+        return new ZoneInstall($zone->zone, $zone->permissions, [...$roles, RequiredRole::ROOT->value => $zone->permissions], $zone->accounts);
     }
 }
