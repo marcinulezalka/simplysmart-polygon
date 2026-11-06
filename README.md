@@ -1,12 +1,17 @@
 # polygon
 
-Narzędzia deweloperskie aplikacji simplysmart: wydania SemVer (`vendor/bin/version-release`) i wdrożenia przed-produkcja → produkcja (`vendor/bin/deploy`), opis: [docs/deploy.md](docs/deploy.md). Instalowana tylko w środowisku deweloperskim (`require-dev`), więc nie trafia na serwery (`composer install --no-dev`).
+Rdzeń bazy danych aplikacji simplysmart i narzędzia deweloperskie:
+
+- **Baza danych** — wszystkie migracje i seedery bazowe (także stockowe `users`, `cache`, `jobs`): kolumny standardowe, pule id, pełna historia zmian triggerami z aktorem (żądania `web`, zadania kolejki), modele `DataModel` z relacjami w traitach i etykietami kolumn, przejścia stanu wiersza, konta strefy `polygon_accounts` i konta frontendu `users`, uprawnienia spatie/laravel-permission bez zespołów oraz słowniki lokalizacji (waluty, języki, kraje, stawki VAT, kursy walut, dni wolne, jednostki miar) z seederami, odczytami (`Queries\Dictionaries`) i zarządzaniem (`DictionaryManagement`); opis: [docs/baza-danych.md](docs/baza-danych.md); domyślna konfiguracja systemu z plików JSON: [docs/instalacja.md](docs/instalacja.md).
+- **Tłumaczenia** — kaskada tekstów i helpery `text_*` / `local_*` jak w admiro, polskie teksty frameworka (`validation`, `auth`, `passwords`, `pagination`) oraz szablon i import tłumaczeń JSON (`polygon:translations:export`, `polygon:translations:import`); opis: [docs/tlumaczenia.md](docs/tlumaczenia.md).
+- **Narzędzia** — wydania SemVer (`vendor/bin/version-release`) i wdrożenia przed-produkcja → produkcja (`vendor/bin/deploy`); opis: [docs/deploy.md](docs/deploy.md).
 
 Paczka Composer: `simplysmart/polygon`, namespace `Simplysmart\Polygon\`.
 
 ## Wymagania
 
-- PHP ^8.4, Laravel 13
+- PHP ^8.4 z rozszerzeniami `intl` (dane ICU słowników) i `bcmath` (przeliczenia kursów), Laravel 13
+- MySQL 8 / MariaDB (triggery historii: uprawnienie `TRIGGER`, przy binlogu `log_bin_trust_function_creators = 1`) albo SQLite
 - provider `Simplysmart\Polygon\PolygonServiceProvider` rejestruje się sam (auto-discovery)
 
 ## Instalacja w projekcie
@@ -20,10 +25,14 @@ Paczka leży lokalnie w `/var/www/packages/simplysmart/polygon`. W `composer.jso
 ```
 
 ```bash
-composer require --dev simplysmart/polygon:@dev
+composer require simplysmart/polygon:@dev
+php artisan migrate                      # tabele paczki (database/migrations/)
+php artisan db:seed                      # słowniki lokalizacji + pliki instalacji (DatabaseSeeder paczki, idempotentny)
+php artisan polygon:install              # same pliki instalacji JSON: strefy, uprawnienia, role, konta startowe
+php artisan polygon:account:create jan@example.com "Jan Kowalski" --role=owner   # konto strefy polygon (polygon_accounts)
 ```
 
-Kod aplikacji nie może zależeć od klas tej paczki, bo na przed-produkcji i produkcji jej nie ma.
+Paczka jest w `require`, bo jej migracje i modele działają też na serwerach. Ustawienia (`config/polygon.php`) zmienia się przez `.env`: `APP_CURRENCY`, `APP_LOCALES`, `APP_COUNTRY`.
 
 Konfiguracje wdrażanych projektów leżą w projekcie: `infrastructure/deploy/vendors/<projekt>.env` (wzór `resources/deploy/deploy-vendor.env.example`).
 

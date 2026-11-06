@@ -2,10 +2,13 @@
     "$schema": "https://getcomposer.org/schema.json",
     "name": "simplysmart/polygon",
     "type": "library",
-    "description": "Polygon: narzędzia deweloperskie aplikacji simplysmart (wydania SemVer, wdrożenia przed-produkcja → produkcja), instalowane tylko jako require-dev.",
+    "description": "Polygon: rdzeń bazy danych aplikacji simplysmart (kolumny standardowe, historia zmian, pule id, tabele strefy, słowniki lokalizacji z seederami) oraz narzędzia deweloperskie (wydania SemVer, wdrożenia przed-produkcja → produkcja).",
     "keywords": [
         "simplysmart",
         "polygon",
+        "database",
+        "migrations",
+        "localization",
         "dev",
         "tools",
         "deploy",
@@ -26,9 +29,13 @@
     },
     "require": {
         "php": "^8.4",
-        "laravel/framework": "^13.0"
+        "ext-bcmath": "*",
+        "ext-intl": "*",
+        "laravel/framework": "^13.0",
+        "spatie/laravel-permission": "^8.3"
     },
     "require-dev": {
+        "fakerphp/faker": "^1.23",
         "laravel/pint": "^1.27",
         "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^12.5"
@@ -36,7 +43,10 @@
     "autoload": {
         "psr-4": {
             "Simplysmart\\Polygon\\": "src/"
-        }
+        },
+        "files": [
+            "src/helpers.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

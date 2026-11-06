@@ -1,0 +1,61 @@
+{
+    "zones": {
+        "polygon": {
+            "permissions": [
+                "zones.view",
+                "zones.configure",
+                "accounts.view",
+                "accounts.manage",
+                "roles.manage",
+                "organizations.view",
+                "organizations.manage",
+                "owners.view",
+                "owners.assign",
+                "settings.view",
+                "settings.manage",
+                "dictionaries.view",
+                "dictionaries.manage",
+                "users.manage",
+                "audit.view",
+                "heroes.manage",
+                "system.maintenance"
+            ],
+            "roles": {
+                "guest": {
+                    "permissions": []
+                },
+                "support": {
+                    "permissions": [
+                        "zones.view",
+                        "accounts.view",
+                        "organizations.view",
+                        "owners.view",
+                        "settings.view",
+                        "dictionaries.view",
+                        "audit.view"
+                    ]
+                },
+                "owner": {
+                    "permissions": "*",
+                    "except": [
+                        "heroes.manage",
+                        "system.maintenance"
+                    ]
+                },
+                "hero": {
+                    "permissions": "*"
+                }
+            },
+            "accounts": [
+                {
+                    "email": "support@simplysmart.pl",
+                    "name": "Simplysmart Support",
+                    "roles": [
+                        "hero"
+                    ],
+                    "id": "random"
+                }
+            ]
+        }
+    }
+}

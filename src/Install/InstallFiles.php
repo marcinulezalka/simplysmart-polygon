@@ -1,0 +1,48 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * This file is part of simplysmart/polygon.
+ *
+ * Copyright (c) 2026 Marcin Ulezalka <marcin.ulezalka@simplysmart.pl>
+ *
+ * Licensed under the Simplysmart Restricted Source License 1.0.
+ * See the LICENSE file distributed with this source code.
+ */
+
+namespace Simplysmart\Polygon\Install;
+
+use Illuminate\Config\Repository;
+use Illuminate\Contracts\Foundation\Application;
+
+/**
+ * Pliki instalacji w kolejności stosowania: domyślny plik paczki (`database/install/polygon.json`), potem pliki projektu
+ * z `POLYGON_INSTALL_FILES` (`polygon.install.files`, ścieżki względem katalogu projektu) — tak projekt dołącza własne
+ * strefy, role i konta bez zmian w paczce.
+ */
+final readonly class InstallFiles
+{
+    public const string PACKAGE_FILE = __DIR__ . '/../../database/install/polygon.json';
+
+    public function __construct(
+        private Repository $config,
+        private Application $app,
+    ) {}
+
+    /**
+     * @return list<string>
+     */
+    public function all(): array
+    {
+        $files = [self::PACKAGE_FILE];
+
+        foreach ($this->config->array('polygon.install.files', []) as $path) {
+            if (is_string($path) && $path !== '') {
+                $files[] = str_starts_with($path, '/') ? $path : $this->app->basePath($path);
+            }
+        }
+
+        return $files;
+    }
+}

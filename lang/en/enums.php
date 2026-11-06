@@ -1,0 +1,60 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * This file is part of simplysmart/polygon.
+ *
+ * Copyright (c) 2026 Marcin Ulezalka <marcin.ulezalka@simplysmart.pl>
+ *
+ * Licensed under the Simplysmart Restricted Source License 1.0.
+ * See the LICENSE file distributed with this source code.
+ */
+
+return [
+    'tax_rate_exempt_short' => 'exempt',
+    'record_status' => [
+        'draft' => 'Draft',
+        'pending' => 'Pending',
+        'active' => 'Active',
+        'blocked' => 'Blocked',
+        'migrating' => 'Migrating',
+        'quarantined' => 'Quarantined',
+        'archived' => 'Archived',
+    ],
+    'tax_rate_type' => [
+        'standard' => 'Standard',
+        'reduced' => 'Reduced',
+        'super-reduced' => 'Super reduced',
+        'zero' => 'Zero',
+        'exempt' => 'Exempt',
+    ],
+    'measure_unit_kind' => [
+        'count' => 'Count',
+        'mass' => 'Mass',
+        'length' => 'Length',
+        'area' => 'Area',
+        'volume' => 'Volume',
+        'time' => 'Time',
+        'energy' => 'Energy',
+        'service' => 'Service',
+        'packaging' => 'Packaging',
+    ],
+    'continent' => [
+        'europe' => 'Europe',
+        'asia' => 'Asia',
+        'north-america' => 'North America',
+        'south-america' => 'South America',
+        'africa' => 'Africa',
+        'oceania' => 'Oceania',
+        'antarctica' => 'Antarctica',
+    ],
+    'exchange_rate_source' => [
+        'nbp' => 'NBP (table A)',
+        'manual' => 'manual',
+    ],
+    'holiday_source' => [
+        'nager' => 'holiday calendar',
+        'manual' => 'manual',
+    ],
+];
