@@ -1,3 +1,9 @@
+**Language versions:** [Polski (binding)](LICENSE.md) · [English (translation)](LICENSE.en.md)
+
+This English text is an informational translation. The Polish version in [LICENSE.md](LICENSE.md) is binding;
+in case of any discrepancy, the Polish version prevails.
+
+```text
 SIMPLYSMART RESTRICTED SOURCE LICENSE, VERSION 1.0
 
 Copyright (c) 2026 Marcin Ulezalka <marcin.ulezalka@simplysmart.pl>
@@ -65,3 +71,4 @@ Copyright (c) 2026 Marcin Ulezalka <marcin.ulezalka@simplysmart.pl>
 
 9. CONTACT
    Requests for written permission: marcin.ulezalka@simplysmart.pl
+```

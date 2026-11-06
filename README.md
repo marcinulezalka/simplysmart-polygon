@@ -35,3 +35,12 @@ composer test      # PHPUnit
 composer lint      # Pint, preset PER + strict_types i nagłówek licencji
 composer analyse   # PHPStan, poziom max
 ```
+
+## Licencja
+
+Simplysmart Restricted Source License 1.0 — © 2026 Marcin Ulezalka.
+
+- [Polski (wiążąca)](LICENSE.md)
+- [English (translation)](LICENSE.en.md)
+
+Użytek komercyjny wymaga wpisu w pliku atrybucji projektu — wzór w [THIRD_PARTY.md](THIRD_PARTY.md).
