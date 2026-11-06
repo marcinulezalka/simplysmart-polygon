@@ -4,7 +4,7 @@ Rdzeń bazy danych aplikacji simplysmart i narzędzia deweloperskie:
 
 - **Baza danych** — wszystkie migracje i seedery bazowe (także stockowe `users`, `cache`, `jobs`): kolumny standardowe, pule id, pełna historia zmian triggerami z aktorem (żądania `web`, zadania kolejki), modele `DataModel` z relacjami w traitach i etykietami kolumn, przejścia stanu wiersza, konta strefy `polygon_accounts` i konta frontendu `users`, uprawnienia spatie/laravel-permission bez zespołów oraz słowniki lokalizacji (waluty, języki, kraje, stawki VAT, kursy walut, dni wolne, jednostki miar) z seederami, odczytami (`Queries\Dictionaries`) i zarządzaniem (`DictionaryManagement`); opis: [docs/baza-danych.md](docs/baza-danych.md); domyślna konfiguracja systemu z plików JSON: [docs/instalacja.md](docs/instalacja.md).
 - **Tłumaczenia** — kaskada tekstów i helpery `text_*` / `local_*` jak w admiro, polskie teksty frameworka (`validation`, `auth`, `passwords`, `pagination`) oraz szablon i import tłumaczeń JSON (`polygon:translations:export`, `polygon:translations:import`); opis: [docs/tlumaczenia.md](docs/tlumaczenia.md).
-- **Narzędzia** — wydania SemVer (`vendor/bin/version-release`) i wdrożenia przed-produkcja → produkcja (`vendor/bin/deploy`); opis: [docs/deploy.md](docs/deploy.md).
+- **Narzędzia** — wydania SemVer (`vendor/bin/version-release`) i wdrożenia przed-produkcja → produkcja (`vendor/bin/deploy`), instalacja paczek prywatnych spoza repozytorium (`vendor/bin/composer-private`); opis: [docs/deploy.md](docs/deploy.md).
 
 Paczka Composer: `simplysmart/polygon`, namespace `Simplysmart\Polygon\`.
 

@@ -54,6 +54,7 @@
         }
     },
     "bin": [
+        "bin/composer-private",
         "bin/deploy",
         "bin/version-release"
     ],

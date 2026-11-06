@@ -1,0 +1,25 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Instalacja paczek prywatnych projektu: lista z git-ignorowanego private-packages.json scalana z composer.json
+ * w composer.private.json (też git-ignorowany), którym composer instaluje je obok publicznych; publiczny composer.json
+ * i composer.lock zostają bez nazw paczek prywatnych. Uruchamiaj z katalogu projektu (albo wskaż go przez --root=).
+ *
+ * Użycie: vendor/bin/composer-private [--dry-run] [--root=<katalog>]
+ */
+use Simplysmart\Polygon\Deploy\Console\CommandLine;
+use Simplysmart\Polygon\Deploy\Console\Output;
+use Simplysmart\Polygon\Deploy\PrivatePackages\ComposerUpdate;
+use Simplysmart\Polygon\Deploy\PrivatePackages\PrivatePackagesCommand;
+use Simplysmart\Polygon\Deploy\Process\SystemProcessRunner;
+
+require __DIR__ . '/autoload.php';
+
+$command = new PrivatePackagesCommand(new ComposerUpdate(new SystemProcessRunner()));
+
+$commandLine = CommandLine::current();
+
+exit($command->run($commandLine->arguments, $commandLine->workingDirectory, Output::standard()));

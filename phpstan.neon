@@ -7,5 +7,6 @@ parameters:
         - lang
         - tests
         - bin/autoload.php
+        - bin/composer-private
         - bin/deploy
         - bin/version-release
