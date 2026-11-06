@@ -16,6 +16,9 @@ namespace Simplysmart\Polygon\Deploy\Deployment;
 use Simplysmart\Polygon\Deploy\Console\Confirmation;
 use Simplysmart\Polygon\Deploy\Console\ExitCode;
 use Simplysmart\Polygon\Deploy\Console\Output;
+use Simplysmart\Polygon\Deploy\PrivatePackages\DeployLock;
+use Simplysmart\Polygon\Deploy\PrivatePackages\PrivatePackages;
+use Simplysmart\Polygon\Deploy\PrivatePackages\PrivatePackagesException;
 use Simplysmart\Polygon\Deploy\Process\ProcessException;
 use Simplysmart\Polygon\Deploy\Process\ProcessRunner;
 
@@ -25,7 +28,9 @@ use Simplysmart\Polygon\Deploy\Process\ProcessRunner;
  * ProductionMode — uruchamia ten sam skrypt na serwerze przez ssh. Błąd przed-produkcji zatrzymuje wdrożenie.
  *
  * Środowiska nie wysyła: na serwerze remote.sh kopiuje leżący tam `.env.production` jako `.env`, a `.env`
- * przed-produkcji zostaje bez zmian. Paczki instaluje `composer install --no-dev` z `composer.lock` z repozytorium.
+ * przed-produkcji zostaje bez zmian. Paczki instaluje `composer install --no-dev`: z manifestu wdrożeniowego
+ * (DeployLock — paczki z repozytoriów path, także prywatne, z ich repozytoriów git), który deploy buduje na nowo,
+ * kopiuje do przed-produkcji i wysyła na serwer (scp), a projekt bez paczek z repozytoriów path — z `composer.lock`.
  */
 final readonly class DeployCommand
 {
@@ -34,6 +39,7 @@ final readonly class DeployCommand
         private RepositoryCheck $repository,
         private RemoteScript $script,
         private Confirmation $confirmation,
+        private DeployLock $deployLock,
     ) {}
 
     /**
@@ -47,7 +53,7 @@ final readonly class DeployCommand
             $options = DeployOptions::fromArguments($arguments, $workingDirectory);
 
             return $this->deploy(ProjectConfig::load("{$options->root}/" . ProjectConfig::DIRECTORY, $options->project), $options, $output);
-        } catch (DeployException|ProcessException $exception) {
+        } catch (DeployException|ProcessException|PrivatePackagesException $exception) {
             $output->error($exception->getMessage());
 
             return ExitCode::FAILURE;
@@ -57,7 +63,7 @@ final readonly class DeployCommand
     /**
      * Wdrożenie projektu: repozytorium, przed-produkcja, decyzja o produkcji i produkcja.
      *
-     * @throws DeployException|ProcessException
+     * @throws DeployException|ProcessException|PrivatePackagesException
      */
     private function deploy(ProjectConfig $project, DeployOptions $options, Output $output): int
     {
@@ -70,13 +76,27 @@ final readonly class DeployCommand
             return ExitCode::FAILURE;
         }
 
+        $private = new PrivatePackages($options->root);
+
         if ($options->dryRun) {
+            $this->deployLock->build($private, true, $output);
             array_map($output->line(...), (new DeployPlan($project, $options->production))->lines());
 
             return ExitCode::SUCCESS;
         }
 
-        $preproduction = $this->preproduction($project, $output);
+        $output->line('==> Tworzę manifest wdrożeniowy');
+        $lock = $this->deployLock->build($private, false, $output);
+
+        if ($lock !== ExitCode::SUCCESS) {
+            $output->error("Manifest wdrożeniowy nie powstał (kod {$lock}) — nic nie zostało wdrożone.");
+
+            return $lock;
+        }
+
+        $files = $private->existingDeployFiles();
+        $manifest = $files === [] ? null : PrivatePackages::DEPLOY_MANIFEST;
+        $preproduction = $this->preproduction($project, $files, $manifest, $output);
 
         if ($preproduction !== ExitCode::SUCCESS) {
             return $preproduction;
@@ -88,10 +108,14 @@ final readonly class DeployCommand
             return ExitCode::SUCCESS;
         }
 
+        if ($files !== []) {
+            $this->upload($project, $files, $output);
+        }
+
         $exitCode = $this->runScript(
             "==> Uruchamiam wdrożenie na {$project->productionTarget()}",
             $this->script->remoteCommand($project),
-            $this->script->production($project),
+            $this->script->production($project, $manifest),
             null,
             'Wdrożenie na serwerze zakończyło się błędem',
             $output,
@@ -105,12 +129,16 @@ final readonly class DeployCommand
     }
 
     /**
-     * Przed-produkcja: remote.sh w jej katalogu (`.env` bez zmian).
+     * Przed-produkcja: manifest wdrożeniowy do jej katalogu (stary jest usuwany) i remote.sh w nim (`.env` bez zmian).
      *
-     * @throws DeployException Gdy katalog nie jest klonem projektu.
+     * @param  list<string>  $files  Pliki manifestu wdrożeniowego; pusta lista — paczki z `composer.lock`.
+     * @param  string|null  $manifest  Nazwa manifestu dla remote.sh.
+     *
+     * @throws DeployException Gdy katalog nie jest klonem projektu albo manifestu nie da się skopiować.
      * @throws ProcessException Gdy basha nie da się uruchomić.
+     * @throws PrivatePackagesException Gdy starego manifestu nie da się usunąć.
      */
-    private function preproduction(ProjectConfig $project, Output $output): int
+    private function preproduction(ProjectConfig $project, array $files, ?string $manifest, Output $output): int
     {
         $directory = $project->preproductionPath;
 
@@ -118,14 +146,39 @@ final readonly class DeployCommand
             throw new DeployException("Przed-produkcja {$directory} nie jest projektem (brak artisan albo .git) — popraw " . ProjectConfig::PREPRODUCTION_PATH . '.');
         }
 
+        (new PrivatePackages($directory))->removeDeploy();
+
+        foreach ($files as $file) {
+            if (! copy($file, "{$directory}/" . basename($file))) {
+                throw new DeployException('Nie udało się skopiować ' . basename($file) . " do przed-produkcji {$directory}.");
+            }
+        }
+
         return $this->runScript(
             "==> Aktualizuję przed-produkcję {$directory}",
             $this->script->localCommand(),
-            $this->script->preproduction($project),
+            $this->script->preproduction($project, $manifest),
             $directory,
             'Aktualizacja przed-produkcji zakończyła się błędem — produkcja nie została wdrożona',
             $output,
         );
+    }
+
+    /**
+     * Wysyła manifest wdrożeniowy do katalogu aplikacji na serwerze (scp).
+     *
+     * @param  list<string>  $files
+     *
+     * @throws DeployException Gdy wysyłka się nie powiodła.
+     * @throws ProcessException Gdy scp nie da się uruchomić.
+     */
+    private function upload(ProjectConfig $project, array $files, Output $output): void
+    {
+        $output->line("==> Wysyłam manifest wdrożeniowy na {$project->productionTarget()}");
+
+        if ($this->processes->run(['scp', '-q', ...$files, "{$project->productionTarget()}/"]) !== ExitCode::SUCCESS) {
+            throw new DeployException("Nie udało się wysłać manifestu wdrożeniowego na {$project->productionTarget()}.");
+        }
     }
 
     private function productionWanted(ProjectConfig $project, ProductionMode $production): bool

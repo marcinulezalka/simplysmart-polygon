@@ -13,12 +13,16 @@ declare(strict_types=1);
 use Simplysmart\Polygon\Deploy\Console\CommandLine;
 use Simplysmart\Polygon\Deploy\Console\Output;
 use Simplysmart\Polygon\Deploy\PrivatePackages\ComposerUpdate;
+use Simplysmart\Polygon\Deploy\PrivatePackages\DeployLock;
+use Simplysmart\Polygon\Deploy\PrivatePackages\GitRepositorySource;
 use Simplysmart\Polygon\Deploy\PrivatePackages\PrivatePackagesCommand;
 use Simplysmart\Polygon\Deploy\Process\SystemProcessRunner;
 
 require __DIR__ . '/autoload.php';
 
-$command = new PrivatePackagesCommand(new ComposerUpdate(new SystemProcessRunner()));
+$processes = new SystemProcessRunner();
+$composer = new ComposerUpdate($processes);
+$command = new PrivatePackagesCommand($composer, new DeployLock($composer, new GitRepositorySource($processes)));
 
 $commandLine = CommandLine::current();
 

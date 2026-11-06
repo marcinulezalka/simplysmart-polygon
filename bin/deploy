@@ -20,6 +20,9 @@ use Simplysmart\Polygon\Deploy\Deployment\DeployCommand;
 use Simplysmart\Polygon\Deploy\Deployment\DeployException;
 use Simplysmart\Polygon\Deploy\Deployment\RemoteScript;
 use Simplysmart\Polygon\Deploy\Deployment\RepositoryCheck;
+use Simplysmart\Polygon\Deploy\PrivatePackages\ComposerUpdate;
+use Simplysmart\Polygon\Deploy\PrivatePackages\DeployLock;
+use Simplysmart\Polygon\Deploy\PrivatePackages\GitRepositorySource;
 use Simplysmart\Polygon\Deploy\Process\SystemProcessRunner;
 
 require __DIR__ . '/autoload.php';
@@ -33,6 +36,7 @@ try {
         new RepositoryCheck($processes),
         RemoteScript::fromFile(),
         TerminalConfirmation::standard($output),
+        new DeployLock(new ComposerUpdate($processes), new GitRepositorySource($processes)),
     );
 } catch (DeployException $exception) {
     $output->error($exception->getMessage());

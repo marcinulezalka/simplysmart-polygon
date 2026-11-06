@@ -43,6 +43,15 @@ final class RemoteScriptTest extends TestCase
     }
 
     #[Test]
+    public function a_deploy_manifest_is_passed_to_both_environments(): void
+    {
+        $script = new RemoteScript("echo remote\n");
+
+        $this->assertStringContainsString("export DEPLOY_COMPOSER_MANIFEST='composer.deploy.json'\n", $script->production($this->config(), 'composer.deploy.json'));
+        $this->assertStringContainsString("export DEPLOY_COMPOSER_MANIFEST='composer.deploy.json'\n", $script->preproduction($this->config(), 'composer.deploy.json'));
+    }
+
+    #[Test]
     public function commands_read_the_script_from_standard_input(): void
     {
         $script = new RemoteScript('');

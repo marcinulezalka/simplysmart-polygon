@@ -19,7 +19,8 @@ namespace Simplysmart\Polygon\Deploy\Deployment;
  *
  * Ten sam skrypt aktualizuje przed-produkcję na tym komputerze i produkcję przez ssh. Przed-produkcja dostaje
  * `DEPLOY_KEEP_ENV=1` (remote.sh zostawia jej `.env` i bierze lokalnego Composera) i nie dostaje tokenu GitHub,
- * więc nie trafia on do globalnej konfiguracji Composera dewelopera.
+ * więc nie trafia on do globalnej konfiguracji Composera dewelopera. Gdy deploy przesłał manifest wdrożeniowy,
+ * skrypt dostaje jego nazwę (`DEPLOY_COMPOSER_MANIFEST`) i instaluje paczki z niego zamiast z `composer.lock`.
  */
 final readonly class RemoteScript
 {
@@ -42,6 +43,8 @@ final readonly class RemoteScript
     private const string ENV_GITHUB_TOKEN = 'GITHUB_TOKEN';
 
     private const string ENV_KEEP_ENV = 'DEPLOY_KEEP_ENV';
+
+    private const string ENV_MANIFEST = 'DEPLOY_COMPOSER_MANIFEST';
 
     /**
      * @param  string  $serverScript  Treść remote.sh.
@@ -84,22 +87,26 @@ final readonly class RemoteScript
 
     /**
      * Skrypt produkcji: PHP, Composer i token GitHub serwera.
+     *
+     * @param  string|null  $manifest  Manifest wdrożeniowy w katalogu aplikacji; null — paczki z `composer.lock`.
      */
-    public function production(ProjectConfig $config): string
+    public function production(ProjectConfig $config, ?string $manifest = null): string
     {
         return $this->script(
-            [self::ENV_PHP => $config->php, self::ENV_GITHUB_TOKEN => $config->githubToken ?? '', self::ENV_COMPOSER => $config->remoteComposer],
+            [self::ENV_PHP => $config->php, self::ENV_GITHUB_TOKEN => $config->githubToken ?? '', self::ENV_COMPOSER => $config->remoteComposer, self::ENV_MANIFEST => $manifest],
             $config->path,
         );
     }
 
     /**
      * Skrypt przed-produkcji: PHP i Composer przed-produkcji, `DEPLOY_KEEP_ENV=1`, bez tokenu GitHub.
+     *
+     * @param  string|null  $manifest  Manifest wdrożeniowy w katalogu przed-produkcji; null — paczki z `composer.lock`.
      */
-    public function preproduction(ProjectConfig $config): string
+    public function preproduction(ProjectConfig $config, ?string $manifest = null): string
     {
         return $this->script(
-            [self::ENV_PHP => $config->preproductionPhp, self::ENV_KEEP_ENV => '1', self::ENV_COMPOSER => $config->preproductionComposer],
+            [self::ENV_PHP => $config->preproductionPhp, self::ENV_KEEP_ENV => '1', self::ENV_COMPOSER => $config->preproductionComposer, self::ENV_MANIFEST => $manifest],
             $config->preproductionPath,
         );
     }

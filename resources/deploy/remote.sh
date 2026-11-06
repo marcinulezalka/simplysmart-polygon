@@ -6,7 +6,8 @@
 #   2. .env (kopia .env.production leżącego na serwerze w katalogu aplikacji — deploy nie wysyła środowiska; APP_KEY
 #      serwera zostaje, gdy plik go nie podaje; bez .env.production .env zostaje bez zmian), git pull --ff-only,
 #   3. token GitHub dla Composera (GITHUB_TOKEN, jeśli podany),
-#   4. paczki z composer.lock (--no-dev),
+#   4. paczki z composer.lock (--no-dev) albo z manifestu wdrożeniowego przesłanego przez deploy
+#      (DEPLOY_COMPOSER_MANIFEST, np. composer.deploy.json z composer.deploy.lock — paczki z repozytoriów git),
 #   5. APP_KEY, migracje, cache konfiguracji, tras i widoków.
 # Z DEPLOY_KEEP_ENV=1 (przed-produkcja na komputerze deweloperskim) .env zostaje bez zmian, a bez COMPOSER_BIN
 # i ~/bin/composer skrypt bierze composer z PATH zamiast go instalować.
@@ -22,6 +23,7 @@ php_bin="${DEPLOY_PHP:?Ustaw DEPLOY_PHP na polecenie PHP 8.4 (np. DEPLOY_PHP=php
 # Plik Composera na serwerze: COMPOSER_BIN (np. composer.phar w katalogu aplikacji), domyślnie ~/bin/composer.
 composer_bin="${COMPOSER_BIN:-$HOME/bin/composer}"
 keep_env="${DEPLOY_KEEP_ENV:-}"
+manifest="${DEPLOY_COMPOSER_MANIFEST:-}"
 
 fail() { echo "BŁĄD: $*" >&2; exit 1; }
 step() { echo "--> $*"; }
@@ -83,7 +85,6 @@ if [[ -n "${GITHUB_TOKEN:-}" ]]; then
     "${composer[@]}" config --global github-oauth.github.com "$GITHUB_TOKEN"
 fi
 
-step "Instaluję paczki (composer.lock, bez narzędzi deweloperskich)"
 if ! grep -qE '^APP_KEY=.+' .env; then
     # Aplikacja nie uruchomi się bez APP_KEY, więc klucz powstaje bez artisana (losowe 32 bajty, base64).
     step "Generuję APP_KEY"
@@ -94,7 +95,15 @@ if ! grep -qE '^APP_KEY=.+' .env; then
         printf '\nAPP_KEY=%s\n' "$key" >> .env
     fi
 fi
-"${composer[@]}" install --no-dev --optimize-autoloader --no-interaction
+if [[ -n "$manifest" ]]; then
+    manifest_lock="${manifest%.json}.lock"
+    [[ -f "$manifest" && -f "$manifest_lock" ]] || fail "Brak $manifest / $manifest_lock — deploy nie przesłał manifestu wdrożeniowego."
+    step "Instaluję paczki ($manifest, bez narzędzi deweloperskich)"
+    COMPOSER="$manifest" "${composer[@]}" install --no-dev --optimize-autoloader --no-interaction
+else
+    step "Instaluję paczki (composer.lock, bez narzędzi deweloperskich)"
+    "${composer[@]}" install --no-dev --optimize-autoloader --no-interaction
+fi
 [[ -f vendor/autoload.php ]] || fail "Instalacja nie utworzyła vendor/autoload.php."
 
 step "Migracje"

@@ -16,6 +16,8 @@ namespace Simplysmart\Polygon\Tests\Deploy\PrivatePackages;
 use PHPUnit\Framework\TestCase;
 use Simplysmart\Polygon\Deploy\Console\ExitCode;
 use Simplysmart\Polygon\Deploy\PrivatePackages\ComposerUpdate;
+use Simplysmart\Polygon\Deploy\PrivatePackages\DeployLock;
+use Simplysmart\Polygon\Deploy\PrivatePackages\GitRepositorySource;
 use Simplysmart\Polygon\Deploy\PrivatePackages\PrivatePackagesCommand;
 use Simplysmart\Polygon\Tests\Deploy\Support\FakeProcessRunner;
 use Simplysmart\Polygon\Tests\Deploy\Support\OutputBuffer;
@@ -54,8 +56,7 @@ final class PrivatePackagesCommandTest extends TestCase
 
     protected function tearDown(): void
     {
-        array_map('unlink', glob("{$this->root}/*") ?: []);
-        rmdir($this->root);
+        exec('rm -rf ' . escapeshellarg($this->root));
     }
 
     public function test_without_a_list_nothing_is_installed(): void
@@ -143,6 +144,106 @@ final class PrivatePackagesCommandTest extends TestCase
         $this->assertStringContainsString('Użycie: composer-private', $output->stderr());
     }
 
+    public function test_deploy_mode_builds_a_manifest_with_git_repositories_instead_of_path_ones(): void
+    {
+        $this->withPathPackages();
+        $this->writeList('{"require": {"acme/secret": "@dev"}}');
+        $this->processes->captures = ['remote' => 'https://example.test/acme/secret.git', 'rev-list' => '0'];
+
+        [$exitCode, $output] = $this->runCommand(['--deploy']);
+
+        $this->assertSame(ExitCode::SUCCESS, $exitCode, $output->stderr());
+        $this->assertSame("Paczki z repozytoriów git: acme/core, acme/secret.\n", $output->stdout());
+        $manifest = json_decode((string) file_get_contents("{$this->root}/composer.deploy.json"), true);
+        $this->assertIsArray($manifest);
+        $this->assertSame(['php' => '^8.4', 'acme/core' => '@dev', 'acme/secret' => '@dev'], $manifest['require']);
+        $this->assertSame([
+            ['type' => 'composer', 'url' => 'https://repo.example.test'],
+            ['type' => 'vcs', 'url' => 'https://example.test/acme/secret.git'],
+            ['type' => 'vcs', 'url' => 'https://example.test/acme/secret.git'],
+        ], $manifest['repositories']);
+        $this->assertFileEquals("{$this->root}/composer.lock", "{$this->root}/composer.deploy.lock");
+        $this->assertStringNotContainsString('acme/secret', (string) file_get_contents("{$this->root}/composer.json"));
+
+        $run = $this->processes->runs[0];
+        $this->assertSame(['env', 'COMPOSER=composer.deploy.json'], array_slice($run['command'], 0, 2));
+        $this->assertSame(['update', 'acme/core', 'acme/secret', '--no-install', '--no-scripts', '--no-interaction'], array_slice($run['command'], -6));
+    }
+
+    public function test_deploy_mode_without_path_packages_writes_no_manifest(): void
+    {
+        file_put_contents("{$this->root}/composer.deploy.json", '{}');
+
+        [$exitCode, $output] = $this->runCommand(['--deploy']);
+
+        $this->assertSame(ExitCode::SUCCESS, $exitCode);
+        $this->assertStringContainsString('manifest wdrożeniowy niepotrzebny', $output->stdout());
+        $this->assertFileDoesNotExist("{$this->root}/composer.deploy.json");
+        $this->assertSame([], $this->processes->runs);
+    }
+
+    public function test_deploy_mode_fails_for_a_package_without_origin(): void
+    {
+        $this->withPathPackages();
+        $this->processes->captures = ['remote' => null];
+
+        [$exitCode, $output] = $this->runCommand(['--deploy']);
+
+        $this->assertSame(ExitCode::FAILURE, $exitCode);
+        $this->assertStringContainsString('nie ma repozytorium git z origin', $output->stderr());
+        $this->assertFileDoesNotExist("{$this->root}/composer.deploy.json");
+    }
+
+    public function test_deploy_mode_warns_about_unpushed_packages_and_dry_run_writes_nothing(): void
+    {
+        $this->withPathPackages();
+        $this->processes->captures = ['remote' => 'https://example.test/acme/core.git', 'rev-list' => '2'];
+
+        [$exitCode, $output] = $this->runCommand(['--deploy', '--dry-run']);
+
+        $this->assertSame(ExitCode::SUCCESS, $exitCode);
+        $this->assertStringContainsString('acme/core ma niewypchnięte commity', $output->stderr());
+        $this->assertStringContainsString('Tryb --dry-run', $output->stdout());
+        $this->assertFileDoesNotExist("{$this->root}/composer.deploy.json");
+        $this->assertSame([], $this->processes->runs);
+    }
+
+    public function test_a_failed_deploy_lock_leaves_no_manifest(): void
+    {
+        $this->withPathPackages();
+        $this->processes->captures = ['remote' => 'https://example.test/acme/core.git'];
+        $this->processes->exitCodes = ['env' => 2];
+
+        [$exitCode] = $this->runCommand(['--deploy']);
+
+        $this->assertSame(2, $exitCode);
+        $this->assertFileDoesNotExist("{$this->root}/composer.deploy.json");
+        $this->assertFileDoesNotExist("{$this->root}/composer.deploy.lock");
+    }
+
+    /**
+     * Projekt z repozytorium path `packages/*\/*`: wymagana paczka acme/core, paczka prywatna acme/secret
+     * i niewymagana acme/unused.
+     */
+    private function withPathPackages(): void
+    {
+        file_put_contents("{$this->root}/composer.json", <<<'JSON'
+            {
+                "name": "acme/app",
+                "require": {"php": "^8.4", "acme/core": "@dev"},
+                "repositories": [
+                    {"type": "path", "url": "packages/*/*", "options": {"symlink": true}},
+                    {"type": "composer", "url": "https://repo.example.test"}
+                ]
+            }
+            JSON);
+
+        foreach (['core', 'secret', 'unused'] as $package) {
+            mkdir("{$this->root}/packages/acme/{$package}", recursive: true);
+            file_put_contents("{$this->root}/packages/acme/{$package}/composer.json", "{\"name\": \"acme/{$package}\"}");
+        }
+    }
+
     private function writeList(string $contents): void
     {
         file_put_contents("{$this->root}/private-packages.json", $contents);
@@ -156,7 +257,9 @@ final class PrivatePackagesCommandTest extends TestCase
     private function runCommand(array $arguments): array
     {
         $output = new OutputBuffer();
-        $exitCode = (new PrivatePackagesCommand(new ComposerUpdate($this->processes)))->run($arguments, $this->root, $output->output);
+        $composer = new ComposerUpdate($this->processes);
+        $command = new PrivatePackagesCommand($composer, new DeployLock($composer, new GitRepositorySource($this->processes)));
+        $exitCode = $command->run($arguments, $this->root, $output->output);
 
         return [$exitCode, $output];
     }

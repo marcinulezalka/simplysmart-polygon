@@ -32,14 +32,15 @@ final readonly class ComposerUpdate
      * @param string $root Katalog projektu.
      * @param string $manifest Plik manifestu względem $root (np. composer.private.json).
      * @param list<string> $packages Paczki do aktualizacji.
+     * @param list<string> $options Dodatkowe opcje composera (np. `--no-install`).
      *
      * @return int Kod wyjścia composera.
      */
-    public function run(string $root, string $manifest, array $packages): int
+    public function run(string $root, string $manifest, array $packages, array $options = []): int
     {
         $binary = getenv('COMPOSER_BINARY');
         $composer = is_string($binary) && $binary !== '' ? [PHP_BINARY, $binary] : ['composer'];
 
-        return $this->processes->run([self::ENV, 'COMPOSER=' . $manifest, ...$composer, 'update', ...$packages, '--no-interaction'], null, $root);
+        return $this->processes->run([self::ENV, 'COMPOSER=' . $manifest, ...$composer, 'update', ...$packages, ...$options, '--no-interaction'], null, $root);
     }
 }

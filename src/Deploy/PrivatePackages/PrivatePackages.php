@@ -33,6 +33,12 @@ final readonly class PrivatePackages
 
     public const string LOCK = 'composer.private.lock';
 
+    /** Manifest wdrożeniowy: paczki z repozytoriów git zamiast katalogów path (DeployManifest). */
+    public const string DEPLOY_MANIFEST = 'composer.deploy.json';
+
+    /** Lock manifestu wdrożeniowego (Composer wyprowadza jego nazwę z DEPLOY_MANIFEST). */
+    public const string DEPLOY_LOCK = 'composer.deploy.lock';
+
     private const string PACKAGE_NAME = '/^[a-z0-9]([_.-]?[a-z0-9]+)*\/[a-z0-9](([_.]|-{1,2})?[a-z0-9]+)*$/';
 
     /**
@@ -115,6 +121,56 @@ final readonly class PrivatePackages
             && ! copy($this->path(self::PUBLIC_LOCK), $this->path(self::LOCK))) {
             throw new PrivatePackagesException('Nie udało się utworzyć ' . self::LOCK . '.');
         }
+    }
+
+    /**
+     * Zapisuje composer.deploy.json i świeżą kopię locka (composer.private.lock, a bez niego composer.lock) jako
+     * composer.deploy.lock — wersje paczek spoza repozytoriów path zostają te same.
+     *
+     * @throws PrivatePackagesException Gdy zapisu nie da się wykonać.
+     */
+    public function prepareDeploy(string $manifest): void
+    {
+        $this->write(self::DEPLOY_MANIFEST, $manifest);
+        $source = is_file($this->path(self::LOCK)) ? self::LOCK : self::PUBLIC_LOCK;
+
+        if (is_file($this->path($source)) && ! copy($this->path($source), $this->path(self::DEPLOY_LOCK))) {
+            throw new PrivatePackagesException('Nie udało się utworzyć ' . self::DEPLOY_LOCK . '.');
+        }
+    }
+
+    /**
+     * Usuwa manifest wdrożeniowy z poprzedniego wdrożenia, żeby nie dało się wdrożyć nieaktualnego.
+     *
+     * @throws PrivatePackagesException Gdy pliku nie da się usunąć.
+     */
+    public function removeDeploy(): void
+    {
+        foreach (self::deployFiles() as $file) {
+            if (is_file($this->path($file)) && ! unlink($this->path($file))) {
+                throw new PrivatePackagesException("Nie udało się usunąć {$file}.");
+            }
+        }
+    }
+
+    /**
+     * Pliki manifestu wdrożeniowego obecne w katalogu projektu (oba albo żaden po prepareDeploy()).
+     *
+     * @return list<string> Ścieżki bezwzględne.
+     */
+    public function existingDeployFiles(): array
+    {
+        $files = array_map($this->path(...), self::deployFiles());
+
+        return array_values(array_filter($files, is_file(...))) === $files ? $files : [];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function deployFiles(): array
+    {
+        return [self::DEPLOY_MANIFEST, self::DEPLOY_LOCK];
     }
 
     public function root(): string

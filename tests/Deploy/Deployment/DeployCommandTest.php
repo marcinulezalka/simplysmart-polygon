@@ -18,6 +18,9 @@ use Simplysmart\Polygon\Deploy\Deployment\DeployCommand;
 use Simplysmart\Polygon\Deploy\Deployment\ProjectConfig;
 use Simplysmart\Polygon\Deploy\Deployment\RemoteScript;
 use Simplysmart\Polygon\Deploy\Deployment\RepositoryCheck;
+use Simplysmart\Polygon\Deploy\PrivatePackages\ComposerUpdate;
+use Simplysmart\Polygon\Deploy\PrivatePackages\DeployLock;
+use Simplysmart\Polygon\Deploy\PrivatePackages\GitRepositorySource;
 use Simplysmart\Polygon\Tests\Deploy\Support\FakeConfirmation;
 use Simplysmart\Polygon\Tests\Deploy\Support\FakeProcessRunner;
 use Simplysmart\Polygon\Tests\Deploy\Support\OutputBuffer;
@@ -179,6 +182,72 @@ final class DeployCommandTest extends TestCase
         $this->assertStringContainsString('nie jest projektem', $stderr);
     }
 
+    #[Test]
+    public function the_deploy_manifest_goes_to_preproduction_and_production(): void
+    {
+        $this->withPathPackage();
+        file_put_contents("{$this->preproduction}/composer.deploy.lock", 'stary');
+
+        [$exitCode, $stdout, $stderr] = $this->deploy(['shop', '--production']);
+
+        $this->assertSame(ExitCode::SUCCESS, $exitCode, $stderr);
+        $this->assertSame(['env', 'bash', 'scp', 'ssh'], $this->processes->programs());
+        $this->assertSame(['--no-install', '--no-scripts', '--no-interaction'], array_slice($this->processes->runs[0]['command'], -3));
+        $this->assertFileEquals("{$this->root}/composer.deploy.json", "{$this->preproduction}/composer.deploy.json");
+        $this->assertFileEquals("{$this->root}/composer.deploy.lock", "{$this->preproduction}/composer.deploy.lock");
+        $this->assertSame(['scp', '-q', "{$this->root}/composer.deploy.json", "{$this->root}/composer.deploy.lock", 'shop@prod:~/shop.pl/'], $this->processes->runs[2]['command']);
+        $this->assertStringContainsString("DEPLOY_COMPOSER_MANIFEST='composer.deploy.json'", (string) $this->processes->runs[1]['input']);
+        $this->assertStringContainsString("DEPLOY_COMPOSER_MANIFEST='composer.deploy.json'", (string) $this->processes->runs[3]['input']);
+        $this->assertStringContainsString('Paczki z repozytoriów git: acme/core.', $stdout);
+    }
+
+    #[Test]
+    public function without_path_packages_the_script_installs_from_the_lock(): void
+    {
+        $this->deploy(['shop', '--production']);
+
+        $this->assertSame(['bash', 'ssh'], $this->processes->programs());
+        $this->assertStringNotContainsString('DEPLOY_COMPOSER_MANIFEST', (string) $this->processes->runs[1]['input']);
+    }
+
+    #[Test]
+    public function a_failed_deploy_lock_stops_before_preproduction(): void
+    {
+        $this->withPathPackage();
+        $this->processes->exitCodes = ['env' => 4];
+
+        [$exitCode, , $stderr] = $this->deploy(['shop', '--production']);
+
+        $this->assertSame(4, $exitCode);
+        $this->assertSame(['env'], $this->processes->programs());
+        $this->assertStringContainsString('Manifest wdrożeniowy nie powstał (kod 4)', $stderr);
+    }
+
+    #[Test]
+    public function a_failed_upload_stops_before_the_server_script(): void
+    {
+        $this->withPathPackage();
+        $this->processes->exitCodes = ['scp' => 1];
+
+        [$exitCode, , $stderr] = $this->deploy(['shop', '--production']);
+
+        $this->assertSame(ExitCode::FAILURE, $exitCode);
+        $this->assertSame(['env', 'bash', 'scp'], $this->processes->programs());
+        $this->assertStringContainsString('Nie udało się wysłać manifestu wdrożeniowego', $stderr);
+    }
+
+    /**
+     * Projekt z repozytorium path `packages/*\/*` i wymaganą paczką acme/core z `origin`.
+     */
+    private function withPathPackage(): void
+    {
+        file_put_contents("{$this->root}/composer.json", '{"require": {"acme/core": "@dev"}, "repositories": [{"type": "path", "url": "packages/*/*"}]}');
+        file_put_contents("{$this->root}/composer.lock", '{"packages": []}');
+        mkdir("{$this->root}/packages/acme/core", recursive: true);
+        file_put_contents("{$this->root}/packages/acme/core/composer.json", '{"name": "acme/core"}');
+        $this->processes->captures = ['rev-list' => '0', 'remote' => 'https://example.test/acme/core.git'];
+    }
+
     /**
      * @param  list<string>  $arguments
      * @return array{0: int, 1: string, 2: string} Kod wyjścia, wyjście i błędy.
@@ -191,6 +260,7 @@ final class DeployCommandTest extends TestCase
             new RepositoryCheck($this->processes),
             new RemoteScript("echo remote\n"),
             $this->confirmation,
+            new DeployLock(new ComposerUpdate($this->processes), new GitRepositorySource($this->processes)),
         );
 
         $exitCode = $command->run(["--root={$this->root}", ...$arguments], '/nonexistent', $buffer->output);

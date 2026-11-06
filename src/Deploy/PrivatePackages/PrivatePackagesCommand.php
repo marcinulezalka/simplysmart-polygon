@@ -19,25 +19,31 @@ use Simplysmart\Polygon\Deploy\Console\Output;
 /**
  * Polecenie `vendor/bin/composer-private` (`composer private:install` projektu): instaluje paczki prywatne
  * z git-ignorowanego `private-packages.json` przez `composer.private.json` (albo pokazuje plan przy --dry-run).
- * Bez listy kończy się sukcesem — publiczny klon nic nie instaluje. Jak `composer-private` w admiro (bez `--deploy`).
+ * Bez listy kończy się sukcesem — publiczny klon nic nie instaluje. Z `--deploy` zamiast instalacji buduje manifest
+ * wdrożeniowy (DeployLock), jak `composer-private --deploy` w admiro.
  */
 final readonly class PrivatePackagesCommand
 {
     public const string USAGE = <<<'USAGE'
-        Użycie: composer-private [--dry-run] [--root=<katalog>]
+        Użycie: composer-private [--deploy] [--dry-run] [--root=<katalog>]
 
+          --deploy          manifest wdrożeniowy: composer.deploy.json i composer.deploy.lock z paczkami
+                            z repozytoriów git (zamiast katalogów path), bez instalacji
           --dry-run         pokazuje paczki; nie zapisuje plików i nie uruchamia composera
           --root=<katalog>  katalog projektu (domyślnie bieżący)
         USAGE;
+
+    public const string DEPLOY = '--deploy';
+
+    public const string DRY_RUN_NOTICE = 'Tryb --dry-run: pliki nie zostały zmienione.';
 
     private const string DRY_RUN = '--dry-run';
 
     private const string ROOT = '--root=';
 
-    private const string DRY_RUN_NOTICE = 'Tryb --dry-run: pliki nie zostały zmienione.';
-
     public function __construct(
         private ComposerUpdate $composer,
+        private DeployLock $deployLock,
     ) {}
 
     /**
@@ -50,10 +56,13 @@ final readonly class PrivatePackagesCommand
     {
         $root = $workingDirectory;
         $dryRun = false;
+        $deploy = false;
 
         foreach ($arguments as $argument) {
             if ($argument === self::DRY_RUN) {
                 $dryRun = true;
+            } elseif ($argument === self::DEPLOY) {
+                $deploy = true;
             } elseif (str_starts_with($argument, self::ROOT)) {
                 $root = substr($argument, strlen(self::ROOT));
             } else {
@@ -65,6 +74,11 @@ final readonly class PrivatePackagesCommand
 
         try {
             $private = new PrivatePackages($root);
+
+            if ($deploy) {
+                return $this->deployLock->build($private, $dryRun, $output);
+            }
+
             $packages = $private->packages();
 
             if ($packages === []) {
