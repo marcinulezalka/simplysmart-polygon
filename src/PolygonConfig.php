@@ -33,6 +33,15 @@ final class PolygonConfig
     /** Stawka VAT bez słownika (`APP_DEFAULT_VAT`). */
     public const string VAT_PERCENT = self::KEY . '.localization.vat_percent';
 
+    /** Ustawienia logowania stref (domyślne; strefa nadpisuje kluczem `auth`). */
+    public const string AUTH = self::KEY . '.auth';
+
+    /** Czas życia sesji strefy z logowaniem w minutach (`ZONE_SESSION_LIFETIME`). */
+    public const string SESSION_LIFETIME = self::KEY . '.zones.session_lifetime';
+
+    /** Config strefy `polygon` (Providers\PolygonZoneServiceProvider). */
+    public const string ZONE = self::KEY . '.zone';
+
     /** Pliki instalacji projektu (`POLYGON_INSTALL_FILES`). */
     public const string INSTALL_FILES = self::KEY . '.install.files';
 }

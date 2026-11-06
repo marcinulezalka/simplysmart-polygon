@@ -14,16 +14,20 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Simplysmart\Polygon\Install\InstallFiles;
 use Simplysmart\Polygon\Permissions\PermissionDefaults;
 
 /**
  * Uprawnienia: konfiguracja spatie/laravel-permission (PermissionDefaults: modele paczki, nazwy tabel, bez zespołów)
- * ustawiana po rejestracji wszystkich providerów, gdy config spatie jest już scalony.
+ * ustawiana po rejestracji wszystkich providerów, gdy config spatie jest już scalony, i jedna lista plików instalacji
+ * (Install\InstallFiles), do której paczki stref dopisują swoje pliki.
  */
 final class PermissionsServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->singleton(InstallFiles::class);
+
         $this->app->booting(function (): void {
             $this->app->make(PermissionDefaults::class)->apply();
         });

@@ -15,17 +15,17 @@ namespace Simplysmart\Polygon\Auth;
 
 use Illuminate\Database\ConnectionInterface;
 use Simplysmart\Polygon\Database\ColumnNames;
-use Simplysmart\Polygon\Models\PolygonAccount;
+use Simplysmart\Polygon\Models\ZoneAccount;
 use Simplysmart\Polygon\Queries\Accounts\ZoneAccounts;
-use Simplysmart\Polygon\Zones\PolygonZone;
+use Simplysmart\Polygon\Zones\ZoneDefinition;
 use Spatie\Permission\Exceptions\RoleDoesNotExist;
 
 /**
- * Zakłada aktywne konto strefy `polygon` bez PIN-u (PIN ustawia właściciel przy pierwszym logowaniu), z rolami spatie
- * guarda strefy, w jednej transakcji: brak roli wycofuje całe założenie. Odpowiednik `CreateZoneAccount` z admiro
- * dla strefy bez rejestracji; wywoływane z komendy `polygon:account:create`.
+ * Zakłada aktywne konto strefy bez PIN-u (PIN ustawia właściciel przy pierwszym logowaniu), z rolami spatie guarda
+ * strefy, w jednej transakcji: brak roli wycofuje całe założenie. Dla stref bez rejestracji — wywoływane z komendy
+ * `<strefa>:account:create` (Console\CreateZoneAccountCommand) i z instalatora (konta startowe).
  */
-final readonly class CreateAccount
+final readonly class CreateZoneAccount
 {
     public function __construct(
         private ConnectionInterface $db,
@@ -35,19 +35,21 @@ final readonly class CreateAccount
     /**
      * @param list<string> $roles Nazwy istniejących ról guarda strefy.
      * @param int|null $id Stałe id konta z puli seederów (IdSlots, 1–999), np. konto startowe z pliku instalacji;
-     *                     null — kolejne id użytkowników (od 1000).
+     *                     null — kolejne id (od 1000).
      *
      * @throws AccountAlreadyExists Gdy strefa ma już konto z tym adresem (także usunięte).
      * @throws RoleDoesNotExist Gdy którejś roli nie ma; konto nie powstaje.
      */
-    public function handle(string $name, string $email, array $roles = [], ?int $id = null): PolygonAccount
+    public function handle(ZoneDefinition $zone, string $name, string $email, array $roles = [], ?int $id = null): ZoneAccount
     {
-        if ($this->accounts->findByEmail($email) !== null) {
-            throw AccountAlreadyExists::inZone(PolygonZone::NAME);
+        if ($this->accounts->findByEmail($zone, $email) !== null) {
+            throw AccountAlreadyExists::inZone($zone->name);
         }
 
-        return $this->db->transaction(static function () use ($name, $email, $roles, $id): PolygonAccount {
-            $account = new PolygonAccount();
+        $model = $zone->accountModel();
+
+        return $this->db->transaction(static function () use ($model, $name, $email, $roles, $id): ZoneAccount {
+            $account = new $model();
             $account->forceFill([
                 ColumnNames::ID => $id,
                 AccountColumns::NAME => $name,

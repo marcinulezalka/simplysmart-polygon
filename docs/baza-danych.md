@@ -22,13 +22,13 @@ Silniki: MySQL 8 / MariaDB i SQLite (testy, lokalnie). Zasady obowiązują każd
 - Tabele strefy z logowaniem (konta, kody logowania, sesje, zaufane urządzenia) tworzy jedna migracja strefy przez
   `Database\ZoneTables`, więc schemat jest identyczny w każdej strefie; strefa paczki to `polygon`
   (`create_polygon_tables`). Konta (`<strefa>_accounts`) mają pełny standard tabel danych.
-- **Dwa rodzaje kont:** `polygon_accounts` — konta strefy `polygon` (jak `admiro_accounts` w admiro: model
-  `Models\PolygonAccount`, guard i provider `polygon` / `polygon_accounts` dopisywane do config/auth przez
-  `Zones\PolygonZone`, e-mail szyfrowany z `email_hash` = HMAC z `APP_KEY` adresu w postaci kanonicznej (`Auth\EmailIndex`,
+- **Dwa rodzaje kont:** `<strefa>_accounts` — konta stref (np. `polygon_accounts`, jak `admiro_accounts` w admiro:
+  model strefy na bazie `Models\ZoneAccount`, np. `Models\PolygonAccount`, guard i provider strefy dopisywane do
+  config/auth przez mechanizm stref, [docs/strefy.md](strefy.md), e-mail szyfrowany z `email_hash` = HMAC z `APP_KEY` adresu w postaci kanonicznej (`Auth\EmailIndex`,
   `Contracts\BlindIndex`; konto po adresie: `Queries\Accounts\ZoneAccounts::findByEmail()`), bez hasła — PIN
-  przy pierwszym logowaniu, role spatie w guardzie `polygon`); `users` — konta frontendu (`Models\User`, guard `web`).
-  Konto strefy zakłada `php artisan polygon:account:create {email} {name} [--role=*] [--skip-existing]`
-  (akcja `Auth\CreateAccount`, jedna transakcja z rolami; adres zajęty także przez konto usunięte).
+  przy pierwszym logowaniu, role spatie w guardzie strefy); `users` — konta frontendu (`Models\User`, guard `web`).
+  Konto strefy zakłada `php artisan <strefa>:account:create {email} {name} [--role=*] [--skip-existing]`
+  (np. `polygon:account:create`; baza `Console\CreateZoneAccountCommand`, akcja `Auth\CreateZoneAccount`, jedna transakcja z rolami; adres zajęty także przez konto usunięte).
 - Nazwa pliku migracji zaczyna się od daty (kolejność) i mówi, czyja jest tabela.
 - Seedery to klasy w `src/Database/Seeders/` (`Simplysmart\Polygon\Database\Seeders`). Seeder główny
   `DatabaseSeeder` (słowniki lokalizacji) provider rejestruje pod nazwą `DatabaseSeeder`, więc `php artisan db:seed`
@@ -84,8 +84,8 @@ zostaje także po zmianach z konsoli SQL.
 - Dialekty (`Contracts\HistoryTriggers`): `MysqlHistoryTriggers` (aktor ze zmiennych sesji MySQL `@actor_zone`,
   `@actor_id`, `@request_id`) i `SqliteHistoryTriggers` (aktor `NULL`).
 - **Kto zmienił:** trigger nie zna użytkownika aplikacji, więc zmienne sesji ustawia `Database\HistoryActor`:
-  middleware `Http\Middleware\RecordHistoryActor` na końcu grupy `web` (po `StartSession`) zapisuje guard `web`,
-  zalogowanego użytkownika z jawnie nazwanego guarda i losowy identyfikator żądania, a po odpowiedzi je czyści; zadanie
+  middleware `Http\Middleware\RecordHistoryActor` na końcu grupy `web` i w grupie strefy `zone.<strefa>` (po
+  `StartSession`) zapisuje strefę (poza strefą guard `web`), zalogowane konto z jawnie nazwanego guarda strefy i losowy identyfikator żądania, a po odpowiedzi je czyści; zadanie
   kolejki działa jako „system” z identyfikatorem zadania (`Listeners\SetHistoryActorForJob`). Konsola i SQL
   zapisują `NULL`. Na SQLite aktor jest zawsze `NULL`.
 - **Binlog:** MySQL z włączonym binlogiem odrzuca triggery użytkownika bez `SUPER` (błąd 1419,
@@ -140,7 +140,7 @@ Kontroler → Form Request (walidacja) → Action (zapis) / Query (odczyt) → D
 ```
 
 - **Queries/** — odczyt danych (`Queries\Dictionaries\*`: filtry, sortowanie, wpisy domyślne).
-- **Actions** — zmiany danych w transakcjach z regułami (`Localization\DictionaryManagement`, `Auth\CreateAccount`,
+- **Actions** — zmiany danych w transakcjach z regułami (`Localization\DictionaryManagement`, `Auth\CreateZoneAccount`,
   `Database\RecordStatusTransitions`).
 - Scope'y modelu (`active()`, `default()`, `usable()`) to tylko słownik warunków używany przez Queries. Wyszukiwanie
   „zawiera” buduje `Database\LikePattern` (bez znaków `%` i `_` od użytkownika).

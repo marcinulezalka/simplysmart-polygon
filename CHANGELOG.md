@@ -21,10 +21,16 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 - Stawki VAT seedowane tylko dla kraju aplikacji (`APP_COUNTRY`, domyślnie Polska).
 - Licencja po polsku (`LICENSE.md`, wersja wiążąca) z tłumaczeniem angielskim (`LICENSE.en.md`) i linkami między nimi; wzór zgłoszenia użytku komercyjnego w `THIRD_PARTY.md`.
 - Narzędzia wydań i wdrożeń: `vendor/bin/version-release` (wydanie SemVer z `[Unreleased]` w CHANGELOG.md, `--dry-run`, `--major-confirm`) i `vendor/bin/deploy <projekt>` (przed-produkcja na komputerze deweloperskim, potem po potwierdzeniu produkcja przez SSH; konfiguracje w `infrastructure/deploy/vendors/` projektu), z testami PHPUnit.
+- Strefy jak w admiro (bez organizacji, kontekstu w adresie i wyglądu stref): baza providera `Zones\ZoneServiceProvider`, definicja `ZoneDefinition` z configu (`name`, `slug`, `model`, `session`, `auth`, `texts`, `views`, `mail.views`), rejestr `Contracts\ZoneRegistry`, strefa i konto żądania (`CurrentZone`, `CurrentAccount`), guard i provider dopisywane do config/auth, grupa middleware `zone.<strefa>` z osobną sesją strefy, pliki tras `public.php` / `account.php` / `zone.php` (`AccessTier`), uprawnienia tras `ZonePermission::middleware()` (alias `zone.permission`) i baza modelu kont `Models\ZoneAccount`; opis w `docs/strefy.md`.
+- Logowanie stref kodem z e-maila i PIN-em: ustawienie PIN-u przy pierwszym logowaniu, limity i blokady, zaufane urządzenia, wylogowanie (także ze wszystkich urządzeń), blokada ekranu, zmiana PIN-u, zapasowy e-mail i reset PIN-u, maile bezpieczeństwa (`Mail\ZoneMailable` z szablonami paczki strefy), config `polygon.auth`, `ZONE_SESSION_LIFETIME`, teksty `lang/{pl,en}/{sign_in,account,emails}.php` i komenda `polygon:auth:prune` (co godzinę). polygon nie ma widoków: ekrany (`Zones\ZoneView`) i maile podaje paczka strefy.
+- Komenda konta dla każdej strefy: `Console\CreateZoneAccountCommand` (`<strefa>:account:create`) i akcja `Auth\CreateZoneAccount`; pliki instalacji paczek stref przez `Install\InstallFiles::add()`.
 
 ### Changed
 
 - Paczka nie jest już tylko deweloperska: projekty instalują ją w `require` (migracje i modele działają na serwerach); wymaga rozszerzeń `intl` i `bcmath`.
+- Strefa `polygon` rejestruje się przez mechanizm stref (`Providers\PolygonZoneServiceProvider`, config `polygon.zone`, `POLYGON_SLUG`); `PolygonAccount` dziedziczy po `ZoneAccount`, `Auth\CreateAccount` zastępuje `Auth\CreateZoneAccount`, a `polygon:account:create` to podklasa `CreateZoneAccountCommand`.
+- Pliki instalacji przyjmują każdą zarejestrowaną strefę z kontami (zamiast `InstallFileParser::SUPPORTED_ZONES`), a konta zakładają modelem strefy.
+- `RecordHistoryActor` zapisuje strefę żądania i konto z jej guarda (poza strefą nadal guard `web`).
 
 ## [0.1.0] - 2026-11-06
 

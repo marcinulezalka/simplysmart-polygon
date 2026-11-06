@@ -11,7 +11,9 @@ php artisan db:seed             # słowniki lokalizacji, potem pliki instalacji 
 ## Które pliki
 
 1. Plik paczki: `database/install/polygon.json` (zawsze pierwszy).
-2. Pliki projektu z `.env`: `POLYGON_INSTALL_FILES=install/strefy.json,install/konta.json` (`polygon.install.files`,
+2. Pliki paczek stref, dodane w `register()` ich providerów:
+   `$this->callAfterResolving(InstallFiles::class, static fn(InstallFiles $files) => $files->add($path))`.
+3. Pliki projektu z `.env`: `POLYGON_INSTALL_FILES=install/strefy.json,install/konta.json` (`polygon.install.files`,
    ścieżki względem katalogu projektu albo absolutne), w podanej kolejności.
 
 Pliki są łączone per strefa: uprawnienia się sumują, rola z pliku stosowanego później zastępuje rolę o tej samej nazwie,
@@ -61,7 +63,7 @@ pilnuje zgodności z plikiem), a etykiety są w `lang/<locale>/permissions.php` 
 
 | Klucz | Znaczenie |
 | --- | --- |
-| `zones.<strefa>` | strefa z kontami i guardem znanym paczce (`Install\InstallFileParser::SUPPORTED_ZONES`, dziś `polygon`) |
+| `zones.<strefa>` | strefa zarejestrowana z kontami (`Contracts\ZoneRegistry`, [docs/strefy.md](strefy.md)), np. `polygon` |
 | `permissions` | uprawnienia strefy `zasób.akcja` (kebab-case po obu stronach kropki) |
 | `roles.<rola>.permissions` | lista uprawnień z `permissions` albo `"*"` (wszystkie) |
 | `roles.<rola>.except` | uprawnienia odjęte od `permissions` i odziedziczonych |
@@ -79,7 +81,7 @@ Etykiety uprawnień i ról nie należą do pliku (dodaje je warstwa interfejsu z
 - **Idempotentność:** uprawnienia i role powstają tylko brakujące; rola dostaje **dokładnie** uprawnienia z pliku
   (`syncPermissions`). Konto powstaje tylko, gdy adresu nie ma w strefie (także wśród usuniętych); istniejącemu
   kontu instalacja dopisuje brakujące role, niczego nie odbiera. Uprawnień, ról i kont spoza plików nie usuwa.
-- **Konta bez hasła:** konto strefy zakłada `Auth\CreateAccount` (aktywne, bez PIN-u — właściciel ustawia go przy
-  pierwszym logowaniu), jak `polygon:account:create`.
+- **Konta bez hasła:** konto strefy zakłada `Auth\CreateZoneAccount` modelem strefy (aktywne, bez PIN-u — właściciel ustawia go przy
+  pierwszym logowaniu), jak `<strefa>:account:create`.
 - **Produkcja:** instalację wolno uruchomić ponownie i na produkcji (seeder referencyjny). Plików z prawdziwymi
   adresami klientów nie commituje się do publicznych repozytoriów — trzymaj je w projekcie.

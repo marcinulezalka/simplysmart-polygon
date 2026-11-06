@@ -14,12 +14,12 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Install;
 
 use Illuminate\Database\ConnectionInterface;
-use Simplysmart\Polygon\Auth\CreateAccount;
+use Simplysmart\Polygon\Auth\CreateZoneAccount;
+use Simplysmart\Polygon\Contracts\ZoneRegistry;
 use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Database\IdSlots;
 use Simplysmart\Polygon\Models\Permissions\Permission;
 use Simplysmart\Polygon\Models\Permissions\Role;
-use Simplysmart\Polygon\Models\PolygonAccount;
 use Simplysmart\Polygon\Permissions\PermissionTables;
 use Simplysmart\Polygon\Queries\Accounts\ZoneAccounts;
 use Spatie\Permission\PermissionRegistrar;
@@ -28,7 +28,7 @@ use Spatie\Permission\PermissionRegistrar;
  * Domyślna konfiguracja systemu z plików instalacji (InstallFiles): najpierw waliduje wszystkie pliki
  * (InstallFileParser) i łączy strefy (ZoneInstallMerger), potem w jednej transakcji zakłada uprawnienia i role guarda
  * strefy (role dostają dokładnie uprawnienia z pliku) oraz konta startowe
- * (tylko brakujące, przez Auth\CreateAccount; losowe id z puli seederów przy `"id": "random"`), dopisując im role
+ * (tylko brakujące, modelem strefy przez Auth\CreateZoneAccount; losowe id z puli seederów przy `"id": "random"`), dopisując im role
  * z pliku. Idempotentny: wolno go uruchomić ponownie i na produkcji; uprawnień i ról spoza plików nie usuwa.
  */
 final readonly class Installer
@@ -38,7 +38,8 @@ final readonly class Installer
         private InstallFileParser $parser,
         private ZoneInstallMerger $merger,
         private ConnectionInterface $db,
-        private CreateAccount $accounts,
+        private ZoneRegistry $zones,
+        private CreateZoneAccount $accounts,
         private ZoneAccounts $zoneAccounts,
         private IdSlots $slots,
         private PermissionRegistrar $permissions,
@@ -87,12 +88,15 @@ final readonly class Installer
             $this->entry(Role::class, $name, $zone->zone)->syncPermissions($permissions);
         }
 
+        $definition = $this->zones->get($zone->zone);
+        $model = $definition->accountModel();
+
         foreach ($zone->accounts as $account) {
-            $existing = $this->zoneAccounts->findByEmail($account->email);
+            $existing = $this->zoneAccounts->findByEmail($definition, $account->email);
 
             if ($existing === null) {
-                $id = $account->randomId ? $this->slots->random(PolygonAccount::TABLE) : null;
-                $this->accounts->handle($account->name, $account->email, $account->roles, $id);
+                $id = $account->randomId ? $this->slots->random((new $model())->getTable()) : null;
+                $this->accounts->handle($definition, $account->name, $account->email, $account->roles, $id);
                 $report->created[] = $account->email;
 
                 continue;

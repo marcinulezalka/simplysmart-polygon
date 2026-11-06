@@ -18,7 +18,7 @@ use Illuminate\Support\Arr;
 
 /**
  * Szablon tłumaczeń dla języka (np. do pobrania jako JSON komendą `polygon:translations:export`): wszystkie teksty plików PHP
- * każdej zarejestrowanej przestrzeni tłumaczeń (Core i paczki, `loadTranslationsFrom`) w języku źródłowym, klucz
+ * każdej zarejestrowanej przestrzeni tłumaczeń (polygon i paczki, `loadTranslationsFrom`) w języku źródłowym, klucz
  * `przestrzeń::plik.klucz`, z tekstem źródłowym i istniejącym tłumaczeniem w języku docelowym (brak — pusty tekst).
  * Teksty nie-tekstowe (np. listy liczb) są pomijane. Wypełniony szablon wraca przez TranslationImport.
  */

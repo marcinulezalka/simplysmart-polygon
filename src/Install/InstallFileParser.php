@@ -15,7 +15,7 @@ namespace Simplysmart\Polygon\Install;
 
 use JsonException;
 use Simplysmart\Polygon\Permissions\RequiredRole;
-use Simplysmart\Polygon\Zones\PolygonZone;
+use Simplysmart\Polygon\Contracts\ZoneRegistry;
 
 /**
  * Czyta i waliduje plik instalacji, zanim cokolwiek trafi do bazy (docs/instalacja.md):
@@ -26,7 +26,7 @@ use Simplysmart\Polygon\Zones\PolygonZone;
  *               "owner": {"inherits": ["support"], "permissions": ["settings.manage"]}, "hero": {"permissions": "*"}},
  *     "accounts": [{"email": "support@example.com", "name": "Support", "roles": ["hero"], "id": "random"}]}}}
  * ```
- * Sprawdza: znane strefy (SUPPORTED_ZONES), rolę root `hero` tylko jako `"*"` bez `except` (role obowiązkowe
+ * Sprawdza: strefy zarejestrowane z kontami (Contracts\ZoneRegistry), rolę root `hero` tylko jako `"*"` bez `except` (role obowiązkowe
  * i pełne uprawnienia roota sprawdza Installer po połączeniu plików), nazwy uprawnień `zasób.akcja` i ról w kebab-case, uprawnienia ról
  * i `except` z listy `permissions`, `inherits` do istniejących ról bez cykli, konta z poprawnym adresem, unikalnym
  * w pliku (istnienie ich ról sprawdza Installer po połączeniu plików); `id` konta to `"random"` (losowy slot 1–999) albo brak (id od 1000).
@@ -37,16 +37,13 @@ final readonly class InstallFileParser
 
     public const string RANDOM_ID = 'random';
 
-    /**
-     * Strefy, których konta i guard zna paczka.
-     *
-     * @var list<string>
-     */
-    public const array SUPPORTED_ZONES = [PolygonZone::NAME];
-
     private const string PERMISSION_PATTERN = '/^[a-z][a-z0-9]*(-[a-z0-9]+)*\.[a-z][a-z0-9]*(-[a-z0-9]+)*$/';
 
     private const string ROLE_PATTERN = '/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/';
+
+    public function __construct(
+        private ZoneRegistry $zones,
+    ) {}
 
     /**
      * @return list<ZoneInstall>
@@ -73,8 +70,8 @@ final readonly class InstallFileParser
 
     private function zone(string $path, string $zone, mixed $definition): ZoneInstall
     {
-        if (! in_array($zone, self::SUPPORTED_ZONES, true)) {
-            throw InvalidInstallFile::in($path, "zone [{$zone}] is not supported (" . implode(', ', self::SUPPORTED_ZONES) . ').');
+        if (! $this->zones->has($zone) || $this->zones->get($zone)->model === null) {
+            throw InvalidInstallFile::in($path, "zone [{$zone}] is not a registered zone with accounts.");
         }
 
         if (! is_array($definition)) {

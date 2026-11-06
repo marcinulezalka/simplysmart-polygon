@@ -18,11 +18,11 @@ use Illuminate\Filesystem\Filesystem;
 use Illuminate\Translation\FileLoader;
 
 /**
- * Dokłada tłumaczenia Core (klucze frameworka bez przestrzeni nazw, np. validation.*) do loadera.
+ * Dokłada tłumaczenia polygon (klucze frameworka bez przestrzeni nazw, np. validation.*) do loadera.
  *
  * Kolejność ścieżek decyduje o pierwszeństwie (późniejsza nadpisuje wcześniejszą), więc katalog
- * Core trafia między tłumaczenia frameworka a lang/ aplikacji: Core zastępuje angielskie
- * domyślne teksty, a plik w lang/<locale>/ szkieletu nadal wygrywa nad Core.
+ * polygon trafia między tłumaczenia frameworka a lang/ aplikacji: polygon zastępuje angielskie
+ * domyślne teksty, a plik w lang/<locale>/ szkieletu nadal wygrywa nad polygon.
  */
 final readonly class CoreTranslationPath
 {
@@ -37,7 +37,7 @@ final readonly class CoreTranslationPath
     ) {}
 
     /**
-     * Zwraca loader z katalogiem Core przed katalogiem aplikacji; inny niż plikowy zostawia bez zmian.
+     * Zwraca loader z katalogiem polygon przed katalogiem aplikacji; inny niż plikowy zostawia bez zmian.
      */
     public function extend(Loader $loader): Loader
     {

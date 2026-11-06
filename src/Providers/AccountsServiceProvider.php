@@ -20,11 +20,9 @@ use RuntimeException;
 use Simplysmart\Polygon\Contracts\BlindIndex;
 use Simplysmart\Polygon\Models\User;
 use Simplysmart\Polygon\Security\HmacBlindIndex;
-use Simplysmart\Polygon\Zones\PolygonZone;
 
 /**
- * Konta: guard i provider strefy `polygon` (konta w `polygon_accounts`) dopisane do config/auth, model providera
- * `users` (konta frontendu, Models\User, gdy projekt nie ma własnego) i indeks e-maili kont (BlindIndex, HMAC z APP_KEY).
+ * Konta: model providera `users` (konta frontendu, Models\User, gdy projekt nie ma własnego) i indeks e-maili kont (BlindIndex, HMAC z APP_KEY).
  */
 final class AccountsServiceProvider extends ServiceProvider
 {
@@ -35,7 +33,6 @@ final class AccountsServiceProvider extends ServiceProvider
         $this->app->singleton(BlindIndex::class, static fn(Application $app): BlindIndex => new HmacBlindIndex(self::appKey($app->make(Repository::class))));
         $this->app->booting(function (): void {
             $config = $this->app->make(Repository::class);
-            $config->set(PolygonZone::authConfig());
             $this->useUserModel($config);
         });
     }

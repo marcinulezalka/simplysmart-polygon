@@ -15,11 +15,12 @@ namespace Simplysmart\Polygon\Queries\Accounts;
 
 use Simplysmart\Polygon\Auth\AccountColumns;
 use Simplysmart\Polygon\Auth\EmailIndex;
-use Simplysmart\Polygon\Models\PolygonAccount;
+use Simplysmart\Polygon\Models\ZoneAccount;
+use Simplysmart\Polygon\Zones\ZoneDefinition;
 
 /**
- * Odczyt kont strefy `polygon`: konto po adresie e-mail (przez `email_hash`, także usunięte — adres usuniętego konta
- * zostaje zajęty).
+ * Odczyt kont strefy: konto po adresie e-mail (przez `email_hash`, także usunięte — adres usuniętego konta zostaje
+ * zajęty).
  */
 final readonly class ZoneAccounts
 {
@@ -27,8 +28,10 @@ final readonly class ZoneAccounts
         private EmailIndex $emails,
     ) {}
 
-    public function findByEmail(string $email): ?PolygonAccount
+    public function findByEmail(ZoneDefinition $zone, string $email): ?ZoneAccount
     {
-        return PolygonAccount::withTrashed()->where(AccountColumns::EMAIL_HASH, $this->emails->of($email))->first();
+        $model = $zone->accountModel();
+
+        return $model::withTrashed()->where(AccountColumns::EMAIL_HASH, $this->emails->of($email))->first();
     }
 }
