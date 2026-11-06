@@ -19,6 +19,7 @@ use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
+use Simplysmart\Polygon\Database\PackageSeeders;
 use Simplysmart\Polygon\Database\Seeders\DatabaseSeeder;
 use Simplysmart\Polygon\Http\Middleware\RecordHistoryActor;
 use Simplysmart\Polygon\Listeners\SetHistoryActorForJob;
@@ -26,7 +27,7 @@ use Simplysmart\Polygon\PolygonServiceProvider;
 
 /**
  * Baza danych paczki (docs/baza-danych.md): migracje `database/migrations/`, seeder główny pod nazwą `DatabaseSeeder`
- * (projekt nie ma własnego) i aktor historii zmian — middleware na końcu grupy `web` oraz listener zadań kolejki.
+ * (projekt nie ma własnego) z rejestrem seederów paczek (Database\PackageSeeders) i aktor historii zmian — middleware na końcu grupy `web` oraz listener zadań kolejki.
  */
 final class DatabaseServiceProvider extends ServiceProvider
 {
@@ -35,6 +36,7 @@ final class DatabaseServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bindIf(DatabaseSeeder::CONTAINER_NAME, DatabaseSeeder::class);
+        $this->app->singleton(PackageSeeders::class);
     }
 
     public function boot(Router $router, Dispatcher $events): void

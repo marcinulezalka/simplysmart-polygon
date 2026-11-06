@@ -15,11 +15,12 @@ namespace Simplysmart\Polygon\Models;
 
 use Simplysmart\Polygon\Auth\Concerns\SignsInWithCodeAndPin;
 use Simplysmart\Polygon\Contracts\CodeAndPinAccount;
+use Simplysmart\Polygon\Models\Relations\HasOrganizations;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
  * Baza modelu kont strefy logującej się kodem z e-maila i PIN-em (tabela `<strefa>_accounts` z Database\ZoneTables),
- * z rolami i uprawnieniami spatie w guardzie strefy. Model strefy ustawia tabelę i guard ról:
+ * z rolami i uprawnieniami spatie w guardzie strefy i członkostwem w organizacjach (organizations()). Model strefy ustawia tabelę i guard ról:
  *
  *     final class ShopAccount extends ZoneAccount
  *     {
@@ -40,6 +41,7 @@ use Spatie\Permission\Traits\HasRoles;
  */
 abstract class ZoneAccount extends MainAuthenticatable implements CodeAndPinAccount
 {
+    use HasOrganizations;
     use HasRoles;
     use SignsInWithCodeAndPin;
 }

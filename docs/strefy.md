@@ -1,13 +1,14 @@
 # Strefy i logowanie
 
 Strefa to wydzielona część aplikacji z własnym segmentem URL, prefiksem nazw tras, guardem, tabelami kont i sesją.
-Mechanizm przeniesiony z rdzenia admiro (bez organizacji, kontekstu w adresie, wyglądu stref i dziennika audytu).
+Mechanizm przeniesiony z rdzenia admiro (bez zespołów spatie, kontekstu w adresie, wyglądu stref i dziennika audytu).
 **polygon nie ma widoków**: daje logikę, trasy, kontrolery, limity i maile, a ekrany logowania, konta i szablony maili
 dostarcza paczka strefy.
 
 ## Strefa w paczce
 
 ```php
+use Simplysmart\Polygon\Database\PackageSeeders;
 use Simplysmart\Polygon\Install\InstallFiles;
 use Simplysmart\Polygon\Zones\ZoneServiceProvider;
 
@@ -20,6 +21,7 @@ final class ShopServiceProvider extends ZoneServiceProvider
         $this->loadTranslationsFrom(__DIR__ . '/../lang', 'shop');
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
         $this->callAfterResolving(InstallFiles::class, static fn(InstallFiles $files) => $files->add(__DIR__ . '/../database/install/shop.json'));
+        $this->callAfterResolving(PackageSeeders::class, static fn(PackageSeeders $seeders) => $seeders->add(ShopSeeder::class)); // opcjonalnie
     }
 
     protected function routeNamePrefix(): string { return 'shop'; }          // stały: shop.dashboard
@@ -32,6 +34,10 @@ final class ShopServiceProvider extends ZoneServiceProvider
 guard i provider do config/auth (`ZoneGuardRegistrar`), grupę middleware `zone.<strefa>` i trasy. Strefa `polygon`
 rejestruje się tak samo (`Providers\PolygonZoneServiceProvider`, config `polygon.zone`): ma konta i guard, ale nie ma
 ekranów ani tras.
+
+Migracje paczki strefy (`database/migrations/`) tworzą tylko schemat; dane referencyjne strefy daje jej seeder
+(`database/seeders/`), dopisany do `Database\PackageSeeders` — `db:seed` uruchamia go po seederach bazowych polygon
+(docs/baza-danych.md §1). Seedera nie woła się z migracji.
 
 ## Config strefy
 
@@ -86,7 +92,8 @@ zapasowy e-mail, zaufane urządzenia, `security/sessions` (wyloguj wszędzie).
 | `unlock` | `name`, `pinLength` |
 | `security` | `account`, `currentPinLength`, `pinLength`, `codeLength`, `devices`, `currentSelector`, `recoveryEmail`, `pendingRecoveryEmail` |
 
-Komunikaty: `session('status')` i błędy walidacji (`$errors`). Teksty domyślne: `lang/<locale>/sign_in.php`,
+Komunikaty: `session(\Simplysmart\Polygon\Http\StatusMessage::KEY)` (kontrolery zapisują je pod tym kluczem)
+i błędy walidacji (`$errors`). Teksty domyślne: `lang/<locale>/sign_in.php`,
 `account.php`, `emails.php` (strefa nadpisuje we własnym namespace; `ZoneDefinition::signInText()`).
 
 ## Maile (`mail.views`)
@@ -100,6 +107,29 @@ Szablony `<prefiks>.<szablon>` (HTML, wymagany) i opcjonalnie `<prefiks>.text.<s
 | `pin-changed` | `accountName`, `changedAt` |
 | `new-trusted-device` | `accountName`, `deviceName`, `registeredAt`, `devicesUrl` |
 | `device-token-reused` | `accountName` |
+
+## Kontekst organizacji
+
+Konto zalogowane w strefie pracuje w kontekście jednej organizacji (docs/baza-danych.md §16). Odczyt i wybór daje
+`Contracts\CurrentOrganization` (`Organizations\SessionCurrentOrganization`, wybór w sesji strefy — każda strefa ma
+własny kontekst):
+
+| Metoda | Wynik |
+| --- | --- |
+| `get()`, `id()` | bieżąca organizacja; bez wyboru (albo gdy wybrana przestała być dostępna) domyślna, zapisana w sesji: hero — organizacja hero, pozostali — najstarsze członkostwo; gość i konto bez organizacji — null |
+| `visible()` | bieżąca organizacja do pokazania we frontendzie (organizacja hero → null) |
+| `contexts()` | `list<Organizations\OrganizationContext>` (organizacja, `current`) do przełącznika, bez organizacji hero |
+| `isHero()` | czy konto jest członkiem organizacji hero |
+| `choose()` | ustawia kontekst; false dla organizacji spoza kontekstów konta |
+
+- **Konteksty konta** (`Queries\Organizations\ActiveMemberships`): członkostwa w organizacjach aktywnych i nieusuniętych,
+  od najstarszego. Członek organizacji hero dostaje organizację hero i wszystkie pozostałe aktywne organizacje (po
+  nazwie) — bez zakładania członkostw.
+- **Przełączenie:** formularz POST na `<strefa>.account.organization.switch` (`account/organization`, pole
+  `organization` = token organizacji, `Http\Controllers\Account\OrganizationSwitchController`); potem pulpit z
+  komunikatem `status` (`account.organization.switched`), a organizacja spoza kontekstów to błąd pola
+  (`account.organization.unavailable`). Teksty przełącznika: `account.organization.*`.
+- Role nie zależą od organizacji (spatie bez zespołów); kontekst wybiera dane, nie uprawnienia.
 
 ## Konta i komendy
 

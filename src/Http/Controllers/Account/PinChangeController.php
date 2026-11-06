@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Http\Controllers\Account;
 
+use Simplysmart\Polygon\Http\StatusMessage;
 use Simplysmart\Polygon\Contracts\CurrentAccount;
 use Simplysmart\Polygon\Models\ZoneAccount;
 use Illuminate\Contracts\Bus\Dispatcher;
@@ -46,7 +47,7 @@ final readonly class PinChangeController
         $limiter->attempt(SignInLimit::AccountCodeRequests, $account->emailAddress(), 'code');
         $bus->dispatch(new IssueSignInCode($this->zone->get()->name, $account->emailAddress(), $request->ip(), $request->userAgent()));
 
-        return $this->back()->with('status', text('account.code_sent'));
+        return $this->back()->with(StatusMessage::KEY, text('account.code_sent'));
     }
 
     public function update(Request $request, ChangePin $change): RedirectResponse
@@ -66,7 +67,7 @@ final readonly class PinChangeController
             $request,
         );
 
-        return $this->back()->with('status', text('account.pin_changed'));
+        return $this->back()->with(StatusMessage::KEY, text('account.pin_changed'));
     }
 
     private function account(): ZoneAccount

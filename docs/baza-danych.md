@@ -4,9 +4,9 @@
 > zmian (`Database\History`, triggery MySQL/MariaDB i SQLite, aktor zmian `Database\HistoryActor`), `Models\DataModel` (token, soft delete, casty,
 > checksum, scope'y, przejścia stanu `RecordStatusTransitions`, etykiety kolumn), krótkie tłumaczenia `json_i18n` (`HasI18n`), tabele strefy `polygon_*` (`Database\ZoneTables`),
 > stockowe tabele Laravela (`users`, `cache`, `jobs`) z wyrównaniem `users` do standardu, słowniki lokalizacji
-> z seederami (§14) i tabele uprawnień spatie/laravel-permission bez zespołów (§15). Warstwa pochodzi z rdzenia
-> `simplysmart/admiro` (kopia, bez organizacji, zespołów uprawnień, audytu, cookies i dokumentów prawnych); numeracja sekcji
-> jest ta sama co w admiro.
+> z seederami (§14), tabele uprawnień spatie/laravel-permission bez zespołów (§15) oraz organizacje z typami jednostek
+> i członkostwem kont (§16). Warstwa pochodzi z rdzenia `simplysmart/admiro` (kopia, bez zespołów uprawnień, audytu,
+> cookies, dokumentów prawnych i widoków); numeracja sekcji §1–§14 jest ta sama co w admiro.
 
 Silniki: MySQL 8 / MariaDB i SQLite (testy, lokalnie). Zasady obowiązują każdą tabelę danych aplikacji.
 
@@ -30,10 +30,16 @@ Silniki: MySQL 8 / MariaDB i SQLite (testy, lokalnie). Zasady obowiązują każd
   Konto strefy zakłada `php artisan <strefa>:account:create {email} {name} [--role=*] [--skip-existing]`
   (np. `polygon:account:create`; baza `Console\CreateZoneAccountCommand`, akcja `Auth\CreateZoneAccount`, jedna transakcja z rolami; adres zajęty także przez konto usunięte).
 - Nazwa pliku migracji zaczyna się od daty (kolejność) i mówi, czyja jest tabela.
-- Seedery to klasy w `src/Database/Seeders/` (`Simplysmart\Polygon\Database\Seeders`). Seeder główny
-  `DatabaseSeeder` (słowniki lokalizacji) provider rejestruje pod nazwą `DatabaseSeeder`, więc `php artisan db:seed`
-  i `migrate --seed` działają bez seedera w projekcie: słowniki (`polygon:localization:seed`), potem pliki instalacji
-  (`InstallSeeder`, `polygon:install`: uprawnienia, role i konta startowe stref, [instalacja.md](instalacja.md)).
+- **Migracje i seedery są rozdzielone:** migracja tworzy i zmienia tylko schemat (tabele, historia, pula id), nigdy nie
+  wstawia danych ani nie woła seedera; dane referencyjne dają wyłącznie seedery. Seedery leżą w `database/seeders/`
+  (`Simplysmart\Polygon\Database\Seeders`, osobne mapowanie PSR-4 w `composer.json`), obok `database/migrations/`.
+- Seeder główny `DatabaseSeeder` provider rejestruje pod nazwą `DatabaseSeeder`, więc `php artisan db:seed`
+  i `migrate --seed` działają bez seedera w projekcie. Najpierw seedery bazowe polygon (`DatabaseSeeder::BASE`):
+  słowniki (`LocalizationSeeder`, `polygon:localization:seed`), dane referencyjne organizacji (`OrganizationsSeeder`,
+  `polygon:organizations:seed`, §16), pliki instalacji (`InstallSeeder`, `polygon:install`: uprawnienia, role i konta
+  startowe stref, [instalacja.md](instalacja.md)); potem seedery paczek z rejestru `Database\PackageSeeders`, w kolejności
+  rejestracji providerów. Paczka dodaje swój seeder (z własnego `database/seeders/`) w `register()` providera:
+  `$this->callAfterResolving(PackageSeeders::class, static fn(PackageSeeders $seeders) => $seeders->add(ShopSeeder::class));`.
   Paczka nie tworzy danych demo. Seedery referencyjne są idempotentne
   (rekord szukany po kodzie z `codeColumn()`, nowy dostaje id z puli seederów, zapis przez model) i wolno je
   uruchomić na produkcji. Nie zawierają sekretów ani danych osobowych.
@@ -99,9 +105,12 @@ zostaje także po zmianach z konsoli SQL.
 Illuminate\Database\Eloquent\Model
   └─ Simplysmart\Polygon\Models\MainModel     (abstract: token jako klucz trasy)
        ├─ Simplysmart\Polygon\Models\DataModel  (abstract: tabele z kolumnami standardowymi)
-       │    └─ Models\Dictionaries\{Country, Language, Currency, TaxRate, ExchangeRate, Holiday, MeasureUnit}
+       │    ├─ Models\Dictionaries\{Country, Language, Currency, TaxRate, ExchangeRate, Holiday, MeasureUnit}
+       │    └─ Models\{Organization, OrganizationUnitType}
        └─ Simplysmart\Polygon\Models\MainAuthenticatable  (konta stref: to samo co DataModel + Authenticatable)
             └─ Models\PolygonAccount               (polygon_accounts, HasRoles w guardzie `polygon`)
+Illuminate\Database\Eloquent\Model
+  └─ Models\OrganizationMember                (tabela łącząca organization_members)
 Illuminate\Foundation\Auth\User
   └─ Simplysmart\Polygon\Models\User           (tabela users, konta frontendu: te same traity co DataModel + HasRoles)
 ```
@@ -119,7 +128,9 @@ Illuminate\Foundation\Auth\User
   `Localization\PackageText::data($model, $kolumna)` (`data.<model>.<kolumna>`, model w snake_case, potem wspólne
   `data.<kolumna>`); test sprawdza kompletność w pl i en. Projekt nadpisuje je w `lang/vendor/polygon/<locale>/data.php`.
 - **Relacje tylko w traitach:** `Models/Relations/Has<X>` / `BelongsTo<X>` (`BelongsToCountry`, `BelongsToCurrency`,
-  `HasCountries`, `HasOfficialLanguages`, `HasTaxRates`, `SpokenInCountries`); model je tylko dołącza.
+  `HasCountries`, `HasOfficialLanguages`, `HasTaxRates`, `SpokenInCountries`, `BelongsToOrganization`,
+  `BelongsToParentOrganization`, `BelongsToUnitType`, `BelongsToMember`, `HasOrganizationMembers`, `HasOrganizations`,
+  `LocatedInCountry`); model je tylko dołącza.
 - **Flagi:** `is_*` — zapisany stan rekordu (boolean); `has_*` — posiadanie cechy, kolumna tylko gdy trzeba po niej
   filtrować; nazwy twierdzące (`is_active`, nie `is_hidden`).
 - **`status` i `is_active`:** `status` to standardowy stan wiersza `Enums\RecordStatus` (`draft`, `pending`, `active`,
@@ -181,7 +192,8 @@ liczy go `DataModel` przy zapisie.
 5. Etykiety kolumn w `lang/<locale>/data.php` dla każdego języka (pl, en).
 6. Enum statusu w `Enums/` z etykietą w `lang/<locale>/enums.php`; relacje jako traity w `Models/Relations/`.
 7. Odczyty w `Queries/`, zmiany w akcjach (transakcja, zapis przez model).
-8. Seeder referencyjny (idempotentny, id z `IdSlots::next()`).
+8. Seeder referencyjny w `database/seeders/` (idempotentny, id z `IdSlots::next()`) w `DatabaseSeeder::BASE` albo,
+   w paczce, w `Database\PackageSeeders` — nigdy wywołany z migracji.
 9. Testy: casty, etykiety, triggery historii zgodne z kolumnami.
 
 ## 14. Słowniki lokalizacji
@@ -204,7 +216,7 @@ liczy go `DataModel` przy zapisie.
   i tylko języki interfejsu.
 - Dane krajów, języków i walut pochodzą z ICU (rozszerzenie `intl`); stawki VAT tylko kraju aplikacji (dane państw UE na 2025 r.;
   Polska w całości z „zw”, pozostałe do weryfikacji w TEDB; stawki innych krajów dodaje administrator); jednostki miar Polski, Wielkiej Brytanii i USA dopisuje
-  `MeasureUnitsSeeder` (także migracja tabeli).
+  `MeasureUnitsSeeder` (w `LocalizationSeeder`).
 - **Odczyty** (`Queries\Dictionaries`): `DefaultEntries` (wpis `is_default`, a bez niego wpis o kodzie z configu:
   `APP_COUNTRY`, `APP_LOCALE`, `APP_CURRENCY`), `DictionaryList` (pełne słowniki, także wyłączone wpisy, i stawki VAT
   kraju), `DictionarySearch` (języki, kraje, waluty po nazwie i kodzie; kraje po nazwie święta), `TaxRatesInForce`
@@ -244,3 +256,46 @@ liczy go `DataModel` przy zapisie.
 - Role i uprawnienia mają pełny standard tabel danych (traity `HasRouteToken`, `HasStandardColumns`, `HasChecksum`,
   soft delete), historię i pulę id; tabele łączące mają `id` zamiast złożonego klucza spatie (dla historii).
 - Model z rolami dołącza `Spatie\Permission\Traits\HasRoles`; model inny niż provider guarda podaje `$guard_name`.
+
+## 16. Organizacje
+
+Organizacja to firma korzystająca z aplikacji, wspólna dla stref. Schemat jest końcowym stanem organizacji z admiro
+(nazwy migracji te same, bez jego migracji `add_*`), ale bez zespołów spatie: role nie zależą od organizacji, a paczka
+ma za to kontekst organizacji konta w strefie ([strefy.md](strefy.md), „Kontekst organizacji”); widoki, formularze
+i zarządzanie organizacjami dodaje paczka strefy.
+
+| Tabela | Model | Standard | Kolumny domenowe |
+| --- | --- | --- | --- |
+| `organizations` | `Models\Organization` | pełny, drzewo przez `parent_id` | `is_department`, `unit_type_id`, `short_name`, `color`, dane firmy (`Organization::DETAIL_LENGTHS`) |
+| `organization_unit_types` | `Models\OrganizationUnitType` | pełny | `code` (unikalny), `number_prefix`, `icon`, `is_internal`, `is_public`; `json_attributes.fields` — pola podorganizacji typu |
+| `organization_members` | `Models\OrganizationMember` | łącząca, z historią | `organization_id`, `model_type`, `model_id`, `timestamps`; unikalne organizacja + konto |
+
+- **Dane firmy** (opcjonalne): `nip` (nieunikalny — oddział może mieć NIP firmy, indeks), `regon`, `krs`, `phone`
+  i `mobile_phone` (z prefiksem kraju, `Organization::PHONES`), `email`, `billing_email`, `street`, `postal_code`,
+  `city` (`Organization::address()`) i `country_code` (kod alpha-2 słownika krajów, relacja `country()` —
+  `Relations\LocatedInCountry`). Nazwa skrócona (`short_name`, do `Organization::SHORT_NAME_MAX_LENGTH` = 100 znaków):
+  `shortName()` daje ją, a bez niej pełną nazwę. Kolor (`color`, `#rrggbb`): `color()` bez zapisanego koloru zwraca
+  stały kolor z `Organization::COLOR_PALETTE` według id. Ikona z `Organization::ICONS` w `json_attributes.icon` (`icon()`).
+- **Departament** (`is_department`, `isDepartment()`): wewnętrzna agregacja — dział jednostki (organizacji bez flagi)
+  z własnymi członkami, bez własnych danych; nazwa „Jednostka · Departament” z `contextName()`. Reguły drzewa
+  (departament bezpośrednio pod jednostką, bez organizacji pod sobą) egzekwuje paczka zarządzająca organizacjami.
+- **Typy jednostek:** słownik z typami domyślnymi (placówka, filia, poradnia, oddział, departament, pracownia, zakład,
+  rejestracja, jednostka ogólna, dział administracyjny, dział wewnętrzny) w slotach 1–999 z polami podorganizacji
+  (`OrganizationUnitType::fields()`), z `Database\Seeders\OrganizationUnitTypeSeeder` (w `OrganizationsSeeder`);
+  `displayNumber()` dokleja `number_prefix`. Usunięcie typu zostawia jednostkę bez typu (`nullOnDelete`).
+- **Organizacja hero** (`Organization::HERO_ID` = 1, nazwa `Organization::HERO_NAME` = „Simplysmart”, `is_default`;
+  `isHero()`): organizacja operatora aplikacji, zakładana automatycznie przez seeder główny (`HeroOrganizationSeeder` w
+  `OrganizationsSeeder`, przed plikami instalacji — przywraca usuniętą i wyłączoną, zmienionej nazwy nie nadpisuje).
+  Konto, któremu nadano rolę `hero` (`Auth\CreateZoneAccount`, instalator), zostaje jej członkiem, o ile już istnieje (`Organizations\OrganizationMembership::joinHeroOrganization()`),
+  a członek organizacji hero pracuje jak hero: w kontekście każdej aktywnej organizacji ([strefy.md](strefy.md),
+  „Kontekst organizacji”). Frontend stref jej nie pokazuje — scope `Organization::query()->visible()` (bez niej)
+  i `Contracts\CurrentOrganization::contexts()`/`visible()`. Seedery typów i organizacji hero uruchamia
+  `OrganizationsSeeder` (`php artisan polygon:organizations:seed`, także w `DatabaseSeeder`).
+- **Członkostwo** konta strefy w organizacji jest niezależne od ról: `ZoneAccount::organizations()`
+  (`Relations\HasOrganizations`, morph `model`), `Organization::members()`; dodaje i usuwa je
+  `Organizations\OrganizationMembership` (`add()`, `remove()`), a aktywne (organizacja włączona i nieusunięta) czyta
+  `Queries\Organizations\ActiveMemberships`; aktywną organizację po tokenie z formularza —
+  `Queries\Organizations\ActiveOrganizations::findByToken()`. Usunięcie organizacji (fizyczne) kasuje członkostwa (`cascadeOnDelete`),
+  zwykle organizację usuwa się miękko.
+- Rekord należący do organizacji ma kolumnę `Organization::FOREIGN_KEY` (`organization_id`) i relację
+  `Relations\BelongsToOrganization`.

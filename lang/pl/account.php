@@ -59,5 +59,12 @@ return [
         'locked_out' => 'Za dużo błędnych prób PIN-u — konto zostało zablokowane i wylogowane.',
         'sign_out' => 'Wyloguj się',
     ],
+    'organization' => [
+        'switch' => 'Przełącz organizację',
+        'current' => 'Bieżąca organizacja',
+        'switched' => 'Pracujesz teraz w organizacji :name.',
+        'unavailable' => 'Ta organizacja nie jest dostępna dla Twojego konta.',
+        'none' => 'Twoje konto nie należy jeszcze do żadnej organizacji.',
+    ],
 
 ];

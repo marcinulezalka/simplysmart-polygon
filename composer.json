@@ -42,6 +42,7 @@
     },
     "autoload": {
         "psr-4": {
+            "Simplysmart\\Polygon\\Database\\Seeders\\": "database/seeders/",
             "Simplysmart\\Polygon\\": "src/"
         },
         "files": [

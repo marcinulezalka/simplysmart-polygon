@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Http\Controllers\Account;
 
+use Simplysmart\Polygon\Http\StatusMessage;
 use Simplysmart\Polygon\Zones\ZoneView;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -82,6 +83,6 @@ final readonly class ScreenLockController
     {
         $signOut->handle($request);
 
-        return (new RedirectResponse(route($this->zone->get()->routeName(ZoneRedirects::LOGIN_ROUTE))))->with('status', text('account.screen_lock.locked_out'));
+        return (new RedirectResponse(route($this->zone->get()->routeName(ZoneRedirects::LOGIN_ROUTE))))->with(StatusMessage::KEY, text('account.screen_lock.locked_out'));
     }
 }

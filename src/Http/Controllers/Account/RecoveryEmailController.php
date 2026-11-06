@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Http\Controllers\Account;
 
+use Simplysmart\Polygon\Http\StatusMessage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Redirector;
@@ -39,7 +40,7 @@ final readonly class RecoveryEmailController
         $email = $validated[RecoveryEmailRegistration::EMAIL_FIELD];
         $registration->sendCode($this->account->require(), is_string($email) ? $email : '', $request);
 
-        return $this->back()->with('status', text('account.recovery.code_sent'));
+        return $this->back()->with(StatusMessage::KEY, text('account.recovery.code_sent'));
     }
 
     public function update(Request $request, RecoveryEmailRegistration $registration): RedirectResponse
@@ -48,14 +49,14 @@ final readonly class RecoveryEmailController
         $code = $validated[RecoveryEmailRegistration::CODE_FIELD];
         $registration->confirm($this->account->require(), is_string($code) ? $code : '', $request);
 
-        return $this->back()->with('status', text('account.recovery.saved'));
+        return $this->back()->with(StatusMessage::KEY, text('account.recovery.saved'));
     }
 
     public function destroy(Request $request, RecoveryEmailRegistration $registration): RedirectResponse
     {
         $registration->remove($this->account->require(), $request);
 
-        return $this->back()->with('status', text('account.recovery.removed'));
+        return $this->back()->with(StatusMessage::KEY, text('account.recovery.removed'));
     }
 
     private function back(): RedirectResponse

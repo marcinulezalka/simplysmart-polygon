@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Http\Controllers\Auth;
 
+use Simplysmart\Polygon\Http\StatusMessage;
 use Simplysmart\Polygon\Zones\ZoneView;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -45,7 +46,7 @@ final readonly class ForgotPinController
         $email = $validated[RecoveryPinReset::EMAIL_FIELD];
         $reset->sendCode(is_string($email) ? $email : '', $request);
 
-        return $this->back()->with('status', text('sign_in.forgot_pin.recovery.code_sent'));
+        return $this->back()->with(StatusMessage::KEY, text('sign_in.forgot_pin.recovery.code_sent'));
     }
 
     public function reset(Request $request, RecoveryPinReset $reset): RedirectResponse
@@ -54,7 +55,7 @@ final readonly class ForgotPinController
         $code = $validated[RecoveryPinReset::CODE_FIELD];
         $reset->confirm(is_string($code) ? $code : '', $request);
 
-        return $this->redirect->route($this->zone->get()->routeName(ZoneRedirects::LOGIN_ROUTE))->with('status', text('sign_in.forgot_pin.recovery.done'));
+        return $this->redirect->route($this->zone->get()->routeName(ZoneRedirects::LOGIN_ROUTE))->with(StatusMessage::KEY, text('sign_in.forgot_pin.recovery.done'));
     }
 
     public function cancel(Request $request, RecoveryPinReset $reset): RedirectResponse

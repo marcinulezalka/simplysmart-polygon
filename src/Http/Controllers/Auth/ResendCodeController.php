@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Http\Controllers\Auth;
 
+use Simplysmart\Polygon\Http\StatusMessage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Redirector;
@@ -31,6 +32,6 @@ final readonly class ResendCodeController
         $resend->handle($request);
 
         return $redirect->route($zone->get()->routeName(SignInRoutes::stepRoute(EmailCodeStep::KEY)))
-            ->with('status', text('sign_in.code_resent'));
+            ->with(StatusMessage::KEY, text('sign_in.code_resent'));
     }
 }

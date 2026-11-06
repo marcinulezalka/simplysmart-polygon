@@ -14,11 +14,13 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Simplysmart\Polygon\Database\PackageSeeders;
 
 /**
  * Seeder główny projektu (`php artisan db:seed`, `migrate --seed`): PolygonServiceProvider rejestruje go pod nazwą
- * `DatabaseSeeder`, więc projekt nie potrzebuje własnego `database/seeders/`. Wczytuje słowniki lokalizacji, potem
- * domyślną konfigurację systemu z plików instalacji (InstallSeeder: uprawnienia, role, konta startowe). Oba seedery są
+ * `DatabaseSeeder`, więc projekt nie potrzebuje własnego `database/seeders/`. Migracje nie wstawiają danych — wszystkie
+ * dane referencyjne dają seedery: bazowe polygon (słowniki lokalizacji, typy jednostek i organizacja hero, pliki
+ * instalacji: uprawnienia, role, konta startowe), potem seedery paczek (Database\PackageSeeders). Wszystkie są
  * referencyjne i idempotentne, także na produkcji; paczka nie tworzy danych demo.
  */
 final class DatabaseSeeder extends Seeder
@@ -28,8 +30,19 @@ final class DatabaseSeeder extends Seeder
      */
     public const string CONTAINER_NAME = 'DatabaseSeeder';
 
+    /**
+     * Seedery bazowe polygon w kolejności zależności (konta hero z plików instalacji dołączają do organizacji hero).
+     *
+     * @var list<class-string<Seeder>>
+     */
+    public const array BASE = [LocalizationSeeder::class, OrganizationsSeeder::class, InstallSeeder::class];
+
+    public function __construct(
+        private readonly PackageSeeders $packages,
+    ) {}
+
     public function run(): void
     {
-        $this->call([LocalizationSeeder::class, InstallSeeder::class]);
+        $this->call([...self::BASE, ...$this->packages->all()]);
     }
 }

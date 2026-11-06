@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Http;
 
 use Illuminate\Routing\Router;
+use Simplysmart\Polygon\Http\Controllers\Account\OrganizationSwitchController;
 use Simplysmart\Polygon\Http\Controllers\Account\PinChangeController;
 use Simplysmart\Polygon\Http\Controllers\Account\RecoveryEmailController;
 use Simplysmart\Polygon\Http\Controllers\Account\ScreenLockController;
@@ -23,7 +24,8 @@ use Simplysmart\Polygon\Zones\AccessTier;
 use Simplysmart\Polygon\Zones\ZoneDefinition;
 
 /**
- * Trasy konta zalogowanego w strefie (poziom Authenticated, pod `account/`): blokada i odblokowanie ekranu oraz strona
+ * Trasy konta zalogowanego w strefie (poziom Authenticated, pod `account/`): przełączenie organizacji kontekstu, blokada
+ * i odblokowanie ekranu oraz strona
  * bezpieczeństwa — zmiana PIN-u, zapasowy adres e-mail, w strefie z zaufanymi urządzeniami ich odwołanie i wylogowanie
  * wszędzie (dawne `pin` i `devices` przekierowują do sekcji strony). Każda zmiana ma limit `polygon.sign-in`.
  */
@@ -60,6 +62,9 @@ final readonly class AccountRoutes
 
     public const string SIGN_OUT_EVERYWHERE = 'account.security.sign-out-everywhere';
 
+    /** Przełączenie organizacji kontekstu konta (POST, Http\Controllers\Account\OrganizationSwitchController). */
+    public const string ORGANIZATION_SWITCH = 'account.organization.switch';
+
     /** Kotwice sekcji strony bezpieczeństwa (`#pin`, `#devices`, `#recovery`, `#lock`). */
     public const string SECTION_PIN = 'pin';
 
@@ -84,6 +89,7 @@ final readonly class AccountRoutes
             $this->router->get('unlock', [ScreenLockController::class, 'show'])->name(self::UNLOCK);
             $this->router->post('unlock', [ScreenLockController::class, 'unlock'])->middleware($throttle)->name(self::UNLOCK_STORE);
 
+            $this->router->post('organization', OrganizationSwitchController::class)->name(self::ORGANIZATION_SWITCH);
             $this->router->get('security', [SecurityController::class, 'show'])->name(self::SECURITY);
             $this->router->delete('security/sessions', [SecurityController::class, 'signOutEverywhere'])->middleware($throttle)->name(self::SIGN_OUT_EVERYWHERE);
             $this->router->get('pin', [SecurityController::class, 'section'])->defaults('section', self::SECTION_PIN)->name(self::PIN);

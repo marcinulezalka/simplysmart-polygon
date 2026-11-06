@@ -5,7 +5,7 @@ Domyślną konfigurację systemu — strefy, uprawnienia, role i konta startowe 
 
 ```bash
 php artisan polygon:install     # same pliki instalacji
-php artisan db:seed             # słowniki lokalizacji, potem pliki instalacji (DatabaseSeeder → InstallSeeder)
+php artisan db:seed             # słowniki, organizacje (hero), pliki instalacji, potem seedery paczek (DatabaseSeeder)
 ```
 
 ## Które pliki

@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Http\Controllers\Account;
 
+use Simplysmart\Polygon\Http\StatusMessage;
 use Simplysmart\Polygon\Contracts\CurrentAccount;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\RedirectResponse;
@@ -79,6 +80,6 @@ final readonly class TrustedDeviceController
 
     private function back(): RedirectResponse
     {
-        return SecurityController::redirectTo($this->redirect, $this->zone, AccountRoutes::SECTION_DEVICES)->with('status', text('account.devices_revoked'));
+        return SecurityController::redirectTo($this->redirect, $this->zone, AccountRoutes::SECTION_DEVICES)->with(StatusMessage::KEY, text('account.devices_revoked'));
     }
 }

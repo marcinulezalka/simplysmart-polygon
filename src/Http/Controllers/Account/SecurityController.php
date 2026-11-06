@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Http\Controllers\Account;
 
+use Simplysmart\Polygon\Http\StatusMessage;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -83,7 +84,7 @@ final readonly class SecurityController
         $revoke->handle($zone, $this->account->require(), AccessRevocationReason::SignedOutEverywhere);
         $signOut->handle($request);
 
-        return $this->redirect->route($zone->routeName(ZoneRedirects::LOGIN_ROUTE))->with('status', text('account.signed_out_everywhere'));
+        return $this->redirect->route($zone->routeName(ZoneRedirects::LOGIN_ROUTE))->with(StatusMessage::KEY, text('account.signed_out_everywhere'));
     }
 
     /**

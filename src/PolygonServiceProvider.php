@@ -19,8 +19,10 @@ use Simplysmart\Polygon\Console\ExportTranslationsCommand;
 use Simplysmart\Polygon\Console\ImportTranslationsCommand;
 use Simplysmart\Polygon\Console\InstallCommand;
 use Simplysmart\Polygon\Console\SeedLocalization;
+use Simplysmart\Polygon\Console\SeedOrganizations;
 use Simplysmart\Polygon\Providers\AccountsServiceProvider;
 use Simplysmart\Polygon\Providers\DatabaseServiceProvider;
+use Simplysmart\Polygon\Providers\OrganizationsServiceProvider;
 use Simplysmart\Polygon\Providers\PermissionsServiceProvider;
 use Simplysmart\Polygon\Providers\PolygonZoneServiceProvider;
 use Simplysmart\Polygon\Providers\SignInServiceProvider;
@@ -48,6 +50,7 @@ final class PolygonServiceProvider extends ServiceProvider
         ZonesServiceProvider::class,
         SignInServiceProvider::class,
         PolygonZoneServiceProvider::class,
+        OrganizationsServiceProvider::class,
     ];
 
     /**
@@ -55,6 +58,7 @@ final class PolygonServiceProvider extends ServiceProvider
      */
     private const array COMMANDS = [
         SeedLocalization::class,
+        SeedOrganizations::class,
         CreateAccountCommand::class,
         InstallCommand::class,
         ExportTranslationsCommand::class,

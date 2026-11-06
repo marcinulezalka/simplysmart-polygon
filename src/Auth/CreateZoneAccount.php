@@ -16,13 +16,15 @@ namespace Simplysmart\Polygon\Auth;
 use Illuminate\Database\ConnectionInterface;
 use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Models\ZoneAccount;
+use Simplysmart\Polygon\Organizations\OrganizationMembership;
 use Simplysmart\Polygon\Queries\Accounts\ZoneAccounts;
 use Simplysmart\Polygon\Zones\ZoneDefinition;
 use Spatie\Permission\Exceptions\RoleDoesNotExist;
 
 /**
  * Zakłada aktywne konto strefy bez PIN-u (PIN ustawia właściciel przy pierwszym logowaniu), z rolami spatie guarda
- * strefy, w jednej transakcji: brak roli wycofuje całe założenie. Dla stref bez rejestracji — wywoływane z komendy
+ * strefy, w jednej transakcji: brak roli wycofuje całe założenie. Konto z rolą hero zostaje członkiem organizacji hero
+ * (Organizations\OrganizationMembership::joinHeroOrganization()). Dla stref bez rejestracji — wywoływane z komendy
  * `<strefa>:account:create` (Console\CreateZoneAccountCommand) i z instalatora (konta startowe).
  */
 final readonly class CreateZoneAccount
@@ -30,6 +32,7 @@ final readonly class CreateZoneAccount
     public function __construct(
         private ConnectionInterface $db,
         private ZoneAccounts $accounts,
+        private OrganizationMembership $membership,
     ) {}
 
     /**
@@ -48,7 +51,7 @@ final readonly class CreateZoneAccount
 
         $model = $zone->accountModel();
 
-        return $this->db->transaction(static function () use ($model, $name, $email, $roles, $id): ZoneAccount {
+        return $this->db->transaction(function () use ($model, $name, $email, $roles, $id): ZoneAccount {
             $account = new $model();
             $account->forceFill([
                 ColumnNames::ID => $id,
@@ -59,6 +62,7 @@ final readonly class CreateZoneAccount
 
             if ($roles !== []) {
                 $account->assignRole($roles);
+                $this->membership->joinHeroOrganization($account, $roles);
             }
 
             return $account;

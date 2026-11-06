@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Http\Controllers\Auth;
 
+use Simplysmart\Polygon\Http\StatusMessage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Redirector;
@@ -29,6 +30,6 @@ final readonly class LogoutController
     {
         $signOut->handle($request);
 
-        return $redirect->route($zone->get()->routeName(ZoneRedirects::LOGIN_ROUTE))->with('status', text('sign_in.signed_out'));
+        return $redirect->route($zone->get()->routeName(ZoneRedirects::LOGIN_ROUTE))->with(StatusMessage::KEY, text('sign_in.signed_out'));
     }
 }

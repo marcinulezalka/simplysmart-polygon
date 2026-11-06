@@ -2,7 +2,7 @@
 
 Rdzeń bazy danych aplikacji simplysmart i narzędzia deweloperskie:
 
-- **Baza danych** — wszystkie migracje i seedery bazowe (także stockowe `users`, `cache`, `jobs`): kolumny standardowe, pule id, pełna historia zmian triggerami z aktorem (żądania `web`, zadania kolejki), modele `DataModel` z relacjami w traitach i etykietami kolumn, przejścia stanu wiersza, konta strefy `polygon_accounts` i konta frontendu `users`, uprawnienia spatie/laravel-permission bez zespołów oraz słowniki lokalizacji (waluty, języki, kraje, stawki VAT, kursy walut, dni wolne, jednostki miar) z seederami, odczytami (`Queries\Dictionaries`) i zarządzaniem (`DictionaryManagement`); opis: [docs/baza-danych.md](docs/baza-danych.md); domyślna konfiguracja systemu z plików JSON: [docs/instalacja.md](docs/instalacja.md).
+- **Baza danych** — wszystkie migracje i seedery bazowe (także stockowe `users`, `cache`, `jobs`): kolumny standardowe, pule id, pełna historia zmian triggerami z aktorem (żądania `web`, zadania kolejki), modele `DataModel` z relacjami w traitach i etykietami kolumn, przejścia stanu wiersza, konta strefy `polygon_accounts` i konta frontendu `users`, uprawnienia spatie/laravel-permission bez zespołów oraz słowniki lokalizacji (waluty, języki, kraje, stawki VAT, kursy walut, dni wolne, jednostki miar) z seederami, organizacje z typami jednostek, członkostwem kont stref, organizacją hero „Simplysmart” i kontekstem organizacji konta w strefie, odczytami (`Queries\Dictionaries`) i zarządzaniem (`DictionaryManagement`); opis: [docs/baza-danych.md](docs/baza-danych.md); domyślna konfiguracja systemu z plików JSON: [docs/instalacja.md](docs/instalacja.md).
 - **Strefy i logowanie** — mechanizm stref jak w admiro (własny segment URL, guard, tabele kont, sesja, role spatie w guardzie strefy) i logowanie kodem z e-maila + PIN z blokadami, limitami, zaufanymi urządzeniami, blokadą ekranu, zmianą PIN-u i zapasowym e-mailem; bez widoków — ekrany i szablony maili dostarcza paczka strefy; opis: [docs/strefy.md](docs/strefy.md).
 - **Tłumaczenia** — kaskada tekstów i helpery `text_*` / `local_*` jak w admiro, polskie teksty frameworka (`validation`, `auth`, `passwords`, `pagination`) oraz szablon i import tłumaczeń JSON (`polygon:translations:export`, `polygon:translations:import`); opis: [docs/tlumaczenia.md](docs/tlumaczenia.md).
 - **Narzędzia** — wydania SemVer (`vendor/bin/version-release`) i wdrożenia przed-produkcja → produkcja (`vendor/bin/deploy`), instalacja paczek prywatnych spoza repozytorium (`vendor/bin/composer-private`); opis: [docs/deploy.md](docs/deploy.md).
@@ -28,7 +28,8 @@ Paczka leży lokalnie w `/var/www/packages/simplysmart/polygon`. W `composer.jso
 ```bash
 composer require simplysmart/polygon:@dev
 php artisan migrate                      # tabele paczki (database/migrations/)
-php artisan db:seed                      # słowniki lokalizacji + pliki instalacji (DatabaseSeeder paczki, idempotentny)
+php artisan db:seed                      # seedery bazowe (słowniki, organizacja hero, pliki instalacji) + seedery paczek; migracje nie wstawiają danych
+php artisan polygon:organizations:seed   # same typy jednostek i organizacja hero (idempotentnie)
 php artisan polygon:install              # same pliki instalacji JSON: strefy, uprawnienia, role, konta startowe
 php artisan polygon:account:create jan@example.com "Jan Kowalski" --role=owner   # konto strefy polygon (polygon_accounts)
 ```

@@ -17,7 +17,6 @@ use Illuminate\Support\Facades\Schema;
 use Simplysmart\Polygon\Database\Columns;
 use Simplysmart\Polygon\Database\History;
 use Simplysmart\Polygon\Database\IdSlots;
-use Simplysmart\Polygon\Database\Seeders\MeasureUnitsSeeder;
 
 /**
  * Jednostki miar krajów (słownik lokalizacji): symbol (`code`, np. `kg`, `szt.`), kod UN/ECE Recommendation 20
@@ -41,7 +40,6 @@ return new class extends Migration {
 
         app(History::class)->create(self::TABLE);
         app(IdSlots::class)->reserve(self::TABLE);
-        app(MeasureUnitsSeeder::class)->run();
     }
 
     public function down(): void

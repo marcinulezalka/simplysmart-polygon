@@ -13,21 +13,20 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Console;
 
-use Illuminate\Console\Command;
 use Simplysmart\Polygon\Database\Seeders\LocalizationSeeder;
 
 /**
- * Wczytuje słowniki lokalizacji (waluty, języki, kraje, stawki VAT). Seeder referencyjny, idempotentny:
- * wolno go uruchomić ponownie i na produkcji, wybory administratora zostają.
+ * Wczytuje słowniki lokalizacji (waluty, języki, kraje, stawki VAT, jednostki miar, dni wolne, kursy walut); wybory
+ * administratora zostają.
  */
-final class SeedLocalization extends Command
+final class SeedLocalization extends SeedCommand
 {
     protected $signature = 'polygon:localization:seed';
 
     protected $description = 'Wczytuje słowniki lokalizacji: waluty, języki, kraje i stawki VAT';
 
-    public function handle(): int
+    protected function seeder(): string
     {
-        return $this->call('db:seed', ['--class' => LocalizationSeeder::class, '--force' => true]);
+        return LocalizationSeeder::class;
     }
 }

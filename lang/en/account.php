@@ -59,5 +59,12 @@ return [
         'locked_out' => 'Too many wrong PIN attempts — the account was locked and signed out.',
         'sign_out' => 'Sign out',
     ],
+    'organization' => [
+        'switch' => 'Switch organization',
+        'current' => 'Current organization',
+        'switched' => 'You are now working in :name.',
+        'unavailable' => 'This organization is not available to your account.',
+        'none' => 'Your account does not belong to any organization yet.',
+    ],
 
 ];
