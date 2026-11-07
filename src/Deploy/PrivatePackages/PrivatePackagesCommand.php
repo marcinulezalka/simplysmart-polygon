@@ -20,7 +20,7 @@ use Simplysmart\Polygon\Deploy\Console\Output;
  * Polecenie `vendor/bin/composer-private` (`composer private:install` projektu): instaluje paczki prywatne
  * z git-ignorowanego `private-packages.json` przez `composer.private.json` (albo pokazuje plan przy --dry-run).
  * Bez listy kończy się sukcesem — publiczny klon nic nie instaluje. Z `--deploy` zamiast instalacji buduje manifest
- * wdrożeniowy (DeployLock), jak `composer-private --deploy` w admiro.
+ * wdrożeniowy (DeployLock).
  */
 final readonly class PrivatePackagesCommand
 {

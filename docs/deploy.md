@@ -13,7 +13,7 @@ Polecenia działają na katalogu, z którego je uruchomiono (repozytorium projek
 ## Paczki prywatne (`vendor/bin/composer-private`)
 
 Paczka prywatna (prywatne repozytorium) nie może pojawić się w publicznym repozytorium projektu — ani w `composer.json`
-i `composer.lock`, ani w dokumentacji. Projekt trzyma ją poza gitem, jak w admiro:
+i `composer.lock`, ani w dokumentacji. Projekt trzyma ją poza gitem:
 
 1. `private-packages.json` (git-ignorowany): `{"require": {"<vendor>/<paczka>": "@dev"}}`.
 2. `composer private:install` (`vendor/bin/composer-private`) scala listę z `composer.json` w `composer.private.json`

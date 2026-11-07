@@ -1,6 +1,6 @@
 # Tłumaczenia i formatowanie
 
-Warstwa tłumaczeń jak w admiro: kaskada tekstów bez języka zapasowego, helpery `text_*` i `local_*`, polskie teksty
+Warstwa tłumaczeń polygon: kaskada tekstów bez języka zapasowego, helpery `text_*` i `local_*`, polskie teksty
 frameworka w paczce oraz szablon i import tłumaczeń JSON.
 
 ## Kaskada tekstów (`Contracts\TextTranslator`, `Translation\CascadeTextTranslator`)
@@ -43,7 +43,7 @@ Szablon (`Translation\TranslationTemplate`) ma klucze `przestrzeń::plik.klucz` 
 Import (`Translation\TranslationImport`) przyjmuje tylko klucze szablonu z niepustym tłumaczeniem (ścieżki są więc
 bezpieczne), zachowuje istniejące nadpisania i zapisuje pliki atomowo; najwyżej 5 MB na plik.
 
-## Współistnienie z admiro
+## Współistnienie z inną warstwą tłumaczeń
 
-Helpery są definiowane warunkowo (`function_exists`). W projekcie z obiema paczkami wygrywają helpery tej, którą
-Composer załaduje pierwszą — taki projekt używa jednej warstwy tłumaczeń (admiro albo polygon).
+Helpery są definiowane warunkowo (`function_exists`). W projekcie z drugą paczką definiującą te same helpery wygrywają
+helpery tej, którą Composer załaduje pierwszą — taki projekt używa jednej warstwy tłumaczeń.

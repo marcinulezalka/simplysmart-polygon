@@ -17,7 +17,7 @@ use Simplysmart\Polygon\Contracts\HasLabel;
 use Simplysmart\Polygon\Localization\PackageText;
 
 /**
- * Uprawnienia strefy `polygon`: zestaw strefy administratorów admiro oraz podgląd kont, zarządzanie rolami i słownikami; przypisania do ról są tylko w pliku instalacji
+ * Uprawnienia strefy `polygon`: zestaw strefy administratorów oraz podgląd kont, zarządzanie rolami i słownikami; przypisania do ról są tylko w pliku instalacji
  * (`database/install/polygon.json`), etykiety w `polygon::permissions.polygon.*`.
  */
 enum PolygonPermission: string implements HasLabel

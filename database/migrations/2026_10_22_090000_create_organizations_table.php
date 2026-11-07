@@ -20,7 +20,7 @@ use Simplysmart\Polygon\Database\IdSlots;
 
 /**
  * Organizacje (firmy korzystające z aplikacji, drzewo przez `parent_id`), wspólne dla stref: flaga departamentu,
- * nazwa skrócona, kolor i dane firmy (wszystkie opcjonalne). Schemat jak w admiro po jego migracjach `add_*`;
+ * nazwa skrócona, kolor i dane firmy (wszystkie opcjonalne). Schemat w jednej migracji (bez osobnych migracji `add_*`);
  * typ jednostki (`unit_type_id`) dodaje migracja `create_organization_unit_types_table`. Lista kolumn danych firmy
  * jest zamrożona w COLUMNS (stan z tej migracji) — kolejne kolumny dochodzą własną migracją. NIP nie jest unikalny:
  * oddział może mieć NIP firmy.

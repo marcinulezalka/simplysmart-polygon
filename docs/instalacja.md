@@ -50,7 +50,7 @@ w tekstach paczki strefy, potem `polygon::roles.<rola>`.
 
 ## Strefa `polygon`
 
-Uprawnienia: zestaw strefy administratorów admiro (`zones.view`, `zones.configure`, `accounts.manage`,
+Uprawnienia: zestaw strefy administratorów (`zones.view`, `zones.configure`, `accounts.manage`,
 `organizations.view`, `organizations.manage`, `owners.view`, `owners.assign`, `settings.view`, `settings.manage`,
 `users.manage`, `audit.view`, `heroes.manage`, `system.maintenance`) oraz `accounts.view`, `roles.manage`,
 `dictionaries.view`, `dictionaries.manage` (enum `Zones\PolygonPermission`, etykiety `polygon::permissions.polygon.*`).

@@ -1,7 +1,7 @@
 # Strefy i logowanie
 
 Strefa to wydzielona część aplikacji z własnym segmentem URL, prefiksem nazw tras, guardem, tabelami kont i sesją.
-Mechanizm przeniesiony z rdzenia admiro (bez kontekstu w adresie, wyglądu stref i dziennika audytu).
+Mechanizm stref polygon (bez kontekstu w adresie, wyglądu stref i dziennika audytu).
 **polygon nie ma widoków**: daje logikę, trasy, kontrolery, limity i maile, a ekrany logowania, konta i szablony maili
 dostarcza paczka strefy.
 

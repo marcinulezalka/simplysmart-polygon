@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Permissions;
 
 /**
- * Role, które musi mieć każda strefa w pliku instalacji (jak w admiro), z `hero` jako rolą root.
+ * Role, które musi mieć każda strefa w pliku instalacji, z `hero` jako rolą root.
  */
 enum RequiredRole: string
 {

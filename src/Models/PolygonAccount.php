@@ -16,8 +16,8 @@ namespace Simplysmart\Polygon\Models;
 use Simplysmart\Polygon\Zones\PolygonZone;
 
 /**
- * Konto strefy `polygon` (tabela `polygon_accounts` z migracji `create_polygon_tables`), jak `AdmiroAccount`
- * w admiro: kolumny standardowe, e-mail szyfrowany z `email_hash`, role i uprawnienia spatie w guardzie strefy.
+ * Konto strefy `polygon` (tabela `polygon_accounts` z migracji `create_polygon_tables`):
+ * kolumny standardowe, e-mail szyfrowany z `email_hash`, role i uprawnienia spatie w guardzie strefy.
  * Konta frontendu są w `users` (Models\User).
  */
 final class PolygonAccount extends ZoneAccount

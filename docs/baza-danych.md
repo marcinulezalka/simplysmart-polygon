@@ -5,8 +5,8 @@
 > checksum, scope'y, przejścia stanu `RecordStatusTransitions`, etykiety kolumn), krótkie tłumaczenia `json_i18n` (`HasI18n`), tabele strefy `polygon_*` (`Database\ZoneTables`),
 > stockowe tabele Laravela (`users`, `cache`, `jobs`) z wyrównaniem `users` do standardu, słowniki lokalizacji
 > z seederami (§14), tabele uprawnień spatie/laravel-permission z zespołami — zespół to organizacja (§15) oraz organizacje z typami jednostek
-> i członkostwem kont (§16). Warstwa pochodzi z rdzenia `simplysmart/admiro` (kopia, bez audytu,
-> cookies, dokumentów prawnych i widoków); numeracja sekcji §1–§14 jest ta sama co w admiro.
+> i członkostwem kont (§16). Warstwa nie obejmuje audytu, cookies, dokumentów prawnych
+> ani widoków.
 
 Silniki: MySQL 8 / MariaDB i SQLite (testy, lokalnie). Zasady obowiązują każdą tabelę danych aplikacji.
 
@@ -22,7 +22,7 @@ Silniki: MySQL 8 / MariaDB i SQLite (testy, lokalnie). Zasady obowiązują każd
 - Tabele strefy z logowaniem (konta, kody logowania, sesje, zaufane urządzenia) tworzy jedna migracja strefy przez
   `Database\ZoneTables`, więc schemat jest identyczny w każdej strefie; strefa paczki to `polygon`
   (`create_polygon_tables`). Konta (`<strefa>_accounts`) mają pełny standard tabel danych.
-- **Dwa rodzaje kont:** `<strefa>_accounts` — konta stref (np. `polygon_accounts`, jak `admiro_accounts` w admiro:
+- **Dwa rodzaje kont:** `<strefa>_accounts` — konta stref (np. `polygon_accounts`:
   model strefy na bazie `Models\ZoneAccount`, np. `Models\PolygonAccount`, guard i provider strefy dopisywane do
   config/auth przez mechanizm stref, [docs/strefy.md](strefy.md), e-mail szyfrowany z `email_hash` = HMAC z `APP_KEY` adresu w postaci kanonicznej (`Auth\EmailIndex`,
   `Contracts\BlindIndex`; konto po adresie: `Queries\Accounts\ZoneAccounts::findByEmail()`), bez hasła — PIN
@@ -236,8 +236,8 @@ liczy go `DataModel` przy zapisie.
 - Kursy walut: `ExchangeRatesSeeder` (w `LocalizationSeeder`) dopisuje kursy tabeli A NBP walut CHF, EUR, GBP i USD
   z dni publikacji 2026-10-29 – 2026-11-05 (`source` = `nbp`, numer tabeli) tylko brakującym parom waluta + dzień —
   kursu wpisanego ręcznie nie nadpisuje. Kolejne dni dopisuje się w `ExchangeRatesSeeder::RATES`.
-- Kursy walut i dni wolne mają tabele, modele i odczyty; ich synchronizacja z NBP i Nager.Date (w admiro
-  `ExchangeRateSync`, `HolidaySync`) nie jest jeszcze częścią paczki.
+- Kursy walut i dni wolne mają tabele, modele i odczyty; ich synchronizacja z NBP i Nager.Date
+  nie jest jeszcze częścią paczki.
 - Dane startowe: `php artisan polygon:localization:seed`. Ponowne uruchomienie dopisuje tylko brakujące wpisy, a wybory
   administratora (włączenie, domyślny, usunięte stawki) zostają.
 
@@ -269,8 +269,8 @@ liczy go `DataModel` przy zapisie.
 
 ## 16. Organizacje
 
-Organizacja to firma korzystająca z aplikacji, wspólna dla stref. Schemat jest końcowym stanem organizacji z admiro
-(nazwy migracji te same, bez jego migracji `add_*`); role konta zależą od organizacji (zespoły spatie, §15), a bieżącą
+Organizacja to firma korzystająca z aplikacji, wspólna dla stref. Schemat powstaje w jednej migracji
+(bez osobnych migracji `add_*`); role konta zależą od organizacji (zespoły spatie, §15), a bieżącą
 organizację wybiera kontekst organizacji konta w strefie ([strefy.md](strefy.md), „Kontekst organizacji”); widoki, formularze
 i zarządzanie organizacjami dodaje paczka strefy.
 

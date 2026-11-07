@@ -17,7 +17,7 @@ use Simplysmart\Polygon\Zones\PolygonZone;
 
 /**
  * Zakłada konto strefy `polygon`: `polygon:account:create {email} {name} [--role=*] [--skip-existing]`
- * (odpowiednik `admiro:account:create`, logika w CreateZoneAccountCommand).
+ * (logika w CreateZoneAccountCommand).
  */
 final class CreateAccountCommand extends CreateZoneAccountCommand
 {
