@@ -25,10 +25,11 @@ use Simplysmart\Polygon\Models\OrganizationResource;
  * opcjonalnie jednego rodzaju, po `sort_order` i nazwie. Wyszukiwanie po tokenie i sprawdzenie id działają w tym
  * samym zakresie, więc formularz jednostki nie wskaże zasobu cudzej organizacji.
  */
-final class OrganizationResources
+final readonly class OrganizationResources
 {
-    /** Najgłębsze drzewo organizacji, które jest przeszukiwane (ochrona przed cyklem w danych). */
-    private const int MAX_DEPTH = 32;
+    public function __construct(
+        private OrganizationUnits $units,
+    ) {}
 
     /**
      * @return Collection<int, OrganizationResource>
@@ -54,22 +55,13 @@ final class OrganizationResources
     }
 
     /**
-     * Id organizacji i jej przodków, od niej w górę.
+     * Id organizacji i jej przodków, od niej w górę (OrganizationUnits::lineage()).
      *
      * @return list<int>
      */
     public function lineage(Organization $organization): array
     {
-        $ids = [];
-        $current = $organization->getKey();
-
-        while (is_int($current) && ! in_array($current, $ids, true) && count($ids) < self::MAX_DEPTH) {
-            $ids[] = $current;
-            $parent = Organization::query()->whereKey($current)->value(ColumnNames::PARENT_ID);
-            $current = is_numeric($parent) ? (int) $parent : null;
-        }
-
-        return $ids;
+        return $this->units->lineage($organization);
     }
 
     /**

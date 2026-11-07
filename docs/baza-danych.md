@@ -5,7 +5,7 @@
 > checksum, scope'y, przejścia stanu `RecordStatusTransitions`, etykiety kolumn), krótkie tłumaczenia `json_i18n` (`HasI18n`), tabele strefy `polygon_*` (`Database\ZoneTables`),
 > stockowe tabele Laravela (`users`, `cache`, `jobs`) z wyrównaniem `users` do standardu, słowniki lokalizacji
 > z seederami (§14), tabele uprawnień spatie/laravel-permission z zespołami — zespół to organizacja (§15) oraz organizacje z typami jednostek
-> i członkostwem kont (§16), zasoby organizacji (§17) oraz kalendarz zasobów (§18). Warstwa nie obejmuje audytu, cookies, dokumentów prawnych
+> i członkostwem kont (§16), zasoby organizacji (§17), kalendarz zasobów (§18) oraz kontrahenci (§19). Warstwa nie obejmuje audytu, cookies, dokumentów prawnych
 > ani widoków.
 
 Silniki: MySQL 8 / MariaDB i SQLite (testy, lokalnie). Zasady obowiązują każdą tabelę danych aplikacji.
@@ -358,4 +358,24 @@ przed zapisem grafiku.
 - **Jednostki** (`Queries\Organizations\OrganizationUnits`): organizacja i jej aktywne jednostki podrzędne bez hero —
   zakres pracy konta w strefie.
 - Grafik startowy: pliki instalacji, `organizations.<klucz>.schedule` ([instalacja.md](instalacja.md)).
+
+## 19. Kontrahenci
+
+Kontrahent to firma, z którą organizacja pracuje (np. pracodawca kierujący pracowników na badania). Należy do jednej
+organizacji i jest dostępny także w jej jednostkach podrzędnych. Paczki stref odwołują się do niego kluczem
+`contractor_id` (`Contractor::FOREIGN_KEY`), np. stanowiska i zatrudnienia pracowników.
+
+| Tabela | Model | Kolumny domenowe |
+| --- | --- | --- |
+| `contractors` | `Models\Contractor` | `organization_id`, `short_name`, `nip` (10 cyfr, unikalny w organizacji), `regon`, `krs`, `street`, `postal_code`, `city`, `country_code`, `email`, `phone`, `notes` |
+| `contractor_contacts` | `Models\ContractorContact` | `contractor_id`, `name` (imię i nazwisko), `role`, `phone`, `email`, `is_primary` |
+| `contractor_contracts` | `Models\ContractorContract` | `contractor_id`, `name` (numer), `signed_on`, `valid_from`, `valid_to`, `notes`; `status()` — `Enums\ContractStatus` (przyszła, obowiązuje, wygasła) |
+
+- **Zapis** (`Contractors\SaveContractor`, `ContractorData`): NIP i REGON normalizowane do cyfr i sprawdzane, NIP
+  unikalny w organizacji (także wśród usuniętych); odmowa — `Contractors\ContractorRejected` z polem formularza.
+  `SaveContact` — jeden kontakt główny na kontrahenta; `SaveContract` — umowa nie kończy się przed początkiem.
+- **Odczyt** (`Queries\Contractors\ContractorSearch`): kontrahenci organizacji i jej przodków po nazwie, wyszukiwanie po
+  początku NIP-u (co najmniej 3 cyfry) albo fragmencie nazwy; `findByToken()`, `includes()` w tym samym zakresie.
+- **Identyfikatory** (`Identifiers\Nip`, `Regon`, `Pesel` — z datą urodzenia i płcią) i reguły walidacji
+  `Rules\Nip`, `Rules\Regon`, `Rules\Pesel` (komunikaty `identifiers.*`).
 

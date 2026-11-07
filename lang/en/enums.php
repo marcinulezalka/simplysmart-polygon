@@ -51,6 +51,11 @@ return [
         'cancelled' => 'cancelled',
         'no_show' => 'no-show',
     ],
+    'contract_status' => [
+        'upcoming' => 'upcoming',
+        'active' => 'in force',
+        'expired' => 'expired',
+    ],
     'continent' => [
         'europe' => 'Europe',
         'asia' => 'Asia',

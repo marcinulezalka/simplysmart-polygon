@@ -18,13 +18,33 @@ use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Models\Organization;
 
 /**
- * Organizacja i jej aktywne jednostki podrzędne na każdym poziomie, bez organizacji hero: zakres pracy konta w strefie
+ * Organizacja i jej aktywne jednostki podrzędne na każdym poziomie, bez organizacji hero (of()), oraz jej przodkowie
+ * (lineage()): zakres pracy konta w strefie
  * (np. w kontekście siedziby — jej poradnie, w kontekście poradni — tylko ona). Ona pierwsza, potem pozostałe po nazwie.
  */
 final readonly class OrganizationUnits
 {
     /** Najgłębsze drzewo, które jest przeszukiwane (ochrona przed cyklem w danych). */
     private const int MAX_DEPTH = 32;
+
+    /**
+     * Id organizacji i jej przodków, od niej w górę (zasoby i kontrahenci przodków są dostępni w jednostce).
+     *
+     * @return list<int>
+     */
+    public function lineage(Organization $organization): array
+    {
+        $ids = [];
+        $current = $organization->id;
+
+        while (is_int($current) && ! in_array($current, $ids, true) && count($ids) < self::MAX_DEPTH) {
+            $ids[] = $current;
+            $parent = Organization::query()->whereKey($current)->value(ColumnNames::PARENT_ID);
+            $current = is_numeric($parent) ? (int) $parent : null;
+        }
+
+        return $ids;
+    }
 
     /**
      * @return Collection<int, Organization>

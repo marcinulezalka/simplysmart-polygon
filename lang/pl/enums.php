@@ -51,6 +51,11 @@ return [
         'cancelled' => 'odwołana',
         'no_show' => 'nieobecność',
     ],
+    'contract_status' => [
+        'upcoming' => 'przyszła',
+        'active' => 'obowiązuje',
+        'expired' => 'wygasła',
+    ],
     'continent' => [
         'europe' => 'Europa',
         'asia' => 'Azja',
