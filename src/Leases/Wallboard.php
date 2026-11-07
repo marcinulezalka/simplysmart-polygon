@@ -26,7 +26,7 @@ use Simplysmart\Polygon\Models\ResourceSchedule;
 /**
  * Publiczna tablica najmu (poziom Wallboard): godziny przyjęć kooperacji na wynajętym zasobie w dniu — bloki grafiku
  * obowiązujące w tym dniu, w oknach umowy, z wykonawcą i liczbą zajętych terminów. Tablica nie zawiera danych osób
- * zapisanych ani rodzaju rezerwacji; dostęp po tokenie umowy (Queries\Leases\ResourceLeases::byWallboardToken()).
+ * zapisanych ani rodzaju rezerwacji; grafik wypełniający wolny czas (najem na żądanie) pokazuje tylko zapisane wizyty; dostęp po tokenie umowy (Queries\Leases\ResourceLeases::byWallboardToken()).
  */
 final readonly class Wallboard
 {
@@ -60,6 +60,17 @@ final readonly class Wallboard
             $start = $day->setTimeFromTimeString($schedule->starts_at);
             $end = $day->setTimeFromTimeString($schedule->ends_at);
             $performer = $schedule->performer;
+
+            if ($schedule->fills_gaps) {
+                foreach ($bookings as $booking) {
+                    if ($booking->performer_type === $schedule->performer_type && $booking->performer_id === $schedule->performer_id && $booking->starts_at->greaterThanOrEqualTo($start) && $booking->starts_at->lessThan($end)) {
+                        $entries[] = new WallboardEntry($booking->starts_at, $booking->ends_at, $performer instanceof SignInAccount ? $performer->displayName() : '', $schedule->resource?->label() ?? '', 1);
+                    }
+                }
+
+                continue;
+            }
+
             $entries[] = new WallboardEntry(
                 $start,
                 $end,

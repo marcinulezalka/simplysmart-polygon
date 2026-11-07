@@ -32,7 +32,8 @@ use Simplysmart\Polygon\Queries\Organizations\OrganizationUnits;
  * właściciela; kooperacja z flagą, aktywna i podrzędna najemcy; umowa kontrahenta właściciela; bez nakładania się okien
  * z innym aktywnym najmem zasobu w pokrywającym się okresie; bez aktywnego grafiku innej jednostki na zasobie w oknach
  * i okresie; przy zmianie umowy — bez grafiku kooperacji poza nowymi oknami, okresem albo cyklem tygodni. Kolidują tylko
- * okna i grafiki o wspólnych tygodniach cyklu (Calendar\WeekCycle).
+ * okna i grafiki o wspólnych tygodniach cyklu (Calendar\WeekCycle). Najem na żądanie (Enums\LeaseMode::OnDemand) nie jest
+ * wyłączny: nie koliduje z innymi najmami ani grafikiem zasobu, a grafik jego kooperacji musi wypełniać wolny czas.
  */
 final readonly class LeaseConflicts
 {
@@ -80,7 +81,7 @@ final readonly class LeaseConflicts
         }
 
         foreach ($this->leases->overlapping($input->resourceId, $input->validFrom, $input->validTo, $ignoreId) as $other) {
-            if ($other->leaseWindows()->overlapsWindows($input->windows) && $other->cycle()->coincides($input->cycle())) {
+            if ($input->mode->isExclusive() && $other->isExclusive() && $other->leaseWindows()->overlapsWindows($input->windows) && $other->cycle()->coincides($input->cycle())) {
                 $conflicts[] = LeaseConflict::Overlapping;
 
                 break;
@@ -89,7 +90,7 @@ final readonly class LeaseConflicts
 
         $schedules = $this->schedules($input);
 
-        if ($schedules->contains(static fn(ResourceSchedule $schedule): bool => $schedule->organization_id !== $input->cooperation->id && $input->windows->overlaps($schedule->weekday, $schedule->from(), $schedule->to()) && $schedule->cycle()->coincides($input->cycle()))) {
+        if ($input->mode->isExclusive() && $schedules->contains(static fn(ResourceSchedule $schedule): bool => $schedule->organization_id !== $input->cooperation->id && ! $schedule->fills_gaps && $input->windows->overlaps($schedule->weekday, $schedule->from(), $schedule->to()) && $schedule->cycle()->coincides($input->cycle()))) {
             $conflicts[] = LeaseConflict::ResourceScheduled;
         }
 
@@ -143,7 +144,7 @@ final readonly class LeaseConflicts
             $periodOutside = $schedule->valid_from->lessThan($input->validFrom)
                 || ($input->validTo !== null && ($schedule->valid_to === null || $schedule->valid_to->greaterThan($input->validTo)));
 
-            return $periodOutside || ! $input->windows->covers($schedule->weekday, $schedule->from(), $schedule->to()) || ! $schedule->cycle()->within($input->cycle());
+            return $periodOutside || ! $input->windows->covers($schedule->weekday, $schedule->from(), $schedule->to()) || ! $schedule->cycle()->within($input->cycle()) || (! $input->mode->isExclusive() && ! $schedule->fills_gaps);
         });
     }
 }

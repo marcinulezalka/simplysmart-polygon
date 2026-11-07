@@ -29,6 +29,8 @@ use Simplysmart\Polygon\Queries\Organizations\OrganizationResources;
  * Najem (Models\ResourceLease): właściciel nie układa grafiku w oknach wynajętych w tym okresie (LeasedOut), a najemca
  * tylko w oknach i okresie swojej umowy (OutsideLease; umowa z końcem wymaga grafiku z końcem nie później). Cykl tygodni
  * (Calendar\WeekCycle): kolidują tylko grafiki i najmy o wspólnych tygodniach, a grafik najemcy mieści się w cyklu umowy.
+ * Grafik wypełniający wolny czas (`fillsGaps`) nie zajmuje zasobu: nie koliduje z grafikiem zasobu ani oknami najmu,
+ * a przy najmie na żądanie (Enums\LeaseMode::OnDemand) grafik najemcy musi być takim grafikiem.
  */
 final readonly class ScheduleConflicts
 {
@@ -65,7 +67,7 @@ final readonly class ScheduleConflicts
             }
         }
 
-        if ($this->coinciding($schedule, $this->overlapping($schedule, $ignoreId)->where(OrganizationResource::FOREIGN_KEY, $schedule->resourceId))) {
+        if (! $schedule->fillsGaps && $this->coinciding($schedule, $this->overlapping($schedule, $ignoreId)->where(OrganizationResource::FOREIGN_KEY, $schedule->resourceId)->where(ResourceSchedule::FILLS_GAPS, false))) {
             $conflicts[] = ScheduleConflict::ResourceTaken;
         }
 
@@ -89,7 +91,7 @@ final readonly class ScheduleConflicts
 
         if ($this->resources->owns($unit, $schedule->resourceId)) {
             foreach ($this->leases->overlapping($schedule->resourceId, $schedule->validFrom, $schedule->validTo) as $lease) {
-                if ($lease->leaseWindows()->overlaps($schedule->weekday, $from, $to) && $lease->cycle()->coincides($schedule->cycle())) {
+                if ($lease->isExclusive() && ! $schedule->fillsGaps && $lease->leaseWindows()->overlaps($schedule->weekday, $from, $to) && $lease->cycle()->coincides($schedule->cycle())) {
                     return ScheduleConflict::LeasedOut;
                 }
             }
@@ -98,7 +100,7 @@ final readonly class ScheduleConflicts
         }
 
         foreach ($this->leases->ofCooperation($unit, $schedule->resourceId) as $lease) {
-            if ($lease->coversPeriod($schedule->validFrom, $schedule->validTo) && $lease->leaseWindows()->covers($schedule->weekday, $from, $to) && $schedule->cycle()->within($lease->cycle())) {
+            if ($lease->coversPeriod($schedule->validFrom, $schedule->validTo) && $lease->leaseWindows()->covers($schedule->weekday, $from, $to) && $schedule->cycle()->within($lease->cycle()) && ($lease->isExclusive() || $schedule->fillsGaps)) {
                 return null;
             }
         }

@@ -4,6 +4,10 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Najem na żądanie (`Enums\LeaseMode::OnDemand`, `resource_leases.mode`): najemca korzysta z wolnego czasu zasobu w oknach umowy bez wyłączności; grafik wypełniający wolny czas (`resource_schedules.fills_gaps`, `ScheduleInput::$fillsGaps`) nie koliduje z grafikiem zasobu, a wolne terminy omijają inny grafik, okna najmów na wyłączność i rezerwacje; `ResourceLeases::bookingCounts()` — wizyty umowy w okresie do rozliczenia; tablica pokazuje przy nim tylko zapisane wizyty. W plikach instalacji `mode` umowy i `fills_gaps` grafiku.
+
 ## [0.8.0] - 2026-11-07
 
 ### Added

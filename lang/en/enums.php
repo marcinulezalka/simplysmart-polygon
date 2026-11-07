@@ -51,6 +51,10 @@ return [
         'cancelled' => 'cancelled',
         'no_show' => 'no-show',
     ],
+    'lease_mode' => [
+        'windows' => 'exclusive windows',
+        'on_demand' => 'on demand (free slots)',
+    ],
     'lease_access' => [
         'book' => 'booking',
         'view' => 'schedule view',

@@ -17,6 +17,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Simplysmart\Polygon\Calendar\WeekCycle;
 use Simplysmart\Polygon\Enums\LeaseAccess;
+use Simplysmart\Polygon\Enums\LeaseMode;
 use Simplysmart\Polygon\Leases\LeaseWindows;
 use Simplysmart\Polygon\Models\Relations\BelongsToOrganization;
 
@@ -26,7 +27,8 @@ use Simplysmart\Polygon\Models\Relations\BelongsToOrganization;
  * (`cooperation_organization_id`, Organization::IS_COOPERATION), w której jest grafik najemcy na tym zasobie. `name` —
  * numer umowy; `contractor_contract_id` — opcjonalna umowa kontrahenta po stronie właściciela; okres `valid_from`–
  * `valid_to` (bez końca: null); `windows` — okna godzinowe (Leases\LeaseWindows, bez okien: cały zasób) co
- * `week_interval` tygodni od tygodnia `valid_from` (Calendar\WeekCycle); `access` —
+ * `week_interval` tygodni od tygodnia `valid_from` (Calendar\WeekCycle); `mode` — okna na wyłączność albo najem na żądanie
+ * w wolnym czasie (Enums\LeaseMode); `access` —
  * poziomy udostępnienia kalendarza najemcy właścicielowi (Enums\LeaseAccess); `wallboard_token` — token publicznej
  * tablicy. Zapisywany tylko przez Leases\SaveLease, TerminateLease i instalator.
  *
@@ -39,6 +41,7 @@ use Simplysmart\Polygon\Models\Relations\BelongsToOrganization;
  * @property CarbonImmutable|null $valid_to
  * @property array<array-key, mixed>|null $windows
  * @property int $week_interval
+ * @property LeaseMode $mode
  * @property array<array-key, mixed>|null $access
  * @property string|null $wallboard_token
  * @property-read Organization|null $organization
@@ -67,6 +70,8 @@ final class ResourceLease extends DataModel
 
     public const string WEEK_INTERVAL = 'week_interval';
 
+    public const string MODE = 'mode';
+
     public const string ACCESS = 'access';
 
     public const string WALLBOARD_TOKEN = 'wallboard_token';
@@ -78,7 +83,7 @@ final class ResourceLease extends DataModel
     /**
      * @var array<string, mixed>
      */
-    protected $attributes = ['is_active' => true, self::WEEK_INTERVAL => 1];
+    protected $attributes = ['is_active' => true, self::WEEK_INTERVAL => 1, self::MODE => 'windows'];
 
     /**
      * @return BelongsTo<OrganizationResource, $this>
@@ -115,6 +120,11 @@ final class ResourceLease extends DataModel
     public function leaseWindows(): LeaseWindows
     {
         return LeaseWindows::fromStored($this->windows);
+    }
+
+    public function isExclusive(): bool
+    {
+        return $this->mode->isExclusive();
     }
 
     /**
@@ -206,6 +216,7 @@ final class ResourceLease extends DataModel
             self::VALID_TO => 'immutable_date',
             self::WINDOWS => 'array',
             self::WEEK_INTERVAL => 'integer',
+            self::MODE => LeaseMode::class,
             self::ACCESS => 'array',
             self::WALLBOARD_TOKEN => 'string',
         ];

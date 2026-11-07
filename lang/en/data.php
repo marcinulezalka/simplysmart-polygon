@@ -108,6 +108,8 @@ return [
         'starts_at' => 'From',
         'ends_at' => 'To',
         'slot_minutes' => 'Slot length (min)',
+        'week_interval' => 'Every N weeks',
+        'fills_gaps' => 'Fills free time',
         'valid_from' => 'Valid from',
         'valid_to' => 'Valid until',
         'name' => 'Range',
@@ -169,6 +171,8 @@ return [
         'valid_to' => 'Valid until',
         'windows' => 'Time windows',
         'access' => 'Sharing',
+        'week_interval' => 'Every N weeks',
+        'mode' => 'Lease mode',
         'wallboard_token' => 'Board token',
     ],
     'organization' => [

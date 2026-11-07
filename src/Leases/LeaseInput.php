@@ -16,12 +16,13 @@ namespace Simplysmart\Polygon\Leases;
 use Carbon\CarbonImmutable;
 use Simplysmart\Polygon\Calendar\WeekCycle;
 use Simplysmart\Polygon\Enums\LeaseAccess;
+use Simplysmart\Polygon\Enums\LeaseMode;
 use Simplysmart\Polygon\Models\Organization;
 
 /**
  * Umowa najmu przed zapisem (SaveLease): organizacja właściciela (kontekst pracy — zasób musi należeć do niej albo jej
  * przodka), zasób, organizacja najemcy z jej podorganizacją kooperacji, numer umowy, opcjonalna umowa kontrahenta
- * właściciela, okres (bez końca: null), okna godzinowe, poziomy udostępnienia i cykl tygodni okien (1 — co tydzień).
+ * właściciela, okres (bez końca: null), okna godzinowe, poziomy udostępnienia, cykl tygodni okien (1 — co tydzień) i tryb (okna na wyłączność albo na żądanie).
  */
 final readonly class LeaseInput
 {
@@ -40,6 +41,7 @@ final readonly class LeaseInput
         public array $access = [],
         public ?int $contractId = null,
         public int $weekInterval = 1,
+        public LeaseMode $mode = LeaseMode::Windows,
     ) {}
 
     /**

@@ -340,7 +340,7 @@ przed zapisem grafiku.
 
 | Tabela | Model | Kolumny domenowe |
 | --- | --- | --- |
-| `resource_schedules` | `Models\ResourceSchedule` | `organization_id` (jednostka), `resource_id`, `performer_type`/`performer_id` (morph, opcjonalny), `weekday` (ISO 1–7), `starts_at`, `ends_at` (time), `slot_minutes` (null — bez slotów), `week_interval` (co ile tygodni od tygodnia `valid_from`, 1 — co tydzień), `valid_from`, `valid_to` (null — bez końca) |
+| `resource_schedules` | `Models\ResourceSchedule` | `organization_id` (jednostka), `resource_id`, `performer_type`/`performer_id` (morph, opcjonalny), `weekday` (ISO 1–7), `starts_at`, `ends_at` (time), `slot_minutes` (null — bez slotów), `week_interval` (co ile tygodni od tygodnia `valid_from`, 1 — co tydzień), `fills_gaps` (wypełnia wolny czas zasobu, bez wyłączności), `valid_from`, `valid_to` (null — bez końca) |
 | `resource_bookings` | `Models\ResourceBooking` | `organization_id`, `resource_id`, wykonawca (morph), `kind` (rodzaj z paczki strefy, np. `<strefa>.visit`), `starts_at`, `ends_at`, `status` (`Enums\BookingStatus`: booked, confirmed, cancelled, no_show — stan dziedzinowy zamiast RecordStatus), `booked_by` i `confirmed_by` (morph konta) |
 
 - **Grafik** (`Calendar\SaveSchedule`, `ScheduleInput`, `ScheduleConflicts`): w transakcji z blokadą wiersza zasobu
@@ -391,7 +391,7 @@ udostępnienia umowy.
 
 | Tabela | Model | Kolumny domenowe |
 | --- | --- | --- |
-| `resource_leases` | `Models\ResourceLease` | `organization_id` (właściciel zasobu), `resource_id`, `lessee_organization_id`, `cooperation_organization_id`, `contractor_contract_id` (opcjonalna umowa kontrahenta właściciela, §19), `name` (numer umowy), `valid_from`, `valid_to` (null — bezterminowo), `windows` (JSON `[dzień ISO, "HH:MM", "HH:MM"]`, bez okien — cały zasób), `week_interval` (okna co ile tygodni od tygodnia `valid_from`), `access` (JSON, `Enums\LeaseAccess`), `wallboard_token` (losowy token publicznej tablicy) |
+| `resource_leases` | `Models\ResourceLease` | `organization_id` (właściciel zasobu), `resource_id`, `lessee_organization_id`, `cooperation_organization_id`, `contractor_contract_id` (opcjonalna umowa kontrahenta właściciela, §19), `name` (numer umowy), `valid_from`, `valid_to` (null — bezterminowo), `windows` (JSON `[dzień ISO, "HH:MM", "HH:MM"]`, bez okien — cały zasób), `week_interval` (okna co ile tygodni od tygodnia `valid_from`), `mode` (`Enums\LeaseMode`: `windows` — na wyłączność, `on_demand` — na żądanie), `access` (JSON, `Enums\LeaseAccess`), `wallboard_token` (losowy token publicznej tablicy) |
 
 - **Okna** (`Leases\LeaseWindows`): kilka okien w jednym dniu (np. 08:00–12:00 i 18:00–22:00); `covers()` — blok mieści
   się w jednym oknie, `overlaps()`, `isValid()` (bez nakładania się w dniu), `label()`.
@@ -411,6 +411,11 @@ udostępnienia umowy.
 - **Odczyt** (`Queries\Leases\ResourceLeases`): `ofOwner()`, `findOfOwner()`, `overlapping()`, `ofCooperation()`,
   `channels(owner, access)` — najmy zasobów właściciela (z przodkami) obowiązujące dziś albo później, dające poziom
   udostępnienia; `byWallboardToken()` — obowiązująca dziś umowa z poziomem `wallboard`.
+- **Najem na żądanie** (`LeaseMode::OnDemand`): okna wyznaczają godziny, w których najemca może korzystać z zasobu, bez
+  wyłączności — nie blokują grafiku właściciela ani innych najmów. Grafik kooperacji musi wypełniać wolny czas
+  (`fills_gaps`): nie zajmuje zasobu, a `FreeSlots` daje terminy tylko poza innym grafikiem zasobu, oknami najmów na
+  wyłączność innych jednostek i rezerwacjami. `ResourceLeases::bookingCounts()` liczy wizyty umowy w okresie (po stanie)
+  do rozliczenia.
 - **Tablica** (`Leases\Wallboard`, `WallboardEntry`): godziny przyjęć kooperacji na zasobie w dniu (blok grafiku
   w oknach umowy, wykonawca, zasób, liczba zajętych terminów) — bez danych osób zapisanych.
 - Umowy startowe: pliki instalacji, `organizations.<właściciel>.leases` i `is_cooperation` ([instalacja.md](instalacja.md)).

@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Install;
 
 use Simplysmart\Polygon\Enums\LeaseAccess;
+use Simplysmart\Polygon\Enums\LeaseMode;
 
 /**
  * Umowa najmu zasobu z pliku instalacji (`organizations.<właściciel>.leases`) po walidacji: klucz zasobu właściciela,
@@ -36,5 +37,6 @@ final readonly class InstallLease
         public array $windows,
         public array $access,
         public int $weekInterval = 1,
+        public LeaseMode $mode = LeaseMode::Windows,
     ) {}
 }

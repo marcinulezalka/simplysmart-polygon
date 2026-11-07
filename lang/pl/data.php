@@ -108,6 +108,8 @@ return [
         'starts_at' => 'Od',
         'ends_at' => 'Do',
         'slot_minutes' => 'Długość terminu (min)',
+        'week_interval' => 'Co ile tygodni',
+        'fills_gaps' => 'Wypełnia wolny czas',
         'valid_from' => 'Obowiązuje od',
         'valid_to' => 'Obowiązuje do',
         'name' => 'Przedział',
@@ -169,6 +171,8 @@ return [
         'valid_to' => 'Obowiązuje do',
         'windows' => 'Okna godzinowe',
         'access' => 'Udostępnienie',
+        'week_interval' => 'Co ile tygodni',
+        'mode' => 'Tryb najmu',
         'wallboard_token' => 'Token tablicy',
     ],
     'organization' => [

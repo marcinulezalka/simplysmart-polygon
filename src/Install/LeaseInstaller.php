@@ -82,6 +82,7 @@ final readonly class LeaseInstaller
                 $entry->access,
                 null,
                 $entry->weekInterval,
+                $entry->mode,
             ));
         } catch (LeaseRejected $rejected) {
             throw InvalidInstallFile::merged("{$where} [{$description}] is rejected: " . $rejected->getMessage());

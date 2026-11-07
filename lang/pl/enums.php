@@ -51,6 +51,10 @@ return [
         'cancelled' => 'odwołana',
         'no_show' => 'nieobecność',
     ],
+    'lease_mode' => [
+        'windows' => 'okna na wyłączność',
+        'on_demand' => 'na żądanie (wolne terminy)',
+    ],
     'lease_access' => [
         'book' => 'zapis wizyt',
         'view' => 'podgląd grafiku',

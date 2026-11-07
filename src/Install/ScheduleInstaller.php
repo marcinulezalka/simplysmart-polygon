@@ -84,6 +84,7 @@ final readonly class ScheduleInstaller
                 $entry->validFrom === null ? CarbonImmutable::today() : CarbonImmutable::parse($entry->validFrom),
                 $entry->validTo === null ? null : CarbonImmutable::parse($entry->validTo),
                 $entry->weekInterval,
+                $entry->fillsGaps,
             ));
         } catch (ScheduleRejected $rejected) {
             throw InvalidInstallFile::merged("{$where} [{$description}] is rejected: " . $rejected->getMessage());

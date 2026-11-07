@@ -16,6 +16,7 @@ namespace Simplysmart\Polygon\Install;
 use Simplysmart\Polygon\Calendar\WeekCycle;
 use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Enums\LeaseAccess;
+use Simplysmart\Polygon\Enums\LeaseMode;
 use Simplysmart\Polygon\Enums\ResourceKind;
 use Simplysmart\Polygon\Models\Organization;
 use Simplysmart\Polygon\Models\OrganizationResource;
@@ -48,13 +49,13 @@ final readonly class InstallOrganizationParser
     private const string ATTRIBUTES = 'attributes';
 
     /** Pola umowy najmu. */
-    private const array LEASE_FIELDS = ['resource', 'lessee', 'cooperation', 'number', 'from', 'to', 'windows', 'access', self::EVERY_WEEKS];
+    private const array LEASE_FIELDS = ['resource', 'lessee', 'cooperation', 'number', 'from', 'to', 'windows', 'access', self::EVERY_WEEKS, 'mode'];
 
     /** Pola okna umowy najmu. */
     private const array WINDOW_FIELDS = ['days', 'from', 'to'];
 
     /** Pola wpisu grafiku organizacji. */
-    private const array SCHEDULE_FIELDS = ['resource', 'performer', 'weekday', 'from', 'to', 'slot', 'valid_from', 'valid_to', self::EVERY_WEEKS];
+    private const array SCHEDULE_FIELDS = ['resource', 'performer', 'weekday', 'from', 'to', 'slot', 'valid_from', 'valid_to', self::EVERY_WEEKS, 'fills_gaps'];
 
     /** Co ile tygodni (grafik i umowa najmu), domyślnie 1. */
     private const string EVERY_WEEKS = 'every_weeks';
@@ -275,6 +276,7 @@ final readonly class InstallOrganizationParser
                 $this->values->reference($path, $entry, 'valid_from', $at, self::DATE_PATTERN),
                 $this->values->reference($path, $entry, 'valid_to', $at, self::DATE_PATTERN),
                 $this->everyWeeks($path, $entry, $at),
+                $this->values->flag($path, $entry, 'fills_gaps', $at),
             );
         }
 
@@ -330,10 +332,25 @@ final readonly class InstallOrganizationParser
                 $this->windows($path, $entry['windows'] ?? [], "{$at}.windows"),
                 array_map(static fn(string $value): LeaseAccess => LeaseAccess::from($value), $this->values->names($path, $entry['access'] ?? [], "{$at}.access", InstallValues::ROLE_PATTERN, LeaseAccess::values())),
                 $this->everyWeeks($path, $entry, $at),
+                $this->mode($path, $entry, $at),
             );
         }
 
         return $result;
+    }
+
+    /**
+     * Tryb umowy (`mode`: Enums\LeaseMode, domyślnie `windows`).
+     *
+     * @param array<array-key, mixed> $entry
+     *
+     * @throws InvalidInstallFile
+     */
+    private function mode(string $path, array $entry, string $where): LeaseMode
+    {
+        $value = $entry['mode'] ?? LeaseMode::Windows->value;
+
+        return (is_string($value) ? LeaseMode::tryFrom($value) : null) ?? throw InvalidInstallFile::in($path, "{$where}.mode must be one of: " . implode(', ', array_column(LeaseMode::cases(), 'value')) . '.');
     }
 
     /**

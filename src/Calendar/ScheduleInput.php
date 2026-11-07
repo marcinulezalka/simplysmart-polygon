@@ -19,7 +19,8 @@ use Simplysmart\Polygon\Models\ZoneAccount;
 /**
  * Grafik zasobu przed zapisem: jednostka, zasób, opcjonalny wykonawca (konto strefy), dzień tygodnia ISO, przedział
  * „HH:MM”, długość slotu w minutach (null — bez podziału na sloty), okres ważności (bez końca: null) i cykl tygodni
- * (co ile tygodni od tygodnia początku ważności; 1 — co tydzień).
+ * (co ile tygodni od tygodnia początku ważności; 1 — co tydzień) oraz czy wypełnia wolny czas zasobu (najem na żądanie,
+ * bez wyłączności).
  */
 final readonly class ScheduleInput
 {
@@ -34,6 +35,7 @@ final readonly class ScheduleInput
         public CarbonImmutable $validFrom,
         public ?CarbonImmutable $validTo = null,
         public int $weekInterval = 1,
+        public bool $fillsGaps = false,
     ) {}
 
     /**

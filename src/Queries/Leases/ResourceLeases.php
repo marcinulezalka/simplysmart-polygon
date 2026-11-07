@@ -20,6 +20,7 @@ use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Enums\LeaseAccess;
 use Simplysmart\Polygon\Models\Organization;
 use Simplysmart\Polygon\Models\OrganizationResource;
+use Simplysmart\Polygon\Models\ResourceBooking;
 use Simplysmart\Polygon\Models\ResourceLease;
 use Simplysmart\Polygon\Queries\Organizations\OrganizationUnits;
 
@@ -124,6 +125,27 @@ final readonly class ResourceLeases
         $query->orderBy(ResourceLease::VALID_FROM);
 
         return $query->get()->filter(static fn(ResourceLease $lease): bool => $lease->grants($access))->values();
+    }
+
+    /**
+     * Wizyty kooperacji na wynajętym zasobie w okresie $from–$to (włącznie), po stanie — do rozliczenia najmu.
+     *
+     * @return array<string, int> Wartość Enums\BookingStatus => liczba rezerwacji.
+     */
+    public function bookingCounts(ResourceLease $lease, CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        $query = ResourceBooking::query();
+        $query->where(Organization::FOREIGN_KEY, $lease->cooperation_organization_id);
+        $query->where(OrganizationResource::FOREIGN_KEY, $lease->resource_id);
+        $query->where(ResourceBooking::STARTS_AT, '>=', $from->startOfDay());
+        $query->where(ResourceBooking::STARTS_AT, '<', $to->startOfDay()->addDay());
+        $counts = [];
+
+        foreach ($query->get([ColumnNames::STATUS]) as $booking) {
+            $counts[$booking->status->value] = ($counts[$booking->status->value] ?? 0) + 1;
+        }
+
+        return $counts;
     }
 
     /**

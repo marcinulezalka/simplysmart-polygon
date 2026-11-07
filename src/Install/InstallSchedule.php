@@ -31,5 +31,6 @@ final readonly class InstallSchedule
         public ?string $validFrom = null,
         public ?string $validTo = null,
         public int $weekInterval = 1,
+        public bool $fillsGaps = false,
     ) {}
 }

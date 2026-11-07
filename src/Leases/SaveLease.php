@@ -67,6 +67,7 @@ final readonly class SaveLease
                 ResourceLease::VALID_TO => $input->validTo?->toDateString(),
                 ResourceLease::WINDOWS => $input->windows->toArray(),
                 ResourceLease::WEEK_INTERVAL => $input->weekInterval,
+                ResourceLease::MODE => $input->mode,
                 ResourceLease::ACCESS => $input->accessValues(),
             ]);
 

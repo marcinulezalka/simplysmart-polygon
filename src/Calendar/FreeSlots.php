@@ -32,7 +32,9 @@ use Simplysmart\Polygon\Queries\Organizations\OrganizationResources;
  * slotów nie daje terminów), bez terminów zajętych przez rezerwacje tego wykonawcy albo tego zasobu (w dowolnej
  * jednostce), bez minionych i bez dni wolnych kraju aplikacji (Queries\Dictionaries\HolidaysIn). Grafik na zasobie
  * wynajętym jednostce (kooperacja najemcy) daje terminy tylko w dniu, w którym umowa najmu obowiązuje i obejmuje jego
- * godziny — po końcu albo wypowiedzeniu umowy terminów nie ma, więc BookSlot ich też nie zapisze.
+ * godziny — po końcu albo wypowiedzeniu umowy terminów nie ma, więc BookSlot ich też nie zapisze. Grafik wypełniający
+ * wolny czas (`fills_gaps`, najem na żądanie) daje terminy tylko poza innym grafikiem zasobu i oknami najmów na
+ * wyłączność innych jednostek.
  */
 final readonly class FreeSlots
 {
@@ -64,8 +66,10 @@ final readonly class FreeSlots
         $slots = [];
 
         foreach ($schedules as $schedule) {
+            $blocked = $schedule->fills_gaps ? $this->blocked($unit, $schedule, $day) : [];
+
             foreach ($this->grid($schedule, $day) as [$start, $end]) {
-                if ($start->lessThanOrEqualTo($now) || $this->overlaps($taken, $performer, $schedule->resource_id, $start, $end)) {
+                if ($start->lessThanOrEqualTo($now) || $this->overlaps($taken, $performer, $schedule->resource_id, $start, $end) || self::within($blocked, $start, $end)) {
                     continue;
                 }
 
@@ -160,6 +164,64 @@ final readonly class FreeSlots
         $query->where(ColumnNames::IS_ACTIVE, true);
 
         return $query->get()->filter(fn(ResourceSchedule $schedule): bool => $schedule->appliesOn($day) && $this->leaseAllows($unit, $schedule, $day))->values();
+    }
+
+    /**
+     * Czas zasobu zajęty w dniu dla grafiku wypełniającego wolny czas: inny grafik zasobu (bez wypełniających) i okna
+     * najmów na wyłączność innych jednostek obowiązujące w tym dniu.
+     *
+     * @return list<array{0: CarbonImmutable, 1: CarbonImmutable}>
+     */
+    private function blocked(Organization $unit, ResourceSchedule $schedule, CarbonImmutable $day): array
+    {
+        $blocked = [];
+        $query = ResourceSchedule::query();
+        $query->where(ColumnNames::IS_ACTIVE, true);
+        $query->where(OrganizationResource::FOREIGN_KEY, $schedule->resource_id);
+        $query->where(ResourceSchedule::WEEKDAY, $day->dayOfWeekIso);
+        $query->where(ResourceSchedule::FILLS_GAPS, false);
+
+        foreach ($query->get() as $other) {
+            if ($other->appliesOn($day)) {
+                $blocked[] = [$day->setTimeFromTimeString($other->starts_at), $day->setTimeFromTimeString($other->ends_at)];
+            }
+        }
+
+        $lineage = $this->resources->lineage($unit);
+
+        foreach ($this->leases->overlapping($schedule->resource_id, $day, $day) as $lease) {
+            if (! $lease->isExclusive() || in_array($lease->cooperation_organization_id, $lineage, true) || ! $lease->occursOn($day)) {
+                continue;
+            }
+
+            $windows = $lease->leaseWindows();
+
+            if ($windows->isWhole()) {
+                $blocked[] = [$day, $day->addDay()];
+            }
+
+            foreach ($windows->windows as [$weekday, $from, $to]) {
+                if ($weekday === $day->dayOfWeekIso) {
+                    $blocked[] = [$day->setTimeFromTimeString($from), $day->setTimeFromTimeString($to)];
+                }
+            }
+        }
+
+        return $blocked;
+    }
+
+    /**
+     * @param list<array{0: CarbonImmutable, 1: CarbonImmutable}> $intervals
+     */
+    private static function within(array $intervals, CarbonImmutable $start, CarbonImmutable $end): bool
+    {
+        foreach ($intervals as [$from, $to]) {
+            if ($from->lessThan($end) && $to->greaterThan($start)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
