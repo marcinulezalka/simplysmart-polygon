@@ -15,6 +15,7 @@ namespace Simplysmart\Polygon\Leases;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Simplysmart\Polygon\Calendar\WeekCycle;
 use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Models\Contractor;
 use Simplysmart\Polygon\Models\ContractorContract;
@@ -30,7 +31,8 @@ use Simplysmart\Polygon\Queries\Organizations\OrganizationUnits;
  * Kolizje umowy najmu przed zapisem (SaveLease): poprawny okres, okna i numer; zasób właściciela; najemca poza drzewem
  * właściciela; kooperacja z flagą, aktywna i podrzędna najemcy; umowa kontrahenta właściciela; bez nakładania się okien
  * z innym aktywnym najmem zasobu w pokrywającym się okresie; bez aktywnego grafiku innej jednostki na zasobie w oknach
- * i okresie; przy zmianie umowy — bez grafiku kooperacji poza nowymi oknami albo okresem.
+ * i okresie; przy zmianie umowy — bez grafiku kooperacji poza nowymi oknami, okresem albo cyklem tygodni. Kolidują tylko
+ * okna i grafiki o wspólnych tygodniach cyklu (Calendar\WeekCycle).
  */
 final readonly class LeaseConflicts
 {
@@ -48,7 +50,7 @@ final readonly class LeaseConflicts
         $conflicts = [];
         $ignoreId = $lease !== null && $lease->exists ? $lease->id : null;
 
-        if (trim($input->number) === '' || ! $input->windows->isValid() || ($input->validTo !== null && $input->validTo->lessThan($input->validFrom))) {
+        if (trim($input->number) === '' || ! $input->windows->isValid() || $input->weekInterval < 1 || $input->weekInterval > WeekCycle::MAX_INTERVAL || ($input->validTo !== null && $input->validTo->lessThan($input->validFrom))) {
             $conflicts[] = LeaseConflict::InvalidRange;
         }
 
@@ -78,7 +80,7 @@ final readonly class LeaseConflicts
         }
 
         foreach ($this->leases->overlapping($input->resourceId, $input->validFrom, $input->validTo, $ignoreId) as $other) {
-            if ($other->leaseWindows()->overlapsWindows($input->windows)) {
+            if ($other->leaseWindows()->overlapsWindows($input->windows) && $other->cycle()->coincides($input->cycle())) {
                 $conflicts[] = LeaseConflict::Overlapping;
 
                 break;
@@ -87,7 +89,7 @@ final readonly class LeaseConflicts
 
         $schedules = $this->schedules($input);
 
-        if ($schedules->contains(static fn(ResourceSchedule $schedule): bool => $schedule->organization_id !== $input->cooperation->id && $input->windows->overlaps($schedule->weekday, $schedule->from(), $schedule->to()))) {
+        if ($schedules->contains(static fn(ResourceSchedule $schedule): bool => $schedule->organization_id !== $input->cooperation->id && $input->windows->overlaps($schedule->weekday, $schedule->from(), $schedule->to()) && $schedule->cycle()->coincides($input->cycle()))) {
             $conflicts[] = LeaseConflict::ResourceScheduled;
         }
 
@@ -141,7 +143,7 @@ final readonly class LeaseConflicts
             $periodOutside = $schedule->valid_from->lessThan($input->validFrom)
                 || ($input->validTo !== null && ($schedule->valid_to === null || $schedule->valid_to->greaterThan($input->validTo)));
 
-            return $periodOutside || ! $input->windows->covers($schedule->weekday, $schedule->from(), $schedule->to());
+            return $periodOutside || ! $input->windows->covers($schedule->weekday, $schedule->from(), $schedule->to()) || ! $schedule->cycle()->within($input->cycle());
         });
     }
 }

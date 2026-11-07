@@ -67,6 +67,7 @@ final readonly class SaveSchedule
                 ResourceSchedule::STARTS_AT => $input->startTime(),
                 ResourceSchedule::ENDS_AT => $input->endTime(),
                 ResourceSchedule::SLOT_MINUTES => $input->slotMinutes,
+                ResourceSchedule::WEEK_INTERVAL => $input->weekInterval,
                 ResourceSchedule::VALID_FROM => $input->validFrom->toDateString(),
                 ResourceSchedule::VALID_TO => $input->validTo?->toDateString(),
             ])->save();

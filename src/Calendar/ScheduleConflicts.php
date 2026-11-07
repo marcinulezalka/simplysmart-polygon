@@ -27,7 +27,8 @@ use Simplysmart\Polygon\Queries\Organizations\OrganizationResources;
  * zasobem wynajętym jej jako kooperacji; w tym dniu tygodnia, w pokrywającym się okresie ważności, przedział nie może
  * nachodzić na inny grafik tego zasobu (dowolny wykonawca i jednostka) ani tego wykonawcy (dowolny zasób i jednostka).
  * Najem (Models\ResourceLease): właściciel nie układa grafiku w oknach wynajętych w tym okresie (LeasedOut), a najemca
- * tylko w oknach i okresie swojej umowy (OutsideLease; umowa z końcem wymaga grafiku z końcem nie później).
+ * tylko w oknach i okresie swojej umowy (OutsideLease; umowa z końcem wymaga grafiku z końcem nie później). Cykl tygodni
+ * (Calendar\WeekCycle): kolidują tylko grafiki i najmy o wspólnych tygodniach, a grafik najemcy mieści się w cyklu umowy.
  */
 final readonly class ScheduleConflicts
 {
@@ -50,7 +51,7 @@ final readonly class ScheduleConflicts
         $unit = Organization::query()->find($schedule->unitId);
         $length = $schedule->slotMinutes ?? 1;
 
-        if ($length < ($schedule->slotMinutes === null ? 1 : self::MIN_SLOT_MINUTES) || $schedule->minutes() < $length || ($schedule->validTo !== null && $schedule->validTo->lessThan($schedule->validFrom))) {
+        if ($length < ($schedule->slotMinutes === null ? 1 : self::MIN_SLOT_MINUTES) || $schedule->minutes() < $length || ($schedule->validTo !== null && $schedule->validTo->lessThan($schedule->validFrom)) || $schedule->weekInterval < 1 || $schedule->weekInterval > WeekCycle::MAX_INTERVAL) {
             $conflicts[] = ScheduleConflict::InvalidRange;
         }
 
@@ -64,13 +65,13 @@ final readonly class ScheduleConflicts
             }
         }
 
-        if ($this->overlapping($schedule, $ignoreId)->where(OrganizationResource::FOREIGN_KEY, $schedule->resourceId)->exists()) {
+        if ($this->coinciding($schedule, $this->overlapping($schedule, $ignoreId)->where(OrganizationResource::FOREIGN_KEY, $schedule->resourceId))) {
             $conflicts[] = ScheduleConflict::ResourceTaken;
         }
 
         $performer = $schedule->performer;
 
-        if ($performer !== null && $this->overlapping($schedule, $ignoreId)->where(ResourceSchedule::PERFORMER_TYPE, $performer->getMorphClass())->where(ResourceSchedule::PERFORMER_ID, $performer->id)->exists()) {
+        if ($performer !== null && $this->coinciding($schedule, $this->overlapping($schedule, $ignoreId)->where(ResourceSchedule::PERFORMER_TYPE, $performer->getMorphClass())->where(ResourceSchedule::PERFORMER_ID, $performer->id))) {
             $conflicts[] = ScheduleConflict::PerformerBusy;
         }
 
@@ -88,7 +89,7 @@ final readonly class ScheduleConflicts
 
         if ($this->resources->owns($unit, $schedule->resourceId)) {
             foreach ($this->leases->overlapping($schedule->resourceId, $schedule->validFrom, $schedule->validTo) as $lease) {
-                if ($lease->leaseWindows()->overlaps($schedule->weekday, $from, $to)) {
+                if ($lease->leaseWindows()->overlaps($schedule->weekday, $from, $to) && $lease->cycle()->coincides($schedule->cycle())) {
                     return ScheduleConflict::LeasedOut;
                 }
             }
@@ -97,12 +98,25 @@ final readonly class ScheduleConflicts
         }
 
         foreach ($this->leases->ofCooperation($unit, $schedule->resourceId) as $lease) {
-            if ($lease->coversPeriod($schedule->validFrom, $schedule->validTo) && $lease->leaseWindows()->covers($schedule->weekday, $from, $to)) {
+            if ($lease->coversPeriod($schedule->validFrom, $schedule->validTo) && $lease->leaseWindows()->covers($schedule->weekday, $from, $to) && $schedule->cycle()->within($lease->cycle())) {
                 return null;
             }
         }
 
         return ScheduleConflict::OutsideLease;
+    }
+
+    /**
+     * Czy któryś grafik z zapytania ma tygodnie wspólne z cyklem nowego grafiku (np. dwa grafiki co 2 tygodnie
+     * w tygodnie na zmianę nie kolidują).
+     *
+     * @param Builder<ResourceSchedule> $query
+     */
+    private function coinciding(ScheduleInput $schedule, Builder $query): bool
+    {
+        $cycle = $schedule->cycle();
+
+        return $query->get()->contains(static fn(ResourceSchedule $other): bool => $other->cycle()->coincides($cycle));
     }
 
     /**

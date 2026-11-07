@@ -37,7 +37,7 @@ final readonly class Wallboard
     {
         $day = $day->startOfDay();
 
-        if (! $lease->inForceOn($day)) {
+        if (! $lease->occursOn($day)) {
             return [];
         }
 

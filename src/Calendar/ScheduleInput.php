@@ -18,7 +18,8 @@ use Simplysmart\Polygon\Models\ZoneAccount;
 
 /**
  * Grafik zasobu przed zapisem: jednostka, zasób, opcjonalny wykonawca (konto strefy), dzień tygodnia ISO, przedział
- * „HH:MM”, długość slotu w minutach (null — bez podziału na sloty) i okres ważności (bez końca: null).
+ * „HH:MM”, długość slotu w minutach (null — bez podziału na sloty), okres ważności (bez końca: null) i cykl tygodni
+ * (co ile tygodni od tygodnia początku ważności; 1 — co tydzień).
  */
 final readonly class ScheduleInput
 {
@@ -32,6 +33,7 @@ final readonly class ScheduleInput
         public ?int $slotMinutes,
         public CarbonImmutable $validFrom,
         public ?CarbonImmutable $validTo = null,
+        public int $weekInterval = 1,
     ) {}
 
     /**
@@ -40,6 +42,14 @@ final readonly class ScheduleInput
     public static function time(string $time): string
     {
         return strlen($time) === 5 ? "{$time}:00" : $time;
+    }
+
+    /**
+     * Cykl tygodni grafiku (co $weekInterval tygodni od tygodnia $validFrom).
+     */
+    public function cycle(): WeekCycle
+    {
+        return new WeekCycle($this->weekInterval, $this->validFrom);
     }
 
     public function startTime(): string

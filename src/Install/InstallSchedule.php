@@ -30,5 +30,6 @@ final readonly class InstallSchedule
         public int $slot,
         public ?string $validFrom = null,
         public ?string $validTo = null,
+        public int $weekInterval = 1,
     ) {}
 }

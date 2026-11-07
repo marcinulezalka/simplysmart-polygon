@@ -340,13 +340,15 @@ przed zapisem grafiku.
 
 | Tabela | Model | Kolumny domenowe |
 | --- | --- | --- |
-| `resource_schedules` | `Models\ResourceSchedule` | `organization_id` (jednostka), `resource_id`, `performer_type`/`performer_id` (morph, opcjonalny), `weekday` (ISO 1–7), `starts_at`, `ends_at` (time), `slot_minutes` (null — bez slotów), `valid_from`, `valid_to` (null — bez końca) |
+| `resource_schedules` | `Models\ResourceSchedule` | `organization_id` (jednostka), `resource_id`, `performer_type`/`performer_id` (morph, opcjonalny), `weekday` (ISO 1–7), `starts_at`, `ends_at` (time), `slot_minutes` (null — bez slotów), `week_interval` (co ile tygodni od tygodnia `valid_from`, 1 — co tydzień), `valid_from`, `valid_to` (null — bez końca) |
 | `resource_bookings` | `Models\ResourceBooking` | `organization_id`, `resource_id`, wykonawca (morph), `kind` (rodzaj z paczki strefy, np. `<strefa>.visit`), `starts_at`, `ends_at`, `status` (`Enums\BookingStatus`: booked, confirmed, cancelled, no_show — stan dziedzinowy zamiast RecordStatus), `booked_by` i `confirmed_by` (morph konta) |
 
 - **Grafik** (`Calendar\SaveSchedule`, `ScheduleInput`, `ScheduleConflicts`): w transakcji z blokadą wiersza zasobu
   i wykonawcy odrzuca (`ScheduleRejected`, `ScheduleConflict`) przedział bez slotu albo z okresem ważności kończącym
   się przed początkiem, zasób spoza jednostki i jej przodków oraz nakładanie się na inny grafik tego zasobu albo tego
-  wykonawcy w tym dniu tygodnia i pokrywającym się okresie ważności. Grafiku z przyszłymi rezerwacjami nie można usunąć.
+  wykonawcy w tym dniu tygodnia i pokrywającym się okresie ważności — z cyklem tygodni (`Calendar\WeekCycle`) tylko
+  wtedy, gdy cykle mają wspólne tygodnie (dwa grafiki co 2 tygodnie na zmianę nie kolidują). Grafiku z przyszłymi
+  rezerwacjami nie można usunąć.
 - **Wolne terminy** (`Calendar\FreeSlots`, `Slot`): sloty grafiku wykonawcy w jednostce w danym dniu, bez minionych,
   zajętych przez rezerwacje wykonawcy albo zasobu (w dowolnej jednostce), dni wolnych kraju aplikacji (`HolidaysIn`)
   i — na zasobie wynajętym — dni, w których umowa najmu nie obowiązuje (§20);
@@ -389,7 +391,7 @@ udostępnienia umowy.
 
 | Tabela | Model | Kolumny domenowe |
 | --- | --- | --- |
-| `resource_leases` | `Models\ResourceLease` | `organization_id` (właściciel zasobu), `resource_id`, `lessee_organization_id`, `cooperation_organization_id`, `contractor_contract_id` (opcjonalna umowa kontrahenta właściciela, §19), `name` (numer umowy), `valid_from`, `valid_to` (null — bezterminowo), `windows` (JSON `[dzień ISO, "HH:MM", "HH:MM"]`, bez okien — cały zasób), `access` (JSON, `Enums\LeaseAccess`), `wallboard_token` (losowy token publicznej tablicy) |
+| `resource_leases` | `Models\ResourceLease` | `organization_id` (właściciel zasobu), `resource_id`, `lessee_organization_id`, `cooperation_organization_id`, `contractor_contract_id` (opcjonalna umowa kontrahenta właściciela, §19), `name` (numer umowy), `valid_from`, `valid_to` (null — bezterminowo), `windows` (JSON `[dzień ISO, "HH:MM", "HH:MM"]`, bez okien — cały zasób), `week_interval` (okna co ile tygodni od tygodnia `valid_from`), `access` (JSON, `Enums\LeaseAccess`), `wallboard_token` (losowy token publicznej tablicy) |
 
 - **Okna** (`Leases\LeaseWindows`): kilka okien w jednym dniu (np. 08:00–12:00 i 18:00–22:00); `covers()` — blok mieści
   się w jednym oknie, `overlaps()`, `isValid()` (bez nakładania się w dniu), `label()`.

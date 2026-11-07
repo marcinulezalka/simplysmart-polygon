@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Install;
 
+use Simplysmart\Polygon\Calendar\WeekCycle;
 use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Enums\LeaseAccess;
 use Simplysmart\Polygon\Enums\ResourceKind;
@@ -47,13 +48,16 @@ final readonly class InstallOrganizationParser
     private const string ATTRIBUTES = 'attributes';
 
     /** Pola umowy najmu. */
-    private const array LEASE_FIELDS = ['resource', 'lessee', 'cooperation', 'number', 'from', 'to', 'windows', 'access'];
+    private const array LEASE_FIELDS = ['resource', 'lessee', 'cooperation', 'number', 'from', 'to', 'windows', 'access', self::EVERY_WEEKS];
 
     /** Pola okna umowy najmu. */
     private const array WINDOW_FIELDS = ['days', 'from', 'to'];
 
     /** Pola wpisu grafiku organizacji. */
-    private const array SCHEDULE_FIELDS = ['resource', 'performer', 'weekday', 'from', 'to', 'slot', 'valid_from', 'valid_to'];
+    private const array SCHEDULE_FIELDS = ['resource', 'performer', 'weekday', 'from', 'to', 'slot', 'valid_from', 'valid_to', self::EVERY_WEEKS];
+
+    /** Co ile tygodni (grafik i umowa najmu), domyślnie 1. */
+    private const string EVERY_WEEKS = 'every_weeks';
 
     private const string TIME_PATTERN = '/^([01]\\d|2[0-3]):[0-5]\\d$/';
 
@@ -270,6 +274,7 @@ final readonly class InstallOrganizationParser
                 $slot,
                 $this->values->reference($path, $entry, 'valid_from', $at, self::DATE_PATTERN),
                 $this->values->reference($path, $entry, 'valid_to', $at, self::DATE_PATTERN),
+                $this->everyWeeks($path, $entry, $at),
             );
         }
 
@@ -324,6 +329,7 @@ final readonly class InstallOrganizationParser
                 $to,
                 $this->windows($path, $entry['windows'] ?? [], "{$at}.windows"),
                 array_map(static fn(string $value): LeaseAccess => LeaseAccess::from($value), $this->values->names($path, $entry['access'] ?? [], "{$at}.access", InstallValues::ROLE_PATTERN, LeaseAccess::values())),
+                $this->everyWeeks($path, $entry, $at),
             );
         }
 
@@ -371,6 +377,20 @@ final readonly class InstallOrganizationParser
         }
 
         return $result;
+    }
+
+    /**
+     * Cykl tygodni wpisu (`every_weeks`: 1–WeekCycle::MAX_INTERVAL, liczony od tygodnia początku), domyślnie 1.
+     *
+     * @param array<array-key, mixed> $entry
+     *
+     * @throws InvalidInstallFile
+     */
+    private function everyWeeks(string $path, array $entry, string $where): int
+    {
+        $value = $entry[self::EVERY_WEEKS] ?? 1;
+
+        return is_int($value) && $value >= 1 && $value <= WeekCycle::MAX_INTERVAL ? $value : throw InvalidInstallFile::in($path, "{$where}." . self::EVERY_WEEKS . ' must be 1–' . WeekCycle::MAX_INTERVAL . '.');
     }
 
     /**

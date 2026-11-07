@@ -172,7 +172,7 @@ final readonly class FreeSlots
         }
 
         foreach ($this->leases->ofCooperation($unit, $schedule->resource_id) as $lease) {
-            if ($lease->inForceOn($day) && $lease->leaseWindows()->covers($schedule->weekday, $schedule->from(), $schedule->to())) {
+            if ($lease->occursOn($day) && $lease->leaseWindows()->covers($schedule->weekday, $schedule->from(), $schedule->to())) {
                 return true;
             }
         }

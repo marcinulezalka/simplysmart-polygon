@@ -16,13 +16,15 @@ namespace Simplysmart\Polygon\Models;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Simplysmart\Polygon\Calendar\WeekCycle;
 use Simplysmart\Polygon\Models\Relations\BelongsToOrganization;
 
 /**
  * Grafik zasobu (`resource_schedules`, docs/baza-danych.md §18): dostępność zasobu (`resource_id`) dla jednostki
  * (`organization_id`) w dniu tygodnia ISO (`weekday`, 1 = poniedziałek), w przedziale `starts_at`–`ends_at`
  * (`HH:MM:SS`), opcjonalnie z wykonawcą (`performer` — konto strefy, np. lekarz) i podziałem na sloty po
- * `slot_minutes` minut, ważna od `valid_from` do `valid_to` (bez końca: null). `name` to przedział „HH:MM–HH:MM”.
+ * `slot_minutes` minut, co `week_interval` tygodni od tygodnia `valid_from` (1 — co tydzień, Calendar\WeekCycle), ważna od
+ * `valid_from` do `valid_to` (bez końca: null). `name` to przedział „HH:MM–HH:MM”.
  * Zapisywany tylko przez Calendar\SaveSchedule (bez kolizji zasobu, wykonawcy i najmu), instalator i wypowiedzenie
  * najmu (Leases\SaveLease::terminate() skraca okres grafiku najemcy).
  *
@@ -34,6 +36,7 @@ use Simplysmart\Polygon\Models\Relations\BelongsToOrganization;
  * @property string $starts_at
  * @property string $ends_at
  * @property int|null $slot_minutes
+ * @property int $week_interval
  * @property CarbonImmutable $valid_from
  * @property CarbonImmutable|null $valid_to
  * @property-read Organization|null $organization
@@ -61,6 +64,8 @@ final class ResourceSchedule extends DataModel
 
     public const string SLOT_MINUTES = 'slot_minutes';
 
+    public const string WEEK_INTERVAL = 'week_interval';
+
     public const string VALID_FROM = 'valid_from';
 
     public const string VALID_TO = 'valid_to';
@@ -70,7 +75,7 @@ final class ResourceSchedule extends DataModel
     /**
      * @var array<string, mixed>
      */
-    protected $attributes = ['is_active' => true];
+    protected $attributes = ['is_active' => true, self::WEEK_INTERVAL => 1];
 
     /**
      * @return BelongsTo<OrganizationResource, $this>
@@ -105,7 +110,15 @@ final class ResourceSchedule extends DataModel
     }
 
     /**
-     * Czy grafik obowiązuje w dniu $day (dzień tygodnia i okres ważności).
+     * Cykl tygodni grafiku (od tygodnia `valid_from`).
+     */
+    public function cycle(): WeekCycle
+    {
+        return new WeekCycle($this->week_interval, $this->valid_from);
+    }
+
+    /**
+     * Czy grafik obowiązuje w dniu $day (dzień tygodnia, cykl tygodni i okres ważności).
      */
     public function appliesOn(CarbonImmutable $day): bool
     {
@@ -113,7 +126,8 @@ final class ResourceSchedule extends DataModel
 
         return $day->dayOfWeekIso === $this->weekday
             && $day->greaterThanOrEqualTo($this->valid_from->startOfDay())
-            && ($this->valid_to === null || $day->lessThanOrEqualTo($this->valid_to->startOfDay()));
+            && ($this->valid_to === null || $day->lessThanOrEqualTo($this->valid_to->startOfDay()))
+            && $this->cycle()->occursOn($day);
     }
 
     /**
@@ -130,6 +144,7 @@ final class ResourceSchedule extends DataModel
             self::STARTS_AT => 'string',
             self::ENDS_AT => 'string',
             self::SLOT_MINUTES => 'integer',
+            self::WEEK_INTERVAL => 'integer',
             self::VALID_FROM => 'immutable_date',
             self::VALID_TO => 'immutable_date',
         ];

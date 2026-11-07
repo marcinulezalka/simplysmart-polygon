@@ -35,5 +35,6 @@ final readonly class InstallLease
         public ?string $validTo,
         public array $windows,
         public array $access,
+        public int $weekInterval = 1,
     ) {}
 }
