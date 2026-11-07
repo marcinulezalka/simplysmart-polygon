@@ -16,6 +16,7 @@ namespace Simplysmart\Polygon\Queries\Leases;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Simplysmart\Polygon\Calendar\ValidityPeriod;
 use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Enums\LeaseAccess;
 use Simplysmart\Polygon\Models\Organization;
@@ -69,13 +70,7 @@ final readonly class ResourceLeases
     {
         $query = $this->active();
         $query->where(OrganizationResource::FOREIGN_KEY, $resourceId);
-        $query->where(static function (Builder $period) use ($from): void {
-            $period->whereNull(ResourceLease::VALID_TO)->orWhereDate(ResourceLease::VALID_TO, '>=', $from);
-        });
-
-        if ($to !== null) {
-            $query->whereDate(ResourceLease::VALID_FROM, '<=', $to);
-        }
+        ValidityPeriod::overlapping($query, $from, $to);
 
         if ($ignoreId !== null) {
             $query->whereKeyNot($ignoreId);
@@ -181,9 +176,7 @@ final readonly class ResourceLeases
     private function current(): Builder
     {
         $query = $this->active();
-        $query->where(static function (Builder $period): void {
-            $period->whereNull(ResourceLease::VALID_TO)->orWhereDate(ResourceLease::VALID_TO, '>=', CarbonImmutable::today());
-        });
+        ValidityPeriod::overlapping($query, CarbonImmutable::today());
 
         return $query;
     }

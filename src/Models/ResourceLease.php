@@ -15,6 +15,7 @@ namespace Simplysmart\Polygon\Models;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Simplysmart\Polygon\Calendar\ValidityPeriod;
 use Simplysmart\Polygon\Calendar\WeekCycle;
 use Simplysmart\Polygon\Enums\LeaseAccess;
 use Simplysmart\Polygon\Enums\LeaseMode;
@@ -62,9 +63,9 @@ final class ResourceLease extends DataModel
 
     public const string CONTRACT_ID = 'contractor_contract_id';
 
-    public const string VALID_FROM = 'valid_from';
+    public const string VALID_FROM = ValidityPeriod::FROM;
 
-    public const string VALID_TO = 'valid_to';
+    public const string VALID_TO = ValidityPeriod::TO;
 
     public const string WINDOWS = 'windows';
 

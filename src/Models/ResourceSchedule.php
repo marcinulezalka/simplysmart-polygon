@@ -16,6 +16,7 @@ namespace Simplysmart\Polygon\Models;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Simplysmart\Polygon\Calendar\ValidityPeriod;
 use Simplysmart\Polygon\Calendar\WeekCycle;
 use Simplysmart\Polygon\Models\Relations\BelongsToOrganization;
 
@@ -71,9 +72,9 @@ final class ResourceSchedule extends DataModel
     /** Grafik wypełniający wolny czas zasobu (najem na żądanie): bez wyłączności zasobu. */
     public const string FILLS_GAPS = 'fills_gaps';
 
-    public const string VALID_FROM = 'valid_from';
+    public const string VALID_FROM = ValidityPeriod::FROM;
 
-    public const string VALID_TO = 'valid_to';
+    public const string VALID_TO = ValidityPeriod::TO;
 
     protected $table = self::TABLE;
 

@@ -133,13 +133,7 @@ final readonly class ScheduleConflicts
         $query->where(ResourceSchedule::WEEKDAY, $schedule->weekday);
         $query->where(ResourceSchedule::STARTS_AT, '<', $schedule->endTime());
         $query->where(ResourceSchedule::ENDS_AT, '>', $schedule->startTime());
-        $query->where(static function (Builder $period) use ($schedule): void {
-            $period->whereNull(ResourceSchedule::VALID_TO)->orWhereDate(ResourceSchedule::VALID_TO, '>=', $schedule->validFrom);
-        });
-
-        if ($schedule->validTo !== null) {
-            $query->whereDate(ResourceSchedule::VALID_FROM, '<=', $schedule->validTo);
-        }
+        ValidityPeriod::overlapping($query, $schedule->validFrom, $schedule->validTo);
 
         if ($ignoreId !== null) {
             $query->whereKeyNot($ignoreId);

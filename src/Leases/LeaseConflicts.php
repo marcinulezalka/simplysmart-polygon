@@ -13,8 +13,8 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Leases;
 
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Simplysmart\Polygon\Calendar\ValidityPeriod;
 use Simplysmart\Polygon\Calendar\WeekCycle;
 use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Models\Contractor;
@@ -119,13 +119,7 @@ final readonly class LeaseConflicts
         $query = ResourceSchedule::query();
         $query->where(ColumnNames::IS_ACTIVE, true);
         $query->where(OrganizationResource::FOREIGN_KEY, $input->resourceId);
-        $query->where(static function (Builder $period) use ($input): void {
-            $period->whereNull(ResourceSchedule::VALID_TO)->orWhereDate(ResourceSchedule::VALID_TO, '>=', $input->validFrom);
-        });
-
-        if ($input->validTo !== null) {
-            $query->whereDate(ResourceSchedule::VALID_FROM, '<=', $input->validTo);
-        }
+        ValidityPeriod::overlapping($query, $input->validFrom, $input->validTo);
 
         return $query->get();
     }

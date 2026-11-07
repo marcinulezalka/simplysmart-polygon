@@ -4,6 +4,14 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- `FreeSlots::on()` i `days()` z opcjonalnym zasobem (terminy tylko na nim, np. na wynajętym gabinecie).
+
+### Changed
+
+- Reguła „rekord nachodzi na okres ważności” w jednym miejscu (`Calendar\ValidityPeriod`) dla kolizji grafiku, najmu i odczytu najmów.
+
 ## [0.9.0] - 2026-11-07
 
 ### Added

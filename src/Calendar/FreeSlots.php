@@ -45,9 +45,11 @@ final readonly class FreeSlots
     ) {}
 
     /**
+     * Wolne terminy wykonawcy w jednostce w dniu (opcjonalnie tylko na zasobie $resourceId).
+     *
      * @return list<Slot>
      */
-    public function on(Organization $unit, ZoneAccount $performer, CarbonImmutable $day): array
+    public function on(Organization $unit, ZoneAccount $performer, CarbonImmutable $day, ?int $resourceId = null): array
     {
         $day = $day->startOfDay();
 
@@ -56,6 +58,10 @@ final readonly class FreeSlots
         }
 
         $schedules = $this->schedules($unit, $performer, $day);
+
+        if ($resourceId !== null) {
+            $schedules = $schedules->filter(static fn(ResourceSchedule $schedule): bool => $schedule->resource_id === $resourceId)->values();
+        }
 
         if ($schedules->isEmpty()) {
             return [];
@@ -83,18 +89,19 @@ final readonly class FreeSlots
     }
 
     /**
-     * Najbliższe dni (od $from, przez $days dni) z wolnymi terminami wykonawcy w jednostce.
+     * Najbliższe dni (od $from, przez $days dni) z wolnymi terminami wykonawcy w jednostce (opcjonalnie tylko na zasobie
+     * $resourceId).
      *
      * @return list<CarbonImmutable>
      */
-    public function days(Organization $unit, ZoneAccount $performer, CarbonImmutable $from, int $days): array
+    public function days(Organization $unit, ZoneAccount $performer, CarbonImmutable $from, int $days, ?int $resourceId = null): array
     {
         $result = [];
 
         for ($offset = 0; $offset < $days; $offset++) {
             $day = $from->startOfDay()->addDays($offset);
 
-            if ($this->on($unit, $performer, $day) !== []) {
+            if ($this->on($unit, $performer, $day, $resourceId) !== []) {
                 $result[] = $day;
             }
         }
