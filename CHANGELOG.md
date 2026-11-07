@@ -6,6 +6,8 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Added
 
+- Zasoby organizacji (`organization_resources`, docs/baza-danych.md §17): gabinety, sprzęt i inne zasoby organizacji z rodzajem (`Enums\ResourceKind`) i kodem unikalnym w organizacji, model `Models\OrganizationResource`, relacja `Organization::resources()`, odczyt `Queries\Organizations\OrganizationResources` (zasoby organizacji i jej przodków) oraz zasoby startowe w plikach instalacji (`organizations.<klucz>.resources`, zakładane tylko brakujące).
+- `Permissions\OrganizationRoles::holders()`: aktywne konta modelu strefy z rolą w danej organizacji (np. lekarze poradni), bez ról globalnych i ról w innych organizacjach.
 - `vendor/bin/deploy --fresh`: baza od nowa we wdrażanych środowiskach — `migrate:fresh` (usuwa wszystkie dane) i `db:seed` z plikami instalacji zamiast migracji i `polygon:install` (`remote.sh` z `DEPLOY_FRESH=1`); osobne potwierdzenie dla przed-produkcji i produkcji (także z `--production`, bez terminala odmowa), `--dry-run` opisuje plan.
 
 ## [0.2.0] - 2026-11-07

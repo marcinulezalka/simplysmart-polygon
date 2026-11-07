@@ -20,6 +20,7 @@ use Simplysmart\Polygon\Models\Dictionaries\Country;
 use Simplysmart\Polygon\Models\Relations\BelongsToParentOrganization;
 use Simplysmart\Polygon\Models\Relations\BelongsToUnitType;
 use Simplysmart\Polygon\Models\Relations\HasOrganizationMembers;
+use Simplysmart\Polygon\Models\Relations\HasResources;
 use Simplysmart\Polygon\Models\Relations\LocatedInCountry;
 
 /**
@@ -59,6 +60,7 @@ final class Organization extends DataModel
     use BelongsToParentOrganization;
     use BelongsToUnitType;
     use HasOrganizationMembers;
+    use HasResources;
     use LocatedInCountry;
 
     public const string TABLE = 'organizations';

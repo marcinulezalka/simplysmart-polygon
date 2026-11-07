@@ -93,6 +93,12 @@ return [
         'is_internal' => 'Internal structure',
         'is_public' => 'In the public schedule',
     ],
+    'organization_resource' => [
+        'organization_id' => 'Organization',
+        'name' => 'Resource name',
+        'kind' => 'Kind',
+        'code' => 'Code',
+    ],
     'organization' => [
         'unit_type_id' => 'Unit type',
         'short_name' => 'Short name',

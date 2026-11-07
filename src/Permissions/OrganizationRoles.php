@@ -14,7 +14,9 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Permissions;
 
 use Closure;
+use Illuminate\Database\Eloquent\Collection;
 use LogicException;
+use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Models\Organization;
 use Simplysmart\Polygon\Models\ZoneAccount;
 use Spatie\Permission\PermissionRegistrar;
@@ -85,6 +87,34 @@ final readonly class OrganizationRoles
         sort($names);
 
         return $names;
+    }
+
+    /**
+     * Aktywne konta modelu strefy z rolą w organizacji (np. lekarze poradni: rola `doctor` w niej), po nazwie. Role
+     * globalne i role w innych organizacjach się nie liczą.
+     *
+     * @template TAccount of ZoneAccount
+     *
+     * @param class-string<TAccount> $model Model kont strefy.
+     *
+     * @return Collection<int, TAccount>
+     */
+    public function holders(string $model, string $role, int $organizationId): Collection
+    {
+        $account = new $model();
+        $assignments = $account->getConnection()->table(PermissionTables::MODEL_HAS_ROLES);
+        $assignments->join(PermissionTables::ROLES, PermissionTables::ROLES . '.' . ColumnNames::ID, '=', PermissionTables::MODEL_HAS_ROLES . '.' . PermissionTables::ROLE_FOREIGN_KEY);
+        $assignments->where(PermissionTables::MODEL_HAS_ROLES . '.' . PermissionTables::TEAM_FOREIGN_KEY, $organizationId);
+        $assignments->where(PermissionTables::MODEL_HAS_ROLES . '.' . PermissionTables::MODEL_TYPE, $account->getMorphClass());
+        $assignments->where(PermissionTables::ROLES . '.' . ColumnNames::NAME, $role);
+
+        $query = $model::query();
+        $query->whereKey($assignments->pluck(PermissionTables::MODEL_HAS_ROLES . '.' . PermissionTables::MODEL_ID)->all());
+        $query->where(ColumnNames::IS_ACTIVE, true);
+        $query->orderBy(ColumnNames::NAME);
+        $query->orderBy(ColumnNames::ID);
+
+        return $query->get();
     }
 
     /**

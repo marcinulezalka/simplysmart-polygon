@@ -20,11 +20,15 @@ use Simplysmart\Polygon\Models\OrganizationUnitType;
 /**
  * Zakłada organizacje z plików instalacji, rozpoznawane po kluczu (`json_attributes.install_key`, także w koszu):
  * brakująca powstaje aktywna, istniejąca zostaje bez zmian (zmiany z aplikacji nie są cofane). `parent` =
- * Organization::HERO_KEY wpina organizację pod organizację hero (HERO_ID, niewidoczną we frontendzie stref). Działa
- * w transakcji instalatora (Installer).
+ * Organization::HERO_KEY wpina organizację pod organizację hero (HERO_ID, niewidoczną we frontendzie stref). Zasoby
+ * organizacji (także istniejącej) zakłada ResourceInstaller. Działa w transakcji instalatora (Installer).
  */
 final readonly class OrganizationInstaller
 {
+    public function __construct(
+        private ResourceInstaller $resources,
+    ) {}
+
     /** Klucz organizacji z pliku instalacji w `json_attributes` organizacji. */
     public const string INSTALL_KEY = 'install_key';
 
@@ -50,12 +54,12 @@ final readonly class OrganizationInstaller
             if ($existing !== null) {
                 $installed[$organization->key] = $existing;
                 $report->organizationsKept[] = $existing->name;
-
-                continue;
+            } else {
+                $installed[$organization->key] = $this->create($organization, $installed);
+                $report->organizationsCreated[] = $organization->name;
             }
 
-            $installed[$organization->key] = $this->create($organization, $installed);
-            $report->organizationsCreated[] = $organization->name;
+            $this->resources->install($installed[$organization->key], $organization->resources, $report);
         }
 
         return $installed;

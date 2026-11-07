@@ -90,7 +90,8 @@ Organizacje i personel (np. w pliku projektu albo `infrastructure/deploy/vendors
 {
     "organizations": {
         "clinic": { "name": "Centrum Medyczne", "short_name": "CM", "unit_type": "placowka", "nip": "1234567890", "city": "Warszawa" },
-        "clinic-desk": { "name": "Rejestracja", "parent": "clinic", "unit_type": "rejestracja", "is_department": true }
+        "clinic-desk": { "name": "Rejestracja", "parent": "clinic", "unit_type": "rejestracja", "is_department": true,
+            "resources": [{ "key": "gabinet-1", "name": "Gabinet 1", "code": "G1" }, { "key": "audiometr", "name": "Audiometr", "kind": "equipment" }] }
     },
     "zones": {
         "shop": {
@@ -119,6 +120,7 @@ Organizacje i personel (np. w pliku projektu albo `infrastructure/deploy/vendors
 | `organizations.<klucz>.parent` | klucz organizacji nadrzędnej (filia, dział); bez cykli. Zarezerwowany klucz `simplysmart` (`Organization::HERO_KEY`) wpina organizację pod organizację hero (#1 „Simplysmart”), niewidoczną we frontendzie stref (`visible()`, `contexts()`) — organizacje klienta pod rootem operatora; tego klucza nie można zdefiniować ani przypisać kontu (członkiem hero zostaje tylko konto z rolą `hero`) |
 | `organizations.<klucz>.unit_type` | kod typu jednostki z `organization_unit_types` (`siedziba`, `placowka`, `filia`, `poradnia`, `oddzial`, `departament`, `pracownia`, `zaklad`, `administracja`, `dzial`, `rejestracja`, `ogolna`); nieznany kod to błąd |
 | `organizations.<klucz>.is_department` | `true` — departament jednostki nadrzędnej (nazwa w przełączniku: „Jednostka · Departament”) |
+| `organizations.<klucz>.resources` | zasoby organizacji (gabinety, sprzęt; [baza-danych.md](baza-danych.md) §17): lista obiektów `key` (kebab-case, unikalny w organizacji — po nim instalacja rozpoznaje zasób), `name` (wymagana), `kind` (`room` — domyślnie, `equipment`, `other`), opcjonalnie `code` (do 16 znaków, unikalny w organizacji); zakładane są tylko brakujące, istniejących instalacja nie zmienia |
 | `organizations.<klucz>.<dane firmy>` | `nip`, `regon`, `krs`, `phone`, `mobile_phone`, `email`, `billing_email`, `street`, `postal_code`, `city`, `country_code`, `color` (długości jak w kolumnach); inne pola to błąd |
 | `accounts[].id` | `"random"` — losowe wolne id z puli seederów 1–999 (`IdSlots::random()`, nieprzewidywalne); brak — id od 1000 |
 

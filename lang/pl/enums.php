@@ -40,6 +40,11 @@ return [
         'service' => 'Usługa',
         'packaging' => 'Opakowanie',
     ],
+    'resource_kind' => [
+        'room' => 'Gabinet',
+        'equipment' => 'Sprzęt',
+        'other' => 'Inny zasób',
+    ],
     'continent' => [
         'europe' => 'Europa',
         'asia' => 'Azja',

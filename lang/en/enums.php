@@ -40,6 +40,11 @@ return [
         'service' => 'Service',
         'packaging' => 'Packaging',
     ],
+    'resource_kind' => [
+        'room' => 'Room',
+        'equipment' => 'Equipment',
+        'other' => 'Other resource',
+    ],
     'continent' => [
         'europe' => 'Europe',
         'asia' => 'Asia',

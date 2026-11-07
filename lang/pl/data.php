@@ -93,6 +93,12 @@ return [
         'is_internal' => 'Struktura wewnętrzna',
         'is_public' => 'W publicznym grafiku',
     ],
+    'organization_resource' => [
+        'organization_id' => 'Organizacja',
+        'name' => 'Nazwa zasobu',
+        'kind' => 'Rodzaj',
+        'code' => 'Kod',
+    ],
     'organization' => [
         'unit_type_id' => 'Typ jednostki',
         'short_name' => 'Nazwa skrócona',

@@ -5,7 +5,7 @@
 > checksum, scope'y, przejścia stanu `RecordStatusTransitions`, etykiety kolumn), krótkie tłumaczenia `json_i18n` (`HasI18n`), tabele strefy `polygon_*` (`Database\ZoneTables`),
 > stockowe tabele Laravela (`users`, `cache`, `jobs`) z wyrównaniem `users` do standardu, słowniki lokalizacji
 > z seederami (§14), tabele uprawnień spatie/laravel-permission z zespołami — zespół to organizacja (§15) oraz organizacje z typami jednostek
-> i członkostwem kont (§16). Warstwa nie obejmuje audytu, cookies, dokumentów prawnych
+> i członkostwem kont (§16) oraz zasoby organizacji (§17). Warstwa nie obejmuje audytu, cookies, dokumentów prawnych
 > ani widoków.
 
 Silniki: MySQL 8 / MariaDB i SQLite (testy, lokalnie). Zasady obowiązują każdą tabelę danych aplikacji.
@@ -258,7 +258,8 @@ liczy go `DataModel` przy zapisie.
 - **Role w organizacji:** konto może mieć w każdej organizacji inne role (np. właściciel w jednej, lekarz w drugiej).
   Nadaje i czyta je `Permissions\OrganizationRoles` (`assign()`, `names()`; organizacja null — role globalne;
   `assignIn()` dla zapisanej organizacji — bez całkowitego id rzuca `LogicException` zamiast nadać role globalne;
-  `within()` uruchamia działanie w zespole organizacji i przywraca poprzedni), niezależnie od zespołu żądania. Role globalne mają hero i konta bez organizacji (`Auth\CreateZoneAccount`,
+  `within()` uruchamia działanie w zespole organizacji i przywraca poprzedni; `holders()` — aktywne konta modelu strefy
+  z rolą w organizacji, np. lekarze poradni), niezależnie od zespołu żądania. Role globalne mają hero i konta bez organizacji (`Auth\CreateZoneAccount`,
   `<strefa>:account:create`); role personelu nadaje instalator w organizacjach z pliku ([instalacja.md](instalacja.md)).
 - **Zespół żądania:** `Http\Middleware\UseOrganizationPermissions` w grupie middleware strefy ustawia zespół spatie
   (przez `OrganizationRoles::within()`) na bieżącą organizację konta (`Contracts\CurrentOrganization`); hero i konto bez organizacji — null (role globalne).
@@ -310,3 +311,22 @@ i zarządzanie organizacjami dodaje paczka strefy.
   zwykle organizację usuwa się miękko.
 - Rekord należący do organizacji ma kolumnę `Organization::FOREIGN_KEY` (`organization_id`) i relację
   `Relations\BelongsToOrganization`.
+
+## 17. Zasoby organizacji
+
+Zasób to coś, co organizacja ma i czego używa w pracy: gabinet (pomieszczenie przyjęć), sprzęt albo inny zasób. Właścicielem
+jest jedna organizacja; korzystają z niego ona i jej jednostki podrzędne (np. gabinet siedziby w grafiku poradni).
+Rezerwacje i grafiki zasobów dodają paczki stref, odwołując się do zasobu kluczem `resource_id`
+(`OrganizationResource::FOREIGN_KEY`).
+
+| Tabela | Model | Standard | Kolumny domenowe |
+| --- | --- | --- | --- |
+| `organization_resources` | `Models\OrganizationResource` | pełny, z historią i pulą id | `organization_id` (właściciel, usunięcie organizacji z zasobami zablokowane), `kind` (`Enums\ResourceKind`: `room`, `equipment`, `other`), `code` (krótki kod, np. „G3”, unikalny w organizacji) |
+
+- Relacja `Organization::resources()` — zasoby, których organizacja jest właścicielem.
+- **Odczyt** (`Queries\Organizations\OrganizationResources`): `available()` — aktywne zasoby organizacji i jej przodków
+  (opcjonalnie jednego rodzaju), `findByToken()` i `includes()` w tym samym zakresie (formularz jednostki nie wskaże
+  zasobu sąsiedniej jednostki), `lineage()` — id organizacji i jej przodków.
+- `label()` — „kod · nazwa” do list i grafiku. Nowy zasób to aktywny gabinet (`kind` = `room`).
+- Zasoby startowe: pliki instalacji, `organizations.<klucz>.resources` ([instalacja.md](instalacja.md)).
+
