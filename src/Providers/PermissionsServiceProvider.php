@@ -18,7 +18,7 @@ use Simplysmart\Polygon\Install\InstallFiles;
 use Simplysmart\Polygon\Permissions\PermissionDefaults;
 
 /**
- * Uprawnienia: konfiguracja spatie/laravel-permission (PermissionDefaults: modele paczki, nazwy tabel, bez zespołów)
+ * Uprawnienia: konfiguracja spatie/laravel-permission (PermissionDefaults: modele paczki, nazwy tabel, zespół = organizacja)
  * ustawiana po rejestracji wszystkich providerów, gdy config spatie jest już scalony, i jedna lista plików instalacji
  * (Install\InstallFiles), do której paczki stref dopisują swoje pliki.
  */

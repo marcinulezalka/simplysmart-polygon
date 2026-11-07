@@ -59,6 +59,7 @@ final class Role extends SpatieRole
     {
         return [
             PermissionTables::GUARD_NAME => 'string',
+            PermissionTables::TEAM_FOREIGN_KEY => 'integer',
         ];
     }
 }

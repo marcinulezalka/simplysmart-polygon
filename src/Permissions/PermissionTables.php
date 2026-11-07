@@ -14,8 +14,8 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Permissions;
 
 /**
- * Nazwy tabel i kolumn uprawnień spatie/laravel-permission (bez zespołów); czytają je migracja paczki,
- * konfiguracja spatie (PermissionDefaults) i modele.
+ * Nazwy tabel i kolumn uprawnień spatie/laravel-permission z zespołami (zespół = organizacja, TEAM_FOREIGN_KEY); czytają
+ * je migracje paczki, konfiguracja spatie (PermissionDefaults) i modele.
  */
 final class PermissionTables
 {
@@ -40,6 +40,19 @@ final class PermissionTables
     public const string MODEL_ID = 'model_id';
 
     public const string GUARD_NAME = 'guard_name';
+
+    /**
+     * Kolumna zespołu spatie w `roles`, `model_has_roles` i `model_has_permissions`: organizacja przypisania
+     * (Models\Organization::FOREIGN_KEY); null — przypisanie globalne (hero, konta bez organizacji).
+     */
+    public const string TEAM_FOREIGN_KEY = 'organization_id';
+
+    /**
+     * Tabele z kolumną zespołu.
+     *
+     * @var list<string>
+     */
+    public const array TEAM_TABLES = [self::ROLES, self::MODEL_HAS_PERMISSIONS, self::MODEL_HAS_ROLES];
 
     /**
      * Tabele w kolejności tworzenia (zależności kluczy obcych); usuwane w odwrotnej.

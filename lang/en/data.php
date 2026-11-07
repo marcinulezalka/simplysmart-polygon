@@ -120,6 +120,7 @@ return [
     'role' => [
         'name' => 'Role name',
         'guard_name' => 'Zone (guard)',
+        'organization_id' => 'Organization',
     ],
     'permission' => [
         'name' => 'Permission name',

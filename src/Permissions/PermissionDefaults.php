@@ -14,12 +14,14 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Permissions;
 
 use Illuminate\Contracts\Config\Repository;
+use Simplysmart\Polygon\Models\Organization;
 use Simplysmart\Polygon\Models\Permissions\Permission;
 use Simplysmart\Polygon\Models\Permissions\Role;
 
 /**
  * Konfiguracja spatie/laravel-permission ustawiana przez paczkę (bez publikowania config/permission.php): modele
- * paczki z kolumnami standardowymi, nazwy tabel i kolumn z PermissionTables, bez zespołów.
+ * paczki z kolumnami standardowymi, nazwy tabel i kolumn z PermissionTables oraz zespoły: zespół to organizacja
+ * (PermissionTables::TEAM_FOREIGN_KEY), a bieżący zespół żądania strefy ustawia Http\Middleware\UseOrganizationPermissions.
  *
  * Wywoływana po register() wszystkich providerów (config spatie jest już scalony), pojedynczymi kluczami.
  */
@@ -34,7 +36,9 @@ final readonly class PermissionDefaults
         $this->config->set([
             'permission.models.permission' => Permission::class,
             'permission.models.role' => Role::class,
-            'permission.teams' => false,
+            'permission.models.team' => Organization::class,
+            'permission.teams' => true,
+            'permission.column_names.team_foreign_key' => PermissionTables::TEAM_FOREIGN_KEY,
             'permission.column_names.role_pivot_key' => PermissionTables::ROLE_FOREIGN_KEY,
             'permission.column_names.permission_pivot_key' => PermissionTables::PERMISSION_FOREIGN_KEY,
             'permission.column_names.model_morph_key' => PermissionTables::MODEL_ID,

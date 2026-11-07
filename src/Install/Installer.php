@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Install;
 
 use Illuminate\Database\ConnectionInterface;
-use Illuminate\Database\Eloquent\Model;
 use Simplysmart\Polygon\Auth\CreateZoneAccount;
 use Simplysmart\Polygon\Contracts\ZoneRegistry;
 use Simplysmart\Polygon\Database\ColumnNames;
@@ -23,7 +22,9 @@ use Simplysmart\Polygon\Models\Organization;
 use Simplysmart\Polygon\Models\OrganizationUnitType;
 use Simplysmart\Polygon\Models\Permissions\Permission;
 use Simplysmart\Polygon\Models\Permissions\Role;
+use Simplysmart\Polygon\Models\ZoneAccount;
 use Simplysmart\Polygon\Organizations\OrganizationMembership;
+use Simplysmart\Polygon\Permissions\OrganizationRoles;
 use Simplysmart\Polygon\Permissions\PermissionTables;
 use Simplysmart\Polygon\Queries\Accounts\ZoneAccounts;
 use Spatie\Permission\PermissionRegistrar;
@@ -34,7 +35,8 @@ use Spatie\Permission\PermissionRegistrar;
  * transakcji zakłada brakujące organizacje (po kluczu z pliku, organizacja nadrzędna przed podrzędną; istniejących nie
  * zmienia), uprawnienia i role guarda strefy (role dostają dokładnie uprawnienia z pliku) oraz konta startowe
  * (tylko brakujące, modelem strefy przez Auth\CreateZoneAccount; losowe id z puli seederów przy `"id": "random"`), dopisując im role
- * i członkostwa organizacji z pliku (konto z rolą hero zostaje też członkiem organizacji hero). Idempotentny: wolno go uruchomić ponownie i na produkcji; uprawnień, ról i członkostw spoza plików nie usuwa.
+ * i członkostwa organizacji z pliku (konto z rolą hero zostaje też członkiem organizacji hero): role globalne
+ * (InstallAccount::globalRoles()) i role w każdej organizacji konta (InstallAccount::rolesIn(), zespół spatie = organizacja). Idempotentny: wolno go uruchomić ponownie i na produkcji; uprawnień, ról i członkostw spoza plików nie usuwa.
  */
 final readonly class Installer
 {
@@ -57,6 +59,7 @@ final readonly class Installer
         private PermissionRegistrar $permissions,
         private OrganizationMembership $membership,
         private InstallOrganizations $organizations,
+        private OrganizationRoles $roles,
     ) {}
 
     /**
@@ -146,14 +149,18 @@ final readonly class Installer
     }
 
     /**
-     * Konto staje się członkiem (personelem) organizacji z pliku; członkostw spoza plików instalacja nie odbiera.
+     * Konto staje się członkiem (personelem) organizacji z pliku i dostaje w każdej z nich swoje role; członkostw i ról
+     * spoza plików instalacja nie odbiera.
      *
      * @param array<string, Organization> $installed
      */
-    private function joinOrganizations(Model $account, InstallAccount $definition, array $installed): void
+    private function joinOrganizations(ZoneAccount $account, InstallAccount $definition, array $installed): void
     {
         foreach ($definition->organizations as $key) {
-            $this->membership->add($account, $installed[$key]);
+            $organization = $installed[$key];
+            $this->membership->add($account, $organization);
+            $id = $organization->getKey();
+            $this->roles->assign($account, $definition->rolesIn($key), is_int($id) ? $id : null);
         }
     }
 
@@ -181,15 +188,15 @@ final readonly class Installer
 
             if ($existing === null) {
                 $id = $account->randomId ? $this->slots->random((new $model())->getTable()) : null;
-                $created = $this->accounts->handle($definition, $account->name, $account->email, $account->roles, $id);
+                $created = $this->accounts->handle($definition, $account->name, $account->email, $account->globalRoles(), $id);
                 $this->joinOrganizations($created, $account, $installed);
                 $report->created[] = $account->email;
 
                 continue;
             }
 
-            $existing->assignRole($account->roles);
-            $this->membership->joinHeroOrganization($existing, $account->roles);
+            $this->roles->assign($existing, $account->globalRoles(), null);
+            $this->membership->joinHeroOrganization($existing, $account->globalRoles());
             $this->joinOrganizations($existing, $account, $installed);
             $report->kept[] = $account->email;
         }

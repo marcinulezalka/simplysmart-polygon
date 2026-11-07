@@ -93,7 +93,7 @@ final readonly class ZoneInstallMerger
         }
 
         foreach ($zone->accounts as $account) {
-            foreach (array_diff($account->roles, array_keys($roles)) as $missing) {
+            foreach (array_diff($account->allRoles(), array_keys($roles)) as $missing) {
                 throw InvalidInstallFile::in(self::SOURCE, "account [{$account->email}] of zone [{$zone->zone}] has the undefined role [{$missing}].");
             }
         }

@@ -17,13 +17,14 @@ use Illuminate\Database\ConnectionInterface;
 use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Models\ZoneAccount;
 use Simplysmart\Polygon\Organizations\OrganizationMembership;
+use Simplysmart\Polygon\Permissions\OrganizationRoles;
 use Simplysmart\Polygon\Queries\Accounts\ZoneAccounts;
 use Simplysmart\Polygon\Zones\ZoneDefinition;
 use Spatie\Permission\Exceptions\RoleDoesNotExist;
 
 /**
- * Zakłada aktywne konto strefy bez PIN-u (PIN ustawia właściciel przy pierwszym logowaniu), z rolami spatie guarda
- * strefy, w jednej transakcji: brak roli wycofuje całe założenie. Konto z rolą hero zostaje członkiem organizacji hero
+ * Zakłada aktywne konto strefy bez PIN-u (PIN ustawia właściciel przy pierwszym logowaniu), z globalnymi rolami spatie
+ * guarda strefy (zespół null, Permissions\OrganizationRoles; role w organizacjach nadaje instalator), w jednej transakcji: brak roli wycofuje całe założenie. Konto z rolą hero zostaje członkiem organizacji hero
  * (Organizations\OrganizationMembership::joinHeroOrganization()). Dla stref bez rejestracji — wywoływane z komendy
  * `<strefa>:account:create` (Console\CreateZoneAccountCommand) i z instalatora (konta startowe).
  */
@@ -33,10 +34,11 @@ final readonly class CreateZoneAccount
         private ConnectionInterface $db,
         private ZoneAccounts $accounts,
         private OrganizationMembership $membership,
+        private OrganizationRoles $roles,
     ) {}
 
     /**
-     * @param list<string> $roles Nazwy istniejących ról guarda strefy.
+     * @param list<string> $roles Nazwy istniejących ról guarda strefy (globalne).
      * @param int|null $id Stałe id konta z puli seederów (IdSlots, 1–999), np. konto startowe z pliku instalacji;
      *                     null — kolejne id (od 1000).
      *
@@ -61,7 +63,7 @@ final readonly class CreateZoneAccount
             ])->save();
 
             if ($roles !== []) {
-                $account->assignRole($roles);
+                $this->roles->assign($account, $roles, null);
                 $this->membership->joinHeroOrganization($account, $roles);
             }
 

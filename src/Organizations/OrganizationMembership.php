@@ -19,7 +19,7 @@ use Simplysmart\Polygon\Models\OrganizationMember;
 use Simplysmart\Polygon\Permissions\RequiredRole;
 
 /**
- * Członkostwo konta strefy w organizacji (bez ról — polygon nie ma zespołów spatie): dodanie, usunięcie i automatyczne
+ * Członkostwo konta strefy w organizacji (role w organizacji nadaje Permissions\OrganizationRoles): dodanie, usunięcie i automatyczne
  * dołączenie kont z rolą hero (RequiredRole::ROOT) do organizacji hero (Organization::HERO_ID).
  */
 final readonly class OrganizationMembership

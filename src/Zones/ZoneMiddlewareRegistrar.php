@@ -21,13 +21,15 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Simplysmart\Polygon\Http\Middleware\PreventRequestForgeryWithoutCookie;
 use Simplysmart\Polygon\Http\Middleware\RecordHistoryActor;
+use Simplysmart\Polygon\Http\Middleware\UseOrganizationPermissions;
 use Simplysmart\Polygon\Http\Middleware\UseZone;
 
 /**
  * Rejestruje grupę middleware strefy (`zone.<nazwa>`), używaną zamiast grupy `web`.
  *
  * UseZone musi poprzedzać StartSession (ustawia sesję i guard strefy); RecordHistoryActor potrzebuje sesji (konto
- * z guarda strefy), więc stoi po StartSession.
+ * z guarda strefy), więc stoi po StartSession, tak jak UseOrganizationPermissions (zespół spatie = bieżąca organizacja
+ * konta z sesji strefy).
  */
 final readonly class ZoneMiddlewareRegistrar
 {
@@ -55,6 +57,7 @@ final readonly class ZoneMiddlewareRegistrar
             ShareErrorsFromSession::class,
             PreventRequestForgeryWithoutCookie::class,
             RecordHistoryActor::class,
+            UseOrganizationPermissions::class,
             SubstituteBindings::class,
         ]);
     }

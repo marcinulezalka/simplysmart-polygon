@@ -142,19 +142,29 @@ final readonly class InstallFileParser
     }
 
     /**
-     * Organizacje konta; organizacji hero nie można przypisać (jej członkiem zostaje tylko konto z rolą hero).
+     * Organizacje konta z rolami w każdej z nich: lista kluczy (`["clinic"]`, bez ról organizacji) albo obiekt klucz =>
+     * lista ról (`{"clinic": ["owner"]}`). Organizacji hero nie można przypisać (jej członkiem zostaje tylko konto
+     * z rolą hero).
      *
-     * @return list<string>
+     * @return array<string, list<string>> Klucz organizacji => role konta tylko w niej (w kolejności z pliku).
      */
     private function accountOrganizations(string $path, mixed $organizations, string $where): array
     {
-        $keys = $this->names($path, $organizations, $where, self::KEY_PATTERN);
+        if (is_array($organizations) && $organizations !== [] && ! array_is_list($organizations)) {
+            $result = [];
 
-        if (in_array(Organization::HERO_KEY, $keys, true)) {
+            foreach ($organizations as $key => $roles) {
+                $result[$this->names($path, [(string) $key], $where, self::KEY_PATTERN)[0]] = $this->names($path, $roles, "{$where}.{$key}", self::ROLE_PATTERN);
+            }
+        } else {
+            $result = array_fill_keys($this->names($path, $organizations, $where, self::KEY_PATTERN), []);
+        }
+
+        if (array_key_exists(Organization::HERO_KEY, $result)) {
             throw InvalidInstallFile::in($path, "{$where}: the hero organization comes only with the hero role.");
         }
 
-        return $keys;
+        return $result;
     }
 
     /**
@@ -393,12 +403,14 @@ final readonly class InstallFileParser
             }
 
             $emails[] = $email;
+            $organizationRoles = $this->accountOrganizations($path, $account['organizations'] ?? [], "{$where}.organizations");
             $result[] = new InstallAccount(
                 $email,
                 $name,
                 $this->names($path, $account['roles'] ?? [], "{$where}.roles", self::ROLE_PATTERN),
                 $id === self::RANDOM_ID,
-                $this->accountOrganizations($path, $account['organizations'] ?? [], "{$where}.organizations"),
+                array_keys($organizationRoles),
+                array_filter($organizationRoles, static fn(array $roles): bool => $roles !== []),
             );
         }
 

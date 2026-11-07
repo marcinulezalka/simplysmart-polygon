@@ -94,7 +94,8 @@ Organizacje i personel (np. w pliku projektu albo `infrastructure/deploy/vendors
     "zones": {
         "shop": {
             "accounts": [
-                { "email": "anna@example.com", "name": "Anna Nowak", "roles": ["registration"], "organizations": ["clinic", "clinic-desk"] }
+                { "email": "anna@example.com", "name": "Anna Nowak", "roles": ["registration"], "organizations": ["clinic", "clinic-desk"] },
+                { "email": "ewa@example.com", "name": "Ewa Lis", "organizations": { "clinic": ["owner"], "clinic-desk": ["doctor"] } }
             ]
         }
     }
@@ -110,8 +111,8 @@ Organizacje i personel (np. w pliku projektu albo `infrastructure/deploy/vendors
 | `roles.<rola>.except` | uprawnienia odjęte od `permissions` i odziedziczonych |
 | `roles.<rola>.inherits` | role, których uprawnienia rola przejmuje (bez cykli) |
 | `accounts[].email`, `name` | konto strefy (adres zapisywany małymi literami, szyfrowany, z `email_hash`) |
-| `accounts[].roles` | role strefy z dowolnego pliku (np. `hero` z pliku paczki); nieznana rola to błąd |
-| `accounts[].organizations` | klucze organizacji z `organizations` (dowolnego pliku), których konto jest członkiem — personelem (`organization_members`); nieznany klucz to błąd |
+| `accounts[].roles` | role strefy z dowolnego pliku (np. `hero` z pliku paczki); konto z organizacjami dostaje je w każdej swojej organizacji, konto bez organizacji i hero — globalnie; nieznana rola to błąd |
+| `accounts[].organizations` | organizacje z `organizations` (dowolnego pliku), których konto jest członkiem — personelem (`organization_members`): lista kluczy (`["clinic"]`) albo obiekt klucz => role konta tylko w tej organizacji (`{"clinic": ["owner"], "clinic-desk": ["doctor"]}`, zespół spatie = organizacja, [baza-danych.md](baza-danych.md) §15); nieznany klucz albo rola to błąd |
 | `organizations.<klucz>` | organizacja wspólna dla stref; klucz (kebab-case) to jej identyfikator w plikach, zapisany w `json_attributes.install_key` |
 | `organizations.<klucz>.name` | nazwa (wymagana); opcjonalnie `short_name` |
 | `organizations.<klucz>.parent` | klucz organizacji nadrzędnej (filia, dział); bez cykli. Zarezerwowany klucz `simplysmart` (`Organization::HERO_KEY`) wpina organizację pod organizację hero (#1 „Simplysmart”), niewidoczną we frontendzie stref (`visible()`, `contexts()`) — organizacje klienta pod rootem operatora; tego klucza nie można zdefiniować ani przypisać kontu (członkiem hero zostaje tylko konto z rolą `hero`) |

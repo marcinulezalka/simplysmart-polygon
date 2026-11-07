@@ -1,7 +1,7 @@
 # Strefy i logowanie
 
 Strefa to wydzielona część aplikacji z własnym segmentem URL, prefiksem nazw tras, guardem, tabelami kont i sesją.
-Mechanizm przeniesiony z rdzenia admiro (bez zespołów spatie, kontekstu w adresie, wyglądu stref i dziennika audytu).
+Mechanizm przeniesiony z rdzenia admiro (bez kontekstu w adresie, wyglądu stref i dziennika audytu).
 **polygon nie ma widoków**: daje logikę, trasy, kontrolery, limity i maile, a ekrany logowania, konta i szablony maili
 dostarcza paczka strefy.
 
@@ -129,7 +129,9 @@ własny kontekst):
   `organization` = token organizacji, `Http\Controllers\Account\OrganizationSwitchController`); potem pulpit z
   komunikatem `status` (`account.organization.switched`), a organizacja spoza kontekstów to błąd pola
   (`account.organization.unavailable`). Teksty przełącznika: `account.organization.*`.
-- Role nie zależą od organizacji (spatie bez zespołów); kontekst wybiera dane, nie uprawnienia.
+- Kontekst wybiera też uprawnienia: role i uprawnienia konta liczą się w bieżącej organizacji (zespół spatie =
+  organizacja, `Http\Middleware\UseOrganizationPermissions`; docs/baza-danych.md §15). Hero i konto bez organizacji
+  mają role globalne.
 
 ## Konta i komendy
 

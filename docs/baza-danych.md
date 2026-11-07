@@ -4,8 +4,8 @@
 > zmian (`Database\History`, triggery MySQL/MariaDB i SQLite, aktor zmian `Database\HistoryActor`), `Models\DataModel` (token, soft delete, casty,
 > checksum, scope'y, przejścia stanu `RecordStatusTransitions`, etykiety kolumn), krótkie tłumaczenia `json_i18n` (`HasI18n`), tabele strefy `polygon_*` (`Database\ZoneTables`),
 > stockowe tabele Laravela (`users`, `cache`, `jobs`) z wyrównaniem `users` do standardu, słowniki lokalizacji
-> z seederami (§14), tabele uprawnień spatie/laravel-permission bez zespołów (§15) oraz organizacje z typami jednostek
-> i członkostwem kont (§16). Warstwa pochodzi z rdzenia `simplysmart/admiro` (kopia, bez zespołów uprawnień, audytu,
+> z seederami (§14), tabele uprawnień spatie/laravel-permission z zespołami — zespół to organizacja (§15) oraz organizacje z typami jednostek
+> i członkostwem kont (§16). Warstwa pochodzi z rdzenia `simplysmart/admiro` (kopia, bez audytu,
 > cookies, dokumentów prawnych i widoków); numeracja sekcji §1–§14 jest ta sama co w admiro.
 
 Silniki: MySQL 8 / MariaDB i SQLite (testy, lokalnie). Zasady obowiązują każdą tabelę danych aplikacji.
@@ -241,18 +241,28 @@ liczy go `DataModel` przy zapisie.
 - Dane startowe: `php artisan polygon:localization:seed`. Ponowne uruchomienie dopisuje tylko brakujące wpisy, a wybory
   administratora (włączenie, domyślny, usunięte stawki) zostają.
 
-## 15. Uprawnienia (spatie/laravel-permission, bez zespołów)
+## 15. Uprawnienia (spatie/laravel-permission, zespół = organizacja)
 
 | Tabela | Kolumny |
 | --- | --- |
 | `permissions` | kolumny standardowe + `guard_name`; unikalne `name` + `guard_name` |
-| `roles` | kolumny standardowe + `guard_name`; unikalne `name` + `guard_name` |
-| `model_has_permissions`, `model_has_roles` | `id`, `permission_id` / `role_id`, `model_type`, `model_id`; unikalne przypisanie |
+| `roles` | kolumny standardowe + `guard_name` + `organization_id` (zawsze null — role są wspólne dla organizacji); unikalne `name` + `guard_name` |
+| `model_has_permissions`, `model_has_roles` | `id`, `permission_id` / `role_id`, `model_type`, `model_id`, `organization_id` (null — przypisanie globalne); unikalne przypisanie w organizacji |
 | `role_has_permissions` | `id`, `permission_id`, `role_id`; unikalna para |
 
-- Nazwy tabel i kolumn: `Permissions\PermissionTables`. Konfigurację spatie ustawia `Permissions\PermissionDefaults`
-  (po rejestracji providerów): modele `Models\Permissions\{Role,Permission}`, `teams = false`; nie publikuj
-  `config/permission.php`.
+- Nazwy tabel i kolumn: `Permissions\PermissionTables` (kolumna zespołu `TEAM_FOREIGN_KEY` = `organization_id`).
+  Konfigurację spatie ustawia `Permissions\PermissionDefaults` (po rejestracji providerów): modele
+  `Models\Permissions\{Role,Permission}`, `teams = true`, model zespołu `Models\Organization`; nie publikuj
+  `config/permission.php`. Kolumnę zespołu dodaje migracja `add_organization_to_permission_tables` (przypisania sprzed
+  niej zostają globalne).
+- **Role w organizacji:** konto może mieć w każdej organizacji inne role (np. właściciel w jednej, lekarz w drugiej).
+  Nadaje i czyta je `Permissions\OrganizationRoles` (`assign()`, `names()`; organizacja null — role globalne), niezależnie
+  od zespołu żądania. Role globalne mają hero i konta bez organizacji (`Auth\CreateZoneAccount`,
+  `<strefa>:account:create`); role personelu nadaje instalator w organizacjach z pliku ([instalacja.md](instalacja.md)).
+- **Zespół żądania:** `Http\Middleware\UseOrganizationPermissions` w grupie middleware strefy ustawia zespół spatie
+  na bieżącą organizację konta (`Contracts\CurrentOrganization`); hero i konto bez organizacji — null (role globalne).
+  `hasRole()`, `can()`, `checkPermissionTo()` i `zone.permission:*` liczą więc role w bieżącej organizacji. Poza
+  żądaniem strefy (konsola, kolejka) zespół to null.
 - Role i uprawnienia mają pełny standard tabel danych (traity `HasRouteToken`, `HasStandardColumns`, `HasChecksum`,
   soft delete), historię i pulę id; tabele łączące mają `id` zamiast złożonego klucza spatie (dla historii).
 - Model z rolami dołącza `Spatie\Permission\Traits\HasRoles`; model inny niż provider guarda podaje `$guard_name`.
@@ -260,8 +270,8 @@ liczy go `DataModel` przy zapisie.
 ## 16. Organizacje
 
 Organizacja to firma korzystająca z aplikacji, wspólna dla stref. Schemat jest końcowym stanem organizacji z admiro
-(nazwy migracji te same, bez jego migracji `add_*`), ale bez zespołów spatie: role nie zależą od organizacji, a paczka
-ma za to kontekst organizacji konta w strefie ([strefy.md](strefy.md), „Kontekst organizacji”); widoki, formularze
+(nazwy migracji te same, bez jego migracji `add_*`); role konta zależą od organizacji (zespoły spatie, §15), a bieżącą
+organizację wybiera kontekst organizacji konta w strefie ([strefy.md](strefy.md), „Kontekst organizacji”); widoki, formularze
 i zarządzanie organizacjami dodaje paczka strefy.
 
 | Tabela | Model | Standard | Kolumny domenowe |
