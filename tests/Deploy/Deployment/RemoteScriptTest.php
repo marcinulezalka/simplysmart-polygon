@@ -71,6 +71,21 @@ final class RemoteScriptTest extends TestCase
     }
 
     #[Test]
+    public function fresh_is_passed_only_when_asked_and_the_script_seeds_a_fresh_database(): void
+    {
+        $script = RemoteScript::fromFile();
+
+        $this->assertStringContainsString("export DEPLOY_FRESH='1'\n", $script->production($this->config(), null, null, true));
+        $this->assertStringContainsString("export DEPLOY_FRESH='1'\n", $script->preproduction($this->config(), null, null, true));
+        $this->assertStringNotContainsString('export DEPLOY_FRESH', $script->production($this->config()));
+        $this->assertStringNotContainsString('export DEPLOY_FRESH', $script->preproduction($this->config()));
+
+        $server = $script->production($this->config(), null, null, true);
+        $this->assertGreaterThan((int) strpos($server, 'artisan migrate:fresh --force'), (int) strpos($server, 'POLYGON_INSTALL_FILES="$install_files" "$php_bin" artisan db:seed --force'));
+        $this->assertLessThan((int) strpos($server, 'artisan config:cache'), (int) strpos($server, 'artisan db:seed --force'));
+    }
+
+    #[Test]
     public function commands_read_the_script_from_standard_input(): void
     {
         $script = new RemoteScript('');

@@ -29,7 +29,7 @@ final class DeployOptionsTest extends TestCase
     {
         $options = DeployOptions::fromArguments(['shop'], '/repo');
 
-        $this->assertSame(['shop', '/repo', ProductionMode::Ask, false, false], [$options->project, $options->root, $options->production, $options->dryRun, $options->withPush]);
+        $this->assertSame(['shop', '/repo', ProductionMode::Ask, false, false, false], [$options->project, $options->root, $options->production, $options->dryRun, $options->withPush, $options->fresh]);
     }
 
     #[Test]
@@ -39,6 +39,8 @@ final class DeployOptionsTest extends TestCase
 
         $this->assertSame(['shop', '/other', ProductionMode::Skip, true, true], [$options->project, $options->root, $options->production, $options->dryRun, $options->withPush]);
         $this->assertSame(ProductionMode::Always, DeployOptions::fromArguments([DeployOptions::PRODUCTION], '/repo')->production);
+        $this->assertTrue(DeployOptions::fromArguments(['shop', DeployOptions::FRESH], '/repo')->fresh);
+        $this->assertStringContainsString(DeployOptions::FRESH, DeployOptions::USAGE);
     }
 
     #[Test]

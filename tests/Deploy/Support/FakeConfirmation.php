@@ -16,7 +16,7 @@ namespace Simplysmart\Polygon\Tests\Deploy\Support;
 use Simplysmart\Polygon\Deploy\Console\Confirmation;
 
 /**
- * Atrapa pytania tak/nie: zapisuje pytania i odpowiada stałą odpowiedzią.
+ * Atrapa pytania tak/nie: zapisuje pytania i odpowiada kolejną odpowiedzią z listy, a po jej wyczerpaniu — stałą.
  */
 final class FakeConfirmation implements Confirmation
 {
@@ -25,14 +25,18 @@ final class FakeConfirmation implements Confirmation
      */
     public array $questions = [];
 
+    /**
+     * @param  list<bool>  $answers  Odpowiedzi na kolejne pytania (przed stałą odpowiedzią).
+     */
     public function __construct(
         public bool $answer = false,
+        public array $answers = [],
     ) {}
 
     public function ask(string $question): bool
     {
         $this->questions[] = $question;
 
-        return $this->answer;
+        return $this->answers === [] ? $this->answer : array_shift($this->answers);
     }
 }

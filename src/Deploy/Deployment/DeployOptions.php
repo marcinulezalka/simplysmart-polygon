@@ -28,16 +28,20 @@ final readonly class DeployOptions
 
     public const string NO_PRODUCTION = '--no-production';
 
+    /** Baza od nowa (`migrate:fresh` + `db:seed`) zamiast migracji — usuwa wszystkie dane; każde środowisko pyta osobno. */
+    public const string FRESH = '--fresh';
+
     public const string ROOT = CommandLine::ROOT_OPTION;
 
     public const string USAGE = 'Użycie: vendor/bin/deploy <projekt> [' . self::PRODUCTION . '|' . self::NO_PRODUCTION . '] ['
-        . self::DRY_RUN . '] [' . self::WITH_PUSH . '] [' . self::ROOT . '<katalog>]';
+        . self::DRY_RUN . '] [' . self::WITH_PUSH . '] [' . self::FRESH . '] [' . self::ROOT . '<katalog>]';
 
     private const string OPTION_PREFIX = '-';
 
     /**
      * @param  string|null  $project  Nazwa projektu z `infrastructure/deploy/vendors/`; null — nie podano.
      * @param  string  $root  Katalog repozytorium projektu (sprawdzanego i wypychanego przed wdrożeniem).
+     * @param  bool  $fresh  Baza od nowa w każdym wdrażanym środowisku (po potwierdzeniu dla każdego z nich).
      */
     public function __construct(
         public ?string $project,
@@ -45,6 +49,7 @@ final readonly class DeployOptions
         public ProductionMode $production = ProductionMode::Ask,
         public bool $dryRun = false,
         public bool $withPush = false,
+        public bool $fresh = false,
     ) {}
 
     /**
@@ -60,6 +65,7 @@ final readonly class DeployOptions
         $production = ProductionMode::Ask;
         $dryRun = false;
         $withPush = false;
+        $fresh = false;
 
         foreach ($arguments as $argument) {
             match (true) {
@@ -67,12 +73,13 @@ final readonly class DeployOptions
                 $argument === self::NO_PRODUCTION => $production = ProductionMode::Skip,
                 $argument === self::DRY_RUN => $dryRun = true,
                 $argument === self::WITH_PUSH => $withPush = true,
+                $argument === self::FRESH => $fresh = true,
                 str_starts_with($argument, self::ROOT) => $root = substr($argument, strlen(self::ROOT)),
                 $project === null && ! str_starts_with($argument, self::OPTION_PREFIX) => $project = $argument,
                 default => throw new DeployException("Nieznana opcja: {$argument}\n" . self::USAGE),
             };
         }
 
-        return new self($project, $root, $production, $dryRun, $withPush);
+        return new self($project, $root, $production, $dryRun, $withPush, $fresh);
     }
 }

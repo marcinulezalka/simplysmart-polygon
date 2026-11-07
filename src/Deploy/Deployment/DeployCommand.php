@@ -33,6 +33,9 @@ use Simplysmart\Polygon\Deploy\Process\ProcessRunner;
  * kopiuje do przed-produkcji i wysyła na serwer (scp), a projekt bez paczek z repozytoriów path — z `composer.lock`.
  * Plik instalacji projektu (`<projekt>.json` obok `<projekt>.env`: konta, role, uprawnienia; docs/instalacja.md) trafia
  * tak samo do `storage/app/<projekt>.install.json` obu środowisk, a remote.sh stosuje go `polygon:install`.
+ * Z `--fresh` baza każdego środowiska powstaje od nowa (`migrate:fresh` + `db:seed`, remote.sh z `DEPLOY_FRESH=1`) —
+ * tylko po osobnym potwierdzeniu dla przed-produkcji i dla produkcji (także z `--production`); bez potwierdzenia
+ * przed-produkcji nic nie jest wdrażane, a bez potwierdzenia produkcji zostaje ona bez zmian.
  */
 final readonly class DeployCommand
 {
@@ -81,9 +84,15 @@ final readonly class DeployCommand
 
         if ($options->dryRun) {
             $this->deployLock->build($private, true, $output);
-            array_map($output->line(...), (new DeployPlan($project, $options->production))->lines());
+            array_map($output->line(...), (new DeployPlan($project, $options->production, $options->fresh))->lines());
 
             return ExitCode::SUCCESS;
+        }
+
+        if ($options->fresh && ! $this->freshConfirmed("przed-produkcji {$project->preproductionPath}")) {
+            $output->error('Wdrożenie przerwane: bez zgody na ' . DeployOptions::FRESH . ' (migrate:fresh) nic nie zostało zmienione.');
+
+            return ExitCode::FAILURE;
         }
 
         $output->line('==> Tworzę manifest wdrożeniowy');
@@ -99,7 +108,7 @@ final readonly class DeployCommand
         $manifest = $files === [] ? null : PrivatePackages::DEPLOY_MANIFEST;
         $installSource = $project->installSource();
         $installTarget = $installSource === null ? null : $project->installTarget();
-        $preproduction = $this->preproduction($project, $files, $manifest, $installSource, $output);
+        $preproduction = $this->preproduction($project, $files, $manifest, $installSource, $options->fresh, $output);
 
         if ($preproduction !== ExitCode::SUCCESS) {
             return $preproduction;
@@ -107,6 +116,12 @@ final readonly class DeployCommand
 
         if (! $this->productionWanted($project, $options->production)) {
             $output->line('==> Produkcja pominięta — zaktualizowano tylko przed-produkcję');
+
+            return ExitCode::SUCCESS;
+        }
+
+        if ($options->fresh && ! $this->freshConfirmed("produkcji {$project->productionTarget()}")) {
+            $output->line('==> Produkcja pominięta — bez zgody na ' . DeployOptions::FRESH . ' (migrate:fresh) zostaje bez zmian');
 
             return ExitCode::SUCCESS;
         }
@@ -122,7 +137,7 @@ final readonly class DeployCommand
         $exitCode = $this->runScript(
             "==> Uruchamiam wdrożenie na {$project->productionTarget()}",
             $this->script->remoteCommand($project),
-            $this->script->production($project, $manifest, $installTarget),
+            $this->script->production($project, $manifest, $installTarget, $options->fresh),
             null,
             'Wdrożenie na serwerze zakończyło się błędem',
             $output,
@@ -141,12 +156,13 @@ final readonly class DeployCommand
      * @param  list<string>  $files  Pliki manifestu wdrożeniowego; pusta lista — paczki z `composer.lock`.
      * @param  string|null  $manifest  Nazwa manifestu dla remote.sh.
      * @param  string|null  $installSource  Plik instalacji projektu; null — bez pliku.
+     * @param  bool  $fresh  Baza od nowa (`migrate:fresh` + `db:seed`) zamiast migracji.
      *
      * @throws DeployException Gdy katalog nie jest klonem projektu albo manifestu nie da się skopiować.
      * @throws ProcessException Gdy basha nie da się uruchomić.
      * @throws PrivatePackagesException Gdy starego manifestu nie da się usunąć.
      */
-    private function preproduction(ProjectConfig $project, array $files, ?string $manifest, ?string $installSource, Output $output): int
+    private function preproduction(ProjectConfig $project, array $files, ?string $manifest, ?string $installSource, bool $fresh, Output $output): int
     {
         $directory = $project->preproductionPath;
 
@@ -169,7 +185,7 @@ final readonly class DeployCommand
         return $this->runScript(
             "==> Aktualizuję przed-produkcję {$directory}",
             $this->script->localCommand(),
-            $this->script->preproduction($project, $manifest, $installSource === null ? null : $project->installTarget()),
+            $this->script->preproduction($project, $manifest, $installSource === null ? null : $project->installTarget(), $fresh),
             $directory,
             'Aktualizacja przed-produkcji zakończyła się błędem — produkcja nie została wdrożona',
             $output,
@@ -220,6 +236,16 @@ final readonly class DeployCommand
         if ($this->processes->run(['scp', '-q', $source, "{$project->productionTarget()}/{$project->installTarget()}"]) !== ExitCode::SUCCESS) {
             throw new DeployException("Nie udało się wysłać pliku instalacji na {$project->productionTarget()}.");
         }
+    }
+
+    /**
+     * Osobna zgoda na usunięcie wszystkich danych bazy środowiska; bez terminala odpowiedź to „nie”.
+     *
+     * @param  string  $environment  Opis środowiska w pytaniu, np. „produkcji konto@serwer:katalog”.
+     */
+    private function freshConfirmed(string $environment): bool
+    {
+        return $this->confirmation->ask('UWAGA: ' . DeployOptions::FRESH . " usunie WSZYSTKIE dane bazy {$environment} (migrate:fresh) i założy ją od nowa (db:seed). Kontynuować? [t/N] ");
     }
 
     private function productionWanted(ProjectConfig $project, ProductionMode $production): bool

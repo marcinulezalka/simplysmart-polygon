@@ -22,7 +22,8 @@ namespace Simplysmart\Polygon\Deploy\Deployment;
  * więc nie trafia on do globalnej konfiguracji Composera dewelopera. Gdy deploy przesłał manifest wdrożeniowy,
  * skrypt dostaje jego nazwę (`DEPLOY_COMPOSER_MANIFEST`) i instaluje paczki z niego zamiast z `composer.lock`, a gdy
  * przesłał plik instalacji projektu — jego ścieżkę (`DEPLOY_INSTALL_FILE`), którą `polygon:install` dopisuje do
- * `POLYGON_INSTALL_FILES` z `.env`.
+ * `POLYGON_INSTALL_FILES` z `.env`. Z `--fresh` (po potwierdzeniu) skrypt dostaje `DEPLOY_FRESH=1` i zamiast migracji
+ * odtwarza bazę od nowa: `migrate:fresh` i `db:seed` z tymi samymi plikami instalacji.
  */
 final readonly class RemoteScript
 {
@@ -49,6 +50,8 @@ final readonly class RemoteScript
     private const string ENV_MANIFEST = 'DEPLOY_COMPOSER_MANIFEST';
 
     private const string ENV_INSTALL_FILE = 'DEPLOY_INSTALL_FILE';
+
+    private const string ENV_FRESH = 'DEPLOY_FRESH';
 
     /**
      * @param  string  $serverScript  Treść remote.sh.
@@ -94,11 +97,12 @@ final readonly class RemoteScript
      *
      * @param  string|null  $manifest  Manifest wdrożeniowy w katalogu aplikacji; null — paczki z `composer.lock`.
      * @param  string|null  $installFile  Plik instalacji w katalogu aplikacji; null — tylko pliki z `.env`.
+     * @param  bool  $fresh  Baza od nowa (`migrate:fresh` + `db:seed`) zamiast migracji.
      */
-    public function production(ProjectConfig $config, ?string $manifest = null, ?string $installFile = null): string
+    public function production(ProjectConfig $config, ?string $manifest = null, ?string $installFile = null, bool $fresh = false): string
     {
         return $this->script(
-            [self::ENV_PHP => $config->php, self::ENV_GITHUB_TOKEN => $config->githubToken ?? '', self::ENV_COMPOSER => $config->remoteComposer, self::ENV_MANIFEST => $manifest, self::ENV_INSTALL_FILE => $installFile],
+            [self::ENV_PHP => $config->php, self::ENV_GITHUB_TOKEN => $config->githubToken ?? '', self::ENV_COMPOSER => $config->remoteComposer, self::ENV_MANIFEST => $manifest, self::ENV_INSTALL_FILE => $installFile, self::ENV_FRESH => $fresh ? '1' : null],
             $config->path,
         );
     }
@@ -108,11 +112,12 @@ final readonly class RemoteScript
      *
      * @param  string|null  $manifest  Manifest wdrożeniowy w katalogu przed-produkcji; null — paczki z `composer.lock`.
      * @param  string|null  $installFile  Plik instalacji w katalogu przed-produkcji; null — tylko pliki z `.env`.
+     * @param  bool  $fresh  Baza od nowa (`migrate:fresh` + `db:seed`) zamiast migracji.
      */
-    public function preproduction(ProjectConfig $config, ?string $manifest = null, ?string $installFile = null): string
+    public function preproduction(ProjectConfig $config, ?string $manifest = null, ?string $installFile = null, bool $fresh = false): string
     {
         return $this->script(
-            [self::ENV_PHP => $config->preproductionPhp, self::ENV_KEEP_ENV => '1', self::ENV_COMPOSER => $config->preproductionComposer, self::ENV_MANIFEST => $manifest, self::ENV_INSTALL_FILE => $installFile],
+            [self::ENV_PHP => $config->preproductionPhp, self::ENV_KEEP_ENV => '1', self::ENV_COMPOSER => $config->preproductionComposer, self::ENV_MANIFEST => $manifest, self::ENV_INSTALL_FILE => $installFile, self::ENV_FRESH => $fresh ? '1' : null],
             $config->preproductionPath,
         );
     }

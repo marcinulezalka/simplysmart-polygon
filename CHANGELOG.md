@@ -4,6 +4,10 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- `vendor/bin/deploy --fresh`: baza od nowa we wdrażanych środowiskach — `migrate:fresh` (usuwa wszystkie dane) i `db:seed` z plikami instalacji zamiast migracji i `polygon:install` (`remote.sh` z `DEPLOY_FRESH=1`); osobne potwierdzenie dla przed-produkcji i produkcji (także z `--production`, bez terminala odmowa), `--dry-run` opisuje plan.
+
 ## [0.2.0] - 2026-11-07
 
 ### Added

@@ -9,7 +9,7 @@ declare(strict_types=1);
  * (wzór `resources/deploy/deploy-vendor.env.example` tej paczki).
  * Uruchamiaj z katalogu repozytorium projektu (albo wskaż je przez --root=).
  *
- * Użycie: vendor/bin/deploy <projekt> [--production|--no-production] [--dry-run] [--with-push] [--root=<katalog>]
+ * Użycie: vendor/bin/deploy <projekt> [--production|--no-production] [--dry-run] [--with-push] [--fresh] [--root=<katalog>]
  */
 
 use Simplysmart\Polygon\Deploy\Console\CommandLine;

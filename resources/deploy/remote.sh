@@ -10,6 +10,8 @@
 #      (DEPLOY_COMPOSER_MANIFEST, np. composer.deploy.json z composer.deploy.lock — paczki z repozytoriów git),
 #   5. APP_KEY, migracje, typy jednostek i organizacja hero (polygon:organizations:seed), pliki instalacji (polygon:install: uprawnienia, role i konta z plików paczek, POLYGON_INSTALL_FILES
 #      z .env i pliku przesłanego przez deploy — DEPLOY_INSTALL_FILE), cache konfiguracji, tras i widoków.
+#      Z DEPLOY_FRESH=1 (vendor/bin/deploy --fresh, po potwierdzeniu) zamiast migracji, seedera typów jednostek i instalacji:
+#      baza od nowa — migrate:fresh (USUWA WSZYSTKIE DANE) i db:seed z tymi samymi plikami instalacji.
 # Z DEPLOY_KEEP_ENV=1 (przed-produkcja na komputerze deweloperskim) .env zostaje bez zmian, a bez COMPOSER_BIN
 # i ~/bin/composer skrypt bierze composer z PATH zamiast go instalować.
 # Zatrzymuje się przy pierwszym błędzie.
@@ -26,6 +28,7 @@ composer_bin="${COMPOSER_BIN:-$HOME/bin/composer}"
 keep_env="${DEPLOY_KEEP_ENV:-}"
 manifest="${DEPLOY_COMPOSER_MANIFEST:-}"
 install_file="${DEPLOY_INSTALL_FILE:-}"
+fresh="${DEPLOY_FRESH:-}"
 
 fail() { echo "BŁĄD: $*" >&2; exit 1; }
 step() { echo "--> $*"; }
@@ -108,19 +111,8 @@ else
 fi
 [[ -f vendor/autoload.php ]] || fail "Instalacja nie utworzyła vendor/autoload.php."
 
-step "Migracje"
-# Config bez cache, żeby migracje czytały bieżący .env, a nie konfigurację z poprzedniego wdrożenia.
-"$php_bin" artisan config:clear >/dev/null
-"$php_bin" artisan migrate --force
-
-step "Typy jednostek i organizacja hero (polygon:organizations:seed)"
-# Idempotentny seeder referencyjny: brakujące typy jednostek (np. nowe w paczce) muszą być w bazie, zanim pliki
-# instalacji założą organizacje z `unit_type`.
-"$php_bin" artisan polygon:organizations:seed --no-interaction
-
-step "Pliki instalacji (polygon:install)"
-# Config jest bez cache, więc POLYGON_INSTALL_FILES ze środowiska procesu ma pierwszeństwo przed .env (Dotenv go nie
-# nadpisuje): pliki z .env plus plik przesłany przez deploy, bez powtórzeń.
+# Pliki instalacji: z .env plus plik przesłany przez deploy, bez powtórzeń. Config jest bez cache, więc
+# POLYGON_INSTALL_FILES ze środowiska procesu ma pierwszeństwo przed .env (Dotenv go nie nadpisuje).
 install_files="$({ grep -E '^POLYGON_INSTALL_FILES=' .env || true; } | tail -n1 | cut -d= -f2- | sed -E "s/^[\"']//; s/[\"']\s*$//")"
 if [[ -n "$install_file" ]]; then
     [[ -f "$install_file" ]] || fail "Brak $install_file — deploy nie przesłał pliku instalacji."
@@ -130,7 +122,28 @@ if [[ -n "$install_file" ]]; then
         *) install_files="${install_files:+$install_files,}$install_file" ;;
     esac
 fi
-POLYGON_INSTALL_FILES="$install_files" "$php_bin" artisan polygon:install --no-interaction
+
+# Config bez cache, żeby migracje czytały bieżący .env, a nie konfigurację z poprzedniego wdrożenia.
+"$php_bin" artisan config:clear >/dev/null
+
+if [[ "$fresh" == 1 ]]; then
+    step "Baza od nowa: migrate:fresh (usuwa wszystkie dane)"
+    "$php_bin" artisan migrate:fresh --force --no-interaction
+
+    step "Dane startowe: db:seed (słowniki, organizacje, pliki instalacji, seedery paczek)"
+    POLYGON_INSTALL_FILES="$install_files" "$php_bin" artisan db:seed --force --no-interaction
+else
+    step "Migracje"
+    "$php_bin" artisan migrate --force
+
+    step "Typy jednostek i organizacja hero (polygon:organizations:seed)"
+    # Idempotentny seeder referencyjny: brakujące typy jednostek (np. nowe w paczce) muszą być w bazie, zanim pliki
+    # instalacji założą organizacje z `unit_type`.
+    "$php_bin" artisan polygon:organizations:seed --no-interaction
+
+    step "Pliki instalacji (polygon:install)"
+    POLYGON_INSTALL_FILES="$install_files" "$php_bin" artisan polygon:install --no-interaction
+fi
 
 step "Cache konfiguracji, tras i widoków"
 "$php_bin" artisan optimize:clear >/dev/null

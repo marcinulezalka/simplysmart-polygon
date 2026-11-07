@@ -5,7 +5,7 @@ Narzędzia paczki `simplysmart/polygon` (przestrzeń nazw `Simplysmart\Polygon\D
 | Polecenie | Co robi |
 |---|---|
 | `vendor/bin/version-release [--dry-run] [--major-confirm] [--root=<katalog>]` | Wydanie SemVer z sekcji `[Unreleased]` w `CHANGELOG.md`: podbija `VERSION` i datuje sekcję. |
-| `vendor/bin/deploy <projekt> [--dry-run] [--with-push] [--production\|--no-production] [--root=<katalog>]` | Wdrożenie: przed-produkcja na tym komputerze, potem produkcja przez SSH. |
+| `vendor/bin/deploy <projekt> [--dry-run] [--with-push] [--fresh] [--production\|--no-production] [--root=<katalog>]` | Wdrożenie: przed-produkcja na tym komputerze, potem produkcja przez SSH; z `--fresh` baza od nowa (po potwierdzeniu). |
 | `vendor/bin/composer-private [--deploy] [--dry-run] [--root=<katalog>]` | Instalacja paczek prywatnych z `private-packages.json` (poza repozytorium); z `--deploy` manifest wdrożeniowy. |
 
 Polecenia działają na katalogu, z którego je uruchomiono (repozytorium projektu). `--root=` wskazuje inny.
@@ -78,6 +78,26 @@ Błąd przed-produkcji zatrzymuje wdrożenie. Na serwerze musi istnieć klon rep
 
 - katalog projektu: `infrastructure/deploy/vendors/<projekt>/<projekt>.env` (i `<projekt>.json`); w katalogu mogą leżeć inne pliki projektu, deploy ich nie wysyła;
 - układ płaski: `infrastructure/deploy/vendors/<projekt>.env` (i `<projekt>.json`).
+
+### Baza od nowa (`--fresh`)
+
+`vendor/bin/deploy <projekt> --fresh` wdraża jak zwykle, ale zamiast migracji, seedera typów jednostek i
+`polygon:install` odtwarza bazę każdego wdrażanego środowiska od nowa: `php artisan migrate:fresh --force` (**usuwa
+wszystkie tabele i dane**: konta z PIN-ami, zaufane urządzenia, organizacje i wszystko, co dodano w aplikacji), potem
+`php artisan db:seed --force` z tymi samymi plikami instalacji (słowniki, typy jednostek, organizacja hero, pliki
+instalacji paczek i projektu, seedery paczek). `remote.sh` dostaje `DEPLOY_FRESH=1`.
+
+- Każde środowisko pyta osobno: przed-produkcja przed zbudowaniem manifestu, produkcja po decyzji o produkcji — także
+  z `--production`. Bez terminala odpowiedź to „nie”.
+- Brak zgody dla przed-produkcji przerywa wdrożenie, zanim cokolwiek się zmieni; brak zgody dla produkcji zostawia ją
+  bez zmian (przed-produkcja jest już odtworzona).
+- `--dry-run --fresh` tylko opisuje plan, o nic nie pyta.
+- Konta z plików instalacji powstają od nowa — ich właściciele ustawiają PIN przy pierwszym logowaniu.
+
+```bash
+composer deploy -- <projekt> --fresh --no-production   # tylko przed-produkcja od nowa
+composer deploy -- <projekt> --fresh --production      # obie bazy od nowa (dwa potwierdzenia)
+```
 
 ### Środowisko serwera (`.env.production`)
 

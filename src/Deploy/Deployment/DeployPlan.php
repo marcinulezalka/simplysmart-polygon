@@ -23,6 +23,7 @@ final readonly class DeployPlan
     public function __construct(
         private ProjectConfig $project,
         private ProductionMode $production,
+        private bool $fresh = false,
     ) {}
 
     /**
@@ -38,6 +39,7 @@ final readonly class DeployPlan
             "Produkcja: {$this->project->productionTarget()}, PHP: {$this->project->php}; {$this->production->describe()}",
             'Środowisko produkcji: ' . RemoteScript::PRODUCTION_ENV . ' z serwera zostanie skopiowany jako .env (APP_KEY serwera zostaje, gdy plik go nie podaje); wzorzec ' . "{$this->project->directory}/{$this->project->name}" . RemoteScript::PRODUCTION_ENV . ' przenieś na serwer ręcznie — deploy go nie wysyła.',
             'Kolejka: deploy nie uruchamia workera; z QUEUE_CONNECTION=database maile logowania wymagają workera z crona (docs/deploy.md, „Kolejka i worker”).',
+            ...($this->fresh ? ['Baza od nowa (' . DeployOptions::FRESH . '): w każdym wdrażanym środowisku migrate:fresh (USUWA WSZYSTKIE DANE) i db:seed z plikami instalacji zamiast migracji — po osobnym potwierdzeniu dla przed-produkcji i produkcji.'] : []),
             'Tryb ' . DeployOptions::DRY_RUN . ': nic nie zostało uruchomione.',
         ];
     }

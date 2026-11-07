@@ -257,6 +257,58 @@ final class DeployCommandTest extends TestCase
     }
 
     #[Test]
+    public function fresh_without_consent_changes_nothing(): void
+    {
+        [$exitCode, , $stderr] = $this->deploy(['shop', '--production', '--fresh']);
+
+        $this->assertSame(ExitCode::FAILURE, $exitCode);
+        $this->assertSame([], $this->processes->programs());
+        $this->assertCount(1, $this->confirmation->questions);
+        $this->assertStringContainsString("przed-produkcji {$this->preproduction}", $this->confirmation->questions[0]);
+        $this->assertStringContainsString('Wdrożenie przerwane', $stderr);
+    }
+
+    #[Test]
+    public function fresh_asks_each_environment_even_with_production_and_passes_the_flag(): void
+    {
+        $this->confirmation->answer = true;
+
+        [$exitCode, , $stderr] = $this->deploy(['shop', '--production', '--fresh']);
+
+        $this->assertSame(ExitCode::SUCCESS, $exitCode, $stderr);
+        $this->assertSame(['bash', 'ssh'], $this->processes->programs());
+        $this->assertCount(2, $this->confirmation->questions);
+        $this->assertStringContainsString('produkcji shop@prod:~/shop.pl', $this->confirmation->questions[1]);
+        $this->assertStringContainsString("export DEPLOY_FRESH='1'", (string) $this->processes->runs[0]['input']);
+        $this->assertStringContainsString("export DEPLOY_FRESH='1'", (string) $this->processes->runs[1]['input']);
+    }
+
+    #[Test]
+    public function fresh_production_without_consent_is_skipped(): void
+    {
+        $this->confirmation->answers = [true, false];
+
+        [$exitCode, $stdout] = $this->deploy(['shop', '--production', '--fresh']);
+
+        $this->assertSame(ExitCode::SUCCESS, $exitCode);
+        $this->assertSame(['bash'], $this->processes->programs());
+        $this->assertStringContainsString('Produkcja pominięta — bez zgody na --fresh', $stdout);
+    }
+
+    #[Test]
+    public function a_normal_deploy_never_sends_fresh_and_dry_run_only_describes_it(): void
+    {
+        $this->deploy(['shop', '--production']);
+        $this->assertStringNotContainsString('export DEPLOY_FRESH', (string) $this->processes->runs[0]['input']);
+
+        [$exitCode, $stdout] = $this->deploy(['shop', '--dry-run', '--fresh']);
+
+        $this->assertSame(ExitCode::SUCCESS, $exitCode);
+        $this->assertSame([], $this->confirmation->questions);
+        $this->assertStringContainsString('Baza od nowa (--fresh)', $stdout);
+    }
+
+    #[Test]
     public function without_path_packages_the_script_installs_from_the_lock(): void
     {
         $this->deploy(['shop', '--production']);
