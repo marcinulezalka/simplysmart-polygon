@@ -4,6 +4,8 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-07
+
 ### Added
 
 - Kontrahenci organizacji (docs/baza-danych.md §19): `contractors` z danymi firmy i NIP-em unikalnym w organizacji, osoby kontaktowe (`contractor_contacts`, jeden kontakt główny) i umowy (`contractor_contracts`, `Enums\ContractStatus`); `Contractors\SaveContractor` (normalizacja i sprawdzenie NIP/REGON), `SaveContact`, `SaveContract`, `Queries\Contractors\ContractorSearch` (organizacja i jej przodkowie, nazwa albo początek NIP-u). Polskie identyfikatory `Identifiers\Nip`, `Regon`, `Pesel` z regułami walidacji `Rules\Nip`, `Rules\Regon`, `Rules\Pesel`. `OrganizationUnits::lineage()` — organizacja i jej przodkowie (wspólne dla zasobów i kontrahentów).
