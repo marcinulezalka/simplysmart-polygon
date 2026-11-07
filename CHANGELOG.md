@@ -4,6 +4,8 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-07
+
 ### Added
 
 - `FreeSlots::on()` i `days()` z opcjonalnym zasobem (terminy tylko na nim, np. na wynajętym gabinecie).
