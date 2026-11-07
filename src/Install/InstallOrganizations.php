@@ -13,9 +13,11 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Install;
 
+use Simplysmart\Polygon\Models\Organization;
+
 /**
  * Organizacje ze wszystkich plików instalacji: plik stosowany później zastępuje organizację o tym samym kluczu (jak
- * role). Sprawdza organizacje nadrzędne (istnieją, bez cykli) i organizacje kont stref, zanim cokolwiek trafi do bazy,
+ * role). Sprawdza organizacje nadrzędne (istnieją albo to organizacja hero — Organization::HERO_KEY; bez cykli) i organizacje kont stref, zanim cokolwiek trafi do bazy,
  * i zwraca organizacje w kolejności zakładania — organizacja nadrzędna przed podrzędną.
  */
 final readonly class InstallOrganizations
@@ -79,7 +81,7 @@ final readonly class InstallOrganizations
 
         $organization = $organizations[$key];
 
-        if ($organization->parent !== null) {
+        if ($organization->parent !== null && $organization->parent !== Organization::HERO_KEY) {
             if (! array_key_exists($organization->parent, $organizations)) {
                 throw InvalidInstallFile::in(self::SOURCE, "organization [{$key}] has the undefined parent [{$organization->parent}].");
             }

@@ -88,7 +88,8 @@ final readonly class Installer
 
     /**
      * Organizacje z plików, rozpoznawane po kluczu (`json_attributes.install_key`, także w koszu): brakująca powstaje
-     * aktywna, istniejąca zostaje bez zmian (zmiany z aplikacji nie są cofane).
+     * aktywna, istniejąca zostaje bez zmian (zmiany z aplikacji nie są cofane). `parent` = Organization::HERO_KEY wpina
+     * organizację pod organizację hero (HERO_ID, niewidoczną we frontendzie stref).
      *
      * @param list<InstallOrganization> $organizations Organizacja nadrzędna przed podrzędną (InstallOrganizations).
      *
@@ -99,6 +100,11 @@ final readonly class Installer
     private function installOrganizations(array $organizations, InstallReport $report): array
     {
         $installed = [];
+
+        if (in_array(Organization::HERO_KEY, array_map(static fn(InstallOrganization $organization): ?string => $organization->parent, $organizations), true)) {
+            $installed[Organization::HERO_KEY] = Organization::withTrashed()->find(Organization::HERO_ID)
+                ?? throw InvalidInstallFile::in(self::SOURCE, 'the hero organization does not exist (run php artisan polygon:organizations:seed).');
+        }
 
         foreach ($organizations as $organization) {
             $existing = Organization::withTrashed()->where(ColumnNames::JSON_ATTRIBUTES . '->' . self::INSTALL_KEY, $organization->key)->first();

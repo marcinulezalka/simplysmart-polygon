@@ -113,6 +113,10 @@ final readonly class InstallFileParser
                 throw InvalidInstallFile::in($path, "{$where}: the key must be kebab-case.");
             }
 
+            if ($key === Organization::HERO_KEY) {
+                throw InvalidInstallFile::in($path, "{$where}: the key [" . Organization::HERO_KEY . '] is reserved for the hero organization (use it only as "parent").');
+            }
+
             if (! is_array($definition) || array_is_list($definition)) {
                 throw InvalidInstallFile::in($path, "{$where} must be an object.");
             }
@@ -135,6 +139,22 @@ final readonly class InstallFileParser
         }
 
         return $result;
+    }
+
+    /**
+     * Organizacje konta; organizacji hero nie można przypisać (jej członkiem zostaje tylko konto z rolą hero).
+     *
+     * @return list<string>
+     */
+    private function accountOrganizations(string $path, mixed $organizations, string $where): array
+    {
+        $keys = $this->names($path, $organizations, $where, self::KEY_PATTERN);
+
+        if (in_array(Organization::HERO_KEY, $keys, true)) {
+            throw InvalidInstallFile::in($path, "{$where}: the hero organization comes only with the hero role.");
+        }
+
+        return $keys;
     }
 
     /**
@@ -378,7 +398,7 @@ final readonly class InstallFileParser
                 $name,
                 $this->names($path, $account['roles'] ?? [], "{$where}.roles", self::ROLE_PATTERN),
                 $id === self::RANDOM_ID,
-                $this->names($path, $account['organizations'] ?? [], "{$where}.organizations", self::KEY_PATTERN),
+                $this->accountOrganizations($path, $account['organizations'] ?? [], "{$where}.organizations"),
             );
         }
 

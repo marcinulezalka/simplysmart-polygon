@@ -69,6 +69,12 @@ final class Organization extends DataModel
     /** Stałe id organizacji hero (operatora aplikacji) z puli seederów (IdSlots, 1–999). */
     public const int HERO_ID = 1;
 
+    /**
+     * Zarezerwowany klucz organizacji hero w plikach instalacji: wolno go użyć tylko jako `parent` (organizacje klientów
+     * pod niewidoczną organizacją operatora); nie można go zdefiniować ani przypisać kontu.
+     */
+    public const string HERO_KEY = 'simplysmart';
+
     /** Nazwa organizacji hero przy jej założeniu (później może ją zmienić administrator). */
     public const string HERO_NAME = 'Simplysmart';
 

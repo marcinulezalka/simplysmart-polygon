@@ -114,7 +114,7 @@ Organizacje i personel (np. w pliku projektu albo `infrastructure/deploy/vendors
 | `accounts[].organizations` | klucze organizacji z `organizations` (dowolnego pliku), których konto jest członkiem — personelem (`organization_members`); nieznany klucz to błąd |
 | `organizations.<klucz>` | organizacja wspólna dla stref; klucz (kebab-case) to jej identyfikator w plikach, zapisany w `json_attributes.install_key` |
 | `organizations.<klucz>.name` | nazwa (wymagana); opcjonalnie `short_name` |
-| `organizations.<klucz>.parent` | klucz organizacji nadrzędnej (filia, dział); bez cykli |
+| `organizations.<klucz>.parent` | klucz organizacji nadrzędnej (filia, dział); bez cykli. Zarezerwowany klucz `simplysmart` (`Organization::HERO_KEY`) wpina organizację pod organizację hero (#1 „Simplysmart”), niewidoczną we frontendzie stref (`visible()`, `contexts()`) — organizacje klienta pod rootem operatora; tego klucza nie można zdefiniować ani przypisać kontu (członkiem hero zostaje tylko konto z rolą `hero`) |
 | `organizations.<klucz>.unit_type` | kod typu jednostki z `organization_unit_types` (`siedziba`, `placowka`, `filia`, `poradnia`, `oddzial`, `departament`, `pracownia`, `zaklad`, `administracja`, `dzial`, `rejestracja`, `ogolna`); nieznany kod to błąd |
 | `organizations.<klucz>.is_department` | `true` — departament jednostki nadrzędnej (nazwa w przełączniku: „Jednostka · Departament”) |
 | `organizations.<klucz>.<dane firmy>` | `nip`, `regon`, `krs`, `phone`, `mobile_phone`, `email`, `billing_email`, `street`, `postal_code`, `city`, `country_code`, `color` (długości jak w kolumnach); inne pola to błąd |
