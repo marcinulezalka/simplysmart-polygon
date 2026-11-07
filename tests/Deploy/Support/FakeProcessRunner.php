@@ -17,7 +17,7 @@ use Simplysmart\Polygon\Deploy\Process\ProcessRunner;
 
 /**
  * Atrapa procesów: zapisuje wywołania `run`, a `capture` odpowiada według podpolecenia git
- * (`fetch`, `rev-list`, `status`).
+ * (`fetch`, `rev-list`, `status`) — najpierw dla katalogu repozytorium (`<katalog> <podpolecenie>`), potem dla każdego.
  */
 final class FakeProcessRunner implements ProcessRunner
 {
@@ -27,7 +27,8 @@ final class FakeProcessRunner implements ProcessRunner
     public array $runs = [];
 
     /**
-     * @param  array<string, string|null>  $captures  Wyjście `capture` dla podpolecenia git; brak klucza — pusty tekst.
+     * @param  array<string, string|null>  $captures  Wyjście `capture` dla podpolecenia git (`rev-list`) albo podpolecenia
+     *                                               w katalogu (`/repo rev-list`); brak klucza — pusty tekst.
      * @param  array<string, int>  $exitCodes  Kod wyjścia `run` dla programu (`bash`, `ssh`, `git`); brak klucza — 0.
      */
     public function __construct(
@@ -45,6 +46,11 @@ final class FakeProcessRunner implements ProcessRunner
     public function capture(array $command, ?string $directory = null): ?string
     {
         $subcommand = $command[3] ?? '';
+        $inDirectory = ($command[2] ?? '') . " {$subcommand}";
+
+        if (array_key_exists($inDirectory, $this->captures)) {
+            return $this->captures[$inDirectory];
+        }
 
         return array_key_exists($subcommand, $this->captures) ? $this->captures[$subcommand] : '';
     }

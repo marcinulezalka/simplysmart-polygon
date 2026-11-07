@@ -202,6 +202,61 @@ final class DeployCommandTest extends TestCase
     }
 
     #[Test]
+    public function with_push_pushes_unpushed_path_packages_before_the_project(): void
+    {
+        $this->withPathPackage();
+        $package = "{$this->root}/packages/acme/core";
+        $this->processes->captures["{$package} rev-list"] = '3';
+
+        [$exitCode, $stdout, $stderr] = $this->deploy(['shop', '--no-production', '--with-push']);
+
+        $this->assertSame(ExitCode::SUCCESS, $exitCode, $stderr);
+        $this->assertSame(['git', '-C', $package, 'push', '--quiet', '--set-upstream', 'origin', 'HEAD'], $this->processes->runs[0]['command']);
+        $this->assertSame(['git', 'env', 'bash'], $this->processes->programs());
+        $this->assertStringContainsString('Wypycham acme/core.', $stdout);
+    }
+
+    #[Test]
+    public function without_with_push_unpushed_path_packages_are_only_reported(): void
+    {
+        $this->withPathPackage();
+        $this->processes->captures["{$this->root}/packages/acme/core rev-list"] = '3';
+
+        [$exitCode, , $stderr] = $this->deploy(['shop', '--no-production']);
+
+        $this->assertSame(ExitCode::SUCCESS, $exitCode, $stderr);
+        $this->assertSame(['env', 'bash'], $this->processes->programs());
+        $this->assertStringContainsString('Uwaga: acme/core ma niewypchnięte commity', $stderr);
+    }
+
+    #[Test]
+    public function a_failed_package_push_stops_the_deploy(): void
+    {
+        $this->withPathPackage();
+        $this->processes->captures["{$this->root}/packages/acme/core rev-list"] = '1';
+        $this->processes->exitCodes = ['git' => 1];
+
+        [$exitCode, , $stderr] = $this->deploy(['shop', '--production', '--with-push']);
+
+        $this->assertSame(ExitCode::FAILURE, $exitCode);
+        $this->assertSame(['git'], $this->processes->programs());
+        $this->assertStringContainsString('Nie udało się wypchnąć paczki acme/core', $stderr);
+    }
+
+    #[Test]
+    public function dry_run_with_push_lists_unpushed_path_packages(): void
+    {
+        $this->withPathPackage();
+        $this->processes->captures["{$this->root}/packages/acme/core rev-list"] = '2';
+
+        [$exitCode, $stdout] = $this->deploy(['shop', '--dry-run', '--with-push']);
+
+        $this->assertSame(ExitCode::SUCCESS, $exitCode);
+        $this->assertSame([], $this->processes->programs());
+        $this->assertStringContainsString('Do wypchnięcia (--with-push): paczki acme/core.', $stdout);
+    }
+
+    #[Test]
     public function without_path_packages_the_script_installs_from_the_lock(): void
     {
         $this->deploy(['shop', '--production']);

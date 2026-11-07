@@ -39,7 +39,7 @@ katalogu”. Na serwerze tych katalogów nie ma, więc `--deploy` buduje osobny 
   `composer update <paczki> --no-install --no-scripts`, czyli paczki przypięte do commitów z repozytoriów zdalnych, `vendor/` bez zmian.
 
 Stary manifest jest usuwany przed zbudowaniem nowego (także po błędzie composera), więc nie da się wdrożyć
-nieaktualnego. Paczka z niewypchniętymi commitami dostaje ostrzeżenie (lock wskaże kod z repozytorium zdalnego), paczka
+nieaktualnego. Paczka z commitami nieobecnymi w jej `origin` (także bez gałęzi śledzonej) dostaje ostrzeżenie (lock wskaże kod z repozytorium zdalnego; `vendor/bin/deploy --with-push` ją wypycha), paczka
 bez `origin` to błąd. Projekt bez paczek z repozytoriów `path` manifestu nie potrzebuje. Composer na komputerze
 deweloperskim potrzebuje dostępu do prywatnych repozytoriów (`composer config -g github-oauth.github.com <token>`).
 Oba pliki dodaj do `.gitignore` projektu.
@@ -57,7 +57,8 @@ Oba pliki dodaj do `.gitignore` projektu.
 
 ## Wdrożenie (`vendor/bin/deploy`)
 
-1. Sprawdza, czy repozytorium jest wypchnięte. Niewypchnięte commity zatrzymują wdrożenie, chyba że podasz `--with-push`.
+1. Z `--with-push` najpierw wypycha paczki z repozytoriów path wymagane przez projekt, które mają commity nieobecne w ich `origin` (`git push --set-upstream origin HEAD`, więc także paczkę bez gałęzi śledzonej), potem projekt; błąd `git push` zatrzymuje wdrożenie, a `--dry-run` tylko wymienia paczki do wypchnięcia.
+   Potem sprawdza, czy repozytorium projektu jest wypchnięte. Niewypchnięte commity projektu zatrzymują wdrożenie, chyba że podasz `--with-push`; niewypchnięta paczka bez `--with-push` daje tylko ostrzeżenie (krok 2).
 2. Buduje świeży manifest wdrożeniowy (jak `composer-private --deploy`; `--dry-run` tylko wymienia paczki). Błąd zatrzymuje wdrożenie.
 3. Aktualizuje przed-produkcję (`PREPRODUCTION_PATH`, klon repozytorium na tym komputerze): kopiuje do niej manifest (i plik instalacji, niżej) i uruchamia `remote.sh`: `git pull`, `composer install --no-dev` z manifestu (bez niego z `composer.lock`), migracje, `polygon:install`, cache. Jej `.env` zostaje bez zmian.
 4. Pyta, czy wdrożyć produkcję (bez terminala odpowiedź to „nie”; `--production` / `--no-production` pomija pytanie), wysyła manifest do `DEPLOY_PATH` (`scp`) i uruchamia ten sam skrypt na serwerze przez `ssh`. Skrypt dostaje nazwę manifestu w `DEPLOY_COMPOSER_MANIFEST`; bez niej (ręczne uruchomienie) instaluje z `composer.lock`.

@@ -69,16 +69,15 @@ final readonly class DeployCommand
      */
     private function deploy(ProjectConfig $project, DeployOptions $options, Output $output): int
     {
-        if ($options->withPush && ! $options->dryRun) {
-            $output->line('==> Wypycham projekt');
-            $output->line($this->repository->push($options->root) ? 'Wypchnięty.' : 'Nic do wypchnięcia.');
+        $private = new PrivatePackages($options->root);
+
+        if ($options->withPush) {
+            $this->push($private, $options, $output);
         }
 
         if (! $this->repositoryReady($options, $output)) {
             return ExitCode::FAILURE;
         }
-
-        $private = new PrivatePackages($options->root);
 
         if ($options->dryRun) {
             $this->deployLock->build($private, true, $output);
@@ -250,6 +249,30 @@ final readonly class DeployCommand
         }
 
         return $exitCode;
+    }
+
+    /**
+     * `--with-push`: najpierw paczki z repozytoriów path (manifest przypina je do commitów z ich `origin`), potem projekt;
+     * z `--dry-run` tylko wymienia paczki do wypchnięcia (projekt — w sprawdzeniu repozytorium).
+     *
+     * @throws DeployException|PrivatePackagesException Gdy `git push` projektu albo paczki się nie powiódł.
+     */
+    private function push(PrivatePackages $private, DeployOptions $options, Output $output): void
+    {
+        if ($options->dryRun) {
+            $packages = $this->deployLock->unpushedPackages($private);
+
+            if ($packages !== []) {
+                $output->line('Do wypchnięcia (' . DeployOptions::WITH_PUSH . '): paczki ' . implode(', ', $packages) . '.');
+            }
+
+            return;
+        }
+
+        $output->line('==> Wypycham paczki');
+        $output->line($this->deployLock->pushPackages($private, $output) === [] ? 'Nic do wypchnięcia.' : 'Paczki wypchnięte.');
+        $output->line('==> Wypycham projekt');
+        $output->line($this->repository->push($options->root) ? 'Wypchnięty.' : 'Nic do wypchnięcia.');
     }
 
     private function repositoryReady(DeployOptions $options, Output $output): bool

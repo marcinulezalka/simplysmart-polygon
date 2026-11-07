@@ -14,8 +14,8 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Deploy\PrivatePackages;
 
 /**
- * Repozytorium git paczki z katalogu (repozytorium typu path): adres zdalny `origin` i czy ma commity
- * niewypchnięte do gałęzi śledzonej.
+ * Repozytorium git paczki z katalogu (repozytorium typu path): adres zdalny `origin`, czy ma commity, których nie ma
+ * w `origin`, i ich wypchnięcie (`--with-push` wdrożenia).
  */
 interface RepositorySource
 {
@@ -26,7 +26,17 @@ interface RepositorySource
     public function originUrl(string $directory): ?string;
 
     /**
+     * Czy bieżąca gałąź ma commity, których nie ma w żadnej gałęzi `origin` (także bez gałęzi śledzonej).
+     *
      * @param  string  $directory  Katalog paczki.
      */
     public function hasUnpushedCommits(string $directory): bool;
+
+    /**
+     * Wypycha bieżącą gałąź do `origin` pod tą samą nazwą i ustawia ją jako gałąź śledzoną.
+     *
+     * @param  string  $directory  Katalog paczki.
+     * @return bool Czy `git push` się powiódł.
+     */
+    public function push(string $directory): bool;
 }

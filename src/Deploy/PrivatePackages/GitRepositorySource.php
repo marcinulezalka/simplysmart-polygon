@@ -13,15 +13,19 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Deploy\PrivatePackages;
 
+use Simplysmart\Polygon\Deploy\Console\ExitCode;
 use Simplysmart\Polygon\Deploy\Process\ProcessRunner;
 
 /**
- * Odczyt repozytorium paczki przez `git` w osobnym procesie: `git remote get-url origin` i liczba commitów
- * przed gałęzią śledzoną (`@{u}..HEAD`; bez gałęzi śledzonej — brak niewypchniętych).
+ * Repozytorium paczki przez `git` w osobnym procesie: `git remote get-url origin`, liczba commitów `HEAD`, których nie
+ * ma w żadnej gałęzi `origin` (`--not --remotes=origin`, więc działa też bez gałęzi śledzonej), i
+ * `git push --set-upstream origin HEAD`.
  */
 final readonly class GitRepositorySource implements RepositorySource
 {
     private const string GIT = 'git';
+
+    private const string REMOTE = 'origin';
 
     public function __construct(
         private ProcessRunner $processes,
@@ -29,16 +33,21 @@ final readonly class GitRepositorySource implements RepositorySource
 
     public function originUrl(string $directory): ?string
     {
-        $url = $this->git($directory, ['remote', 'get-url', 'origin']);
+        $url = $this->git($directory, ['remote', 'get-url', self::REMOTE]);
 
         return $url === null || $url === '' ? null : $url;
     }
 
     public function hasUnpushedCommits(string $directory): bool
     {
-        $count = $this->git($directory, ['rev-list', '--count', '@{u}..HEAD']);
+        $count = $this->git($directory, ['rev-list', '--count', 'HEAD', '--not', '--remotes=' . self::REMOTE]);
 
         return $count !== null && ctype_digit($count) && (int) $count > 0;
+    }
+
+    public function push(string $directory): bool
+    {
+        return $this->processes->run([self::GIT, '-C', $directory, 'push', '--quiet', '--set-upstream', self::REMOTE, 'HEAD']) === ExitCode::SUCCESS;
     }
 
     /**

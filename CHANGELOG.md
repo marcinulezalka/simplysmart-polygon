@@ -36,6 +36,7 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 - Seedery paczek: rejestr `Database\PackageSeeders` — paczka dopisuje swój seeder w providerze, a `db:seed` uruchamia go po seederach bazowych polygon (`DatabaseSeeder::BASE`).
 - Klucz komunikatu po przekierowaniu `Http\StatusMessage::KEY` dla kontrolerów i widoków paczek stref; wspólna baza komend `polygon:<obszar>:seed` (`Console\SeedCommand`).
 - Konfiguracja wdrożenia w katalogu projektu: `vendor/bin/deploy <projekt>` czyta `infrastructure/deploy/vendors/<projekt>/<projekt>.env` (i plik instalacji `<projekt>.json` z tego katalogu), a gdy go nie ma — dotychczasowy układ płaski `infrastructure/deploy/vendors/<projekt>.env`; lista dostępnych projektów obejmuje oba układy.
+- `vendor/bin/deploy --with-push` wypycha też paczki z repozytoriów path wymagane przez projekt (przed projektem, `git push --set-upstream origin HEAD`), a `--dry-run --with-push` je wymienia; niewypchnięte commity paczki są wykrywane także bez gałęzi śledzonej (commity nieobecne w żadnej gałęzi `origin`).
 
 ### Changed
 

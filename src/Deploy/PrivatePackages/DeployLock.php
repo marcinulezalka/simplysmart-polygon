@@ -33,6 +33,45 @@ final readonly class DeployLock
     ) {}
 
     /**
+     * Paczki z repozytoriów path wymagane przez projekt, które mają commity niewypchnięte do `origin`.
+     *
+     * @return list<string> Nazwy paczek.
+     *
+     * @throws PrivatePackagesException Gdy lista paczek albo manifest jest nieczytelny.
+     */
+    public function unpushedPackages(PrivatePackages $private): array
+    {
+        $deploy = new DeployManifest($private->root(), $this->repositories);
+
+        return $deploy->unpushed($deploy->packages($private->packages()));
+    }
+
+    /**
+     * Wypycha paczki z repozytoriów path wymagane przez projekt, które mają commity niewypchnięte do `origin`, zanim
+     * manifest wdrożeniowy przypnie je do commitów z repozytoriów zdalnych.
+     *
+     * @return list<string> Nazwy wypchniętych paczek.
+     *
+     * @throws PrivatePackagesException Gdy lista paczek jest nieczytelna albo `git push` paczki się nie powiódł.
+     */
+    public function pushPackages(PrivatePackages $private, Output $output): array
+    {
+        $deploy = new DeployManifest($private->root(), $this->repositories);
+        $sources = $deploy->packages($private->packages());
+        $unpushed = $deploy->unpushed($sources);
+
+        foreach ($unpushed as $name) {
+            $output->line("Wypycham {$name}.");
+
+            if (! $this->repositories->push($sources[$name])) {
+                throw new PrivatePackagesException("Nie udało się wypchnąć paczki {$name} ({$sources[$name]}, git push). Sprawdź dostęp do origin i uruchom ponownie.");
+            }
+        }
+
+        return $unpushed;
+    }
+
+    /**
      * @param  bool  $dryRun  Tylko sprawdza paczki i ich repozytoria; nie zapisuje plików i nie uruchamia composera.
      * @return int Kod wyjścia: ExitCode::SUCCESS albo kod composera (po błędzie manifestu nie ma).
      *
