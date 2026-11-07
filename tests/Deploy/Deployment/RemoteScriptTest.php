@@ -71,6 +71,15 @@ final class RemoteScriptTest extends TestCase
     }
 
     #[Test]
+    public function the_server_script_publishes_package_assets_before_caching(): void
+    {
+        $script = RemoteScript::fromFile()->production($this->config());
+
+        $this->assertGreaterThan((int) strpos($script, 'artisan polygon:install'), (int) strpos($script, 'artisan polygon:assets'));
+        $this->assertLessThan((int) strpos($script, 'artisan config:cache'), (int) strpos($script, 'artisan polygon:assets'));
+    }
+
+    #[Test]
     public function fresh_is_passed_only_when_asked_and_the_script_seeds_a_fresh_database(): void
     {
         $script = RemoteScript::fromFile();

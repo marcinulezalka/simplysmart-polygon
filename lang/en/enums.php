@@ -45,6 +45,13 @@ return [
         'equipment' => 'Equipment',
         'other' => 'Other resource',
     ],
+    'color_theme' => [
+        'auto' => 'Automatic',
+        'light' => 'Light',
+        'dark' => 'Dark',
+        'wcag' => 'WCAG',
+        'wcag-contrast' => 'WCAG high contrast',
+    ],
     'booking_status' => [
         'booked' => 'booked',
         'confirmed' => 'confirmed',

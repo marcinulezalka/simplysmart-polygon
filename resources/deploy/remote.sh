@@ -145,6 +145,10 @@ else
     POLYGON_INSTALL_FILES="$install_files" "$php_bin" artisan polygon:install --no-interaction
 fi
 
+step "Assety paczek (polygon:assets)"
+# Zbudowane assety paczek (public/build w repozytorium paczki) pod public/vendor/<paczka>; serwer nie buduje ich sam.
+"$php_bin" artisan polygon:assets --no-interaction
+
 step "Cache konfiguracji, tras i widoków"
 "$php_bin" artisan optimize:clear >/dev/null
 "$php_bin" artisan config:cache

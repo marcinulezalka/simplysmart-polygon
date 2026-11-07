@@ -45,6 +45,13 @@ return [
         'equipment' => 'Sprzęt',
         'other' => 'Inny zasób',
     ],
+    'color_theme' => [
+        'auto' => 'Automatyczny',
+        'light' => 'Jasny',
+        'dark' => 'Ciemny',
+        'wcag' => 'WCAG',
+        'wcag-contrast' => 'WCAG duży kontrast',
+    ],
     'booking_status' => [
         'booked' => 'zapisana',
         'confirmed' => 'potwierdzona',

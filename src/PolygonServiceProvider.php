@@ -21,6 +21,7 @@ use Simplysmart\Polygon\Console\InstallCommand;
 use Simplysmart\Polygon\Console\SeedLocalization;
 use Simplysmart\Polygon\Console\SeedOrganizations;
 use Simplysmart\Polygon\Providers\AccountsServiceProvider;
+use Simplysmart\Polygon\Providers\AssetsServiceProvider;
 use Simplysmart\Polygon\Providers\DatabaseServiceProvider;
 use Simplysmart\Polygon\Providers\OrganizationsServiceProvider;
 use Simplysmart\Polygon\Providers\PermissionsServiceProvider;
@@ -31,7 +32,7 @@ use Simplysmart\Polygon\Providers\ZonesServiceProvider;
 
 /**
  * Provider paczki Polygon, rejestrowany przez auto-discovery Laravela: scala config `polygon` (PolygonConfig),
- * rejestruje providery obszarów z `src/Providers/` (baza danych, tłumaczenia, konta, uprawnienia — nowy obszar dostaje
+ * rejestruje providery obszarów z `src/Providers/` (baza danych, tłumaczenia, konta, uprawnienia, assety — nowy obszar dostaje
  * własny provider zamiast rozbudowy tego) i komendy konsoli paczki.
  */
 final class PolygonServiceProvider extends ServiceProvider
@@ -51,6 +52,7 @@ final class PolygonServiceProvider extends ServiceProvider
         SignInServiceProvider::class,
         PolygonZoneServiceProvider::class,
         OrganizationsServiceProvider::class,
+        AssetsServiceProvider::class,
     ];
 
     /**
