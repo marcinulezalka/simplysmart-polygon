@@ -77,14 +77,14 @@ final class OrganizationUnitTypeSeeder extends Seeder
         foreach (self::DEFAULTS as $code => [$name, $prefix, $icon, $internal]) {
             $order += 10;
 
-            if (OrganizationUnitType::withTrashed()->where('code', $code)->exists()) {
+            if (OrganizationUnitType::withTrashed()->where(OrganizationUnitType::CODE, $code)->exists()) {
                 continue;
             }
 
             (new OrganizationUnitType())->forceFill([
                 ColumnNames::ID => $this->slots->next(OrganizationUnitType::TABLE),
                 ColumnNames::NAME => $name,
-                'code' => $code,
+                OrganizationUnitType::CODE => $code,
                 'number_prefix' => $prefix,
                 'icon' => $icon,
                 'is_internal' => $internal,

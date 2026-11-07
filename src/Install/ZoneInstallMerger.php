@@ -25,8 +25,6 @@ use Simplysmart\Polygon\Permissions\RequiredRole;
  */
 final readonly class ZoneInstallMerger
 {
-    private const string SOURCE = 'install files';
-
     public function __construct(
         private ZoneRegistry $registry,
     ) {}
@@ -67,7 +65,7 @@ final readonly class ZoneInstallMerger
 
         foreach ($zone->accounts as $account) {
             if (in_array($account->email, $emails, true)) {
-                throw InvalidInstallFile::in(self::SOURCE, "account [{$account->email}] of zone [{$zone->zone}] is defined twice.");
+                throw InvalidInstallFile::merged("account [{$account->email}] of zone [{$zone->zone}] is defined twice.");
             }
         }
 
@@ -88,13 +86,13 @@ final readonly class ZoneInstallMerger
 
         foreach (RequiredRole::cases() as $required) {
             if (! array_key_exists($required->value, $roles)) {
-                throw InvalidInstallFile::in(self::SOURCE, "zone [{$zone->zone}] must define the role [{$required->value}].");
+                throw InvalidInstallFile::merged("zone [{$zone->zone}] must define the role [{$required->value}].");
             }
         }
 
         foreach ($zone->accounts as $account) {
             foreach (array_diff($account->allRoles(), array_keys($roles)) as $missing) {
-                throw InvalidInstallFile::in(self::SOURCE, "account [{$account->email}] of zone [{$zone->zone}] has the undefined role [{$missing}].");
+                throw InvalidInstallFile::merged("account [{$account->email}] of zone [{$zone->zone}] has the undefined role [{$missing}].");
             }
         }
 

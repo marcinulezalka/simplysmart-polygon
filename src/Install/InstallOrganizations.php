@@ -22,8 +22,6 @@ use Simplysmart\Polygon\Models\Organization;
  */
 final readonly class InstallOrganizations
 {
-    private const string SOURCE = 'install files';
-
     /**
      * @param list<InstallFile> $files Pliki w kolejności stosowania.
      * @param list<ZoneInstall> $zones Strefy po połączeniu plików (konta z organizacjami).
@@ -47,7 +45,7 @@ final readonly class InstallOrganizations
             foreach ($zone->accounts as $account) {
                 foreach ($account->organizations as $key) {
                     if (! array_key_exists($key, $organizations)) {
-                        throw InvalidInstallFile::in(self::SOURCE, "account [{$account->email}] of zone [{$zone->zone}] belongs to the undefined organization [{$key}].");
+                        throw InvalidInstallFile::merged("account [{$account->email}] of zone [{$zone->zone}] belongs to the undefined organization [{$key}].");
                     }
                 }
             }
@@ -76,14 +74,14 @@ final readonly class InstallOrganizations
         }
 
         if (in_array($key, $trail, true)) {
-            throw InvalidInstallFile::in(self::SOURCE, 'organizations form a cycle: ' . implode(' > ', [...$trail, $key]) . '.');
+            throw InvalidInstallFile::merged('organizations form a cycle: ' . implode(' > ', [...$trail, $key]) . '.');
         }
 
         $organization = $organizations[$key];
 
         if ($organization->parent !== null && $organization->parent !== Organization::HERO_KEY) {
             if (! array_key_exists($organization->parent, $organizations)) {
-                throw InvalidInstallFile::in(self::SOURCE, "organization [{$key}] has the undefined parent [{$organization->parent}].");
+                throw InvalidInstallFile::merged("organization [{$key}] has the undefined parent [{$organization->parent}].");
             }
 
             $this->append($organizations, $organization->parent, [...$trail, $key], $ordered);

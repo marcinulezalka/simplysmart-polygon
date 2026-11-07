@@ -42,6 +42,10 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Changed
 
+- Instalator podzielony według odpowiedzialności: `Install\Installer` tylko koordynuje, organizacje zapisuje `Install\OrganizationInstaller` (stała `INSTALL_KEY` przeniesiona z `Installer`), strefy z uprawnieniami, rolami i kontami — `Install\ZoneInstaller`; sekcję organizacji pliku czyta `Install\InstallOrganizationParser`, pojedyncze wartości `Install\InstallValues` (wzorce `PERMISSION_PATTERN`, `ROLE_PATTERN`); błędy połączonych plików przez `InvalidInstallFile::merged()`.
+- Role w organizacji z pliku instalacji nadaje `OrganizationRoles::assignIn()`: organizacja bez całkowitego id to `LogicException`, a nie ciche nadanie ról globalnych.
+- `Http\Middleware\UseOrganizationPermissions` przełącza zespół spatie przez publiczne `OrganizationRoles::within()` (jedno miejsce przełączania zespołu i odświeżania ról konta).
+- Stała `OrganizationUnitType::CODE` zamiast literału `'code'` w modelu, seederze typów jednostek i instalatorze.
 - Migracje tworzą tylko schemat, a dane referencyjne dają wyłącznie seedery: jednostki miar wczytuje `MeasureUnitsSeeder` w `db:seed` / `polygon:localization:seed` (nie migracja tabeli). Seedery leżą w `database/seeders/` (przestrzeń nazw `Simplysmart\Polygon\Database\Seeders` bez zmian, osobne mapowanie PSR-4).
 - Paczka nie jest już tylko deweloperska: projekty instalują ją w `require` (migracje i modele działają na serwerach); wymaga rozszerzeń `intl` i `bcmath`.
 - Strefa `polygon` rejestruje się przez mechanizm stref (`Providers\PolygonZoneServiceProvider`, config `polygon.zone`, `POLYGON_SLUG`); `PolygonAccount` dziedziczy po `ZoneAccount`, `Auth\CreateAccount` zastępuje `Auth\CreateZoneAccount`, a `polygon:account:create` to podklasa `CreateZoneAccountCommand`.

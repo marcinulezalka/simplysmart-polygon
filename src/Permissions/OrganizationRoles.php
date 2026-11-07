@@ -14,6 +14,8 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Permissions;
 
 use Closure;
+use LogicException;
+use Simplysmart\Polygon\Models\Organization;
 use Simplysmart\Polygon\Models\ZoneAccount;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -27,6 +29,24 @@ final readonly class OrganizationRoles
     public function __construct(
         private PermissionRegistrar $registrar,
     ) {}
+
+    /**
+     * Dopisuje kontu role w zapisanej organizacji; nadanych wcześniej nie odbiera.
+     *
+     * @param list<string> $roles Nazwy istniejących ról guarda konta.
+     *
+     * @throws LogicException Gdy organizacja nie ma całkowitego id (niezapisana) — role nie mogą wtedy trafić do ról globalnych.
+     */
+    public function assignIn(ZoneAccount $account, array $roles, Organization $organization): void
+    {
+        $id = $organization->getKey();
+
+        if (! is_int($id)) {
+            throw new LogicException("Organization [{$organization->name}] has no integer id: its roles cannot be assigned.");
+        }
+
+        $this->assign($account, $roles, $id);
+    }
 
     /**
      * Dopisuje kontu role w organizacji; nadanych wcześniej nie odbiera.
@@ -68,8 +88,8 @@ final readonly class OrganizationRoles
     }
 
     /**
-     * Uruchamia działanie w zespole organizacji, z rolami konta wczytanymi od nowa przed i po (relacja spatie nie zna
-     * zmiany zespołu).
+     * Uruchamia działanie w zespole organizacji (null — role globalne) i przywraca poprzedni zespół; role konta
+     * (gdy jest) wczytują się od nowa przed i po, bo relacja spatie nie zna zmiany zespołu.
      *
      * @template TResult
      *
@@ -77,17 +97,22 @@ final readonly class OrganizationRoles
      *
      * @return TResult
      */
-    private function within(ZoneAccount $account, ?int $organizationId, Closure $action): mixed
+    public function within(?ZoneAccount $account, ?int $organizationId, Closure $action): mixed
     {
         $previous = $this->registrar->getPermissionsTeamId();
         $this->registrar->setPermissionsTeamId($organizationId);
-        $account->unsetRelation('roles')->unsetRelation('permissions');
+        $this->forgetLoadedRoles($account);
 
         try {
             return $action();
         } finally {
             $this->registrar->setPermissionsTeamId($previous);
-            $account->unsetRelation('roles')->unsetRelation('permissions');
+            $this->forgetLoadedRoles($account);
         }
+    }
+
+    private function forgetLoadedRoles(?ZoneAccount $account): void
+    {
+        $account?->unsetRelation('roles')->unsetRelation('permissions');
     }
 }

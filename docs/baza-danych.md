@@ -256,11 +256,12 @@ liczy go `DataModel` przy zapisie.
   `config/permission.php`. Kolumnę zespołu dodaje migracja `add_organization_to_permission_tables` (przypisania sprzed
   niej zostają globalne).
 - **Role w organizacji:** konto może mieć w każdej organizacji inne role (np. właściciel w jednej, lekarz w drugiej).
-  Nadaje i czyta je `Permissions\OrganizationRoles` (`assign()`, `names()`; organizacja null — role globalne), niezależnie
-  od zespołu żądania. Role globalne mają hero i konta bez organizacji (`Auth\CreateZoneAccount`,
+  Nadaje i czyta je `Permissions\OrganizationRoles` (`assign()`, `names()`; organizacja null — role globalne;
+  `assignIn()` dla zapisanej organizacji — bez całkowitego id rzuca `LogicException` zamiast nadać role globalne;
+  `within()` uruchamia działanie w zespole organizacji i przywraca poprzedni), niezależnie od zespołu żądania. Role globalne mają hero i konta bez organizacji (`Auth\CreateZoneAccount`,
   `<strefa>:account:create`); role personelu nadaje instalator w organizacjach z pliku ([instalacja.md](instalacja.md)).
 - **Zespół żądania:** `Http\Middleware\UseOrganizationPermissions` w grupie middleware strefy ustawia zespół spatie
-  na bieżącą organizację konta (`Contracts\CurrentOrganization`); hero i konto bez organizacji — null (role globalne).
+  (przez `OrganizationRoles::within()`) na bieżącą organizację konta (`Contracts\CurrentOrganization`); hero i konto bez organizacji — null (role globalne).
   `hasRole()`, `can()`, `checkPermissionTo()` i `zone.permission:*` liczą więc role w bieżącej organizacji. Poza
   żądaniem strefy (konsola, kolejka) zespół to null.
 - Role i uprawnienia mają pełny standard tabel danych (traity `HasRouteToken`, `HasStandardColumns`, `HasChecksum`,

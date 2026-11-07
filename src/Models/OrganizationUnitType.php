@@ -31,6 +31,9 @@ final class OrganizationUnitType extends DataModel
 {
     public const string TABLE = 'organization_unit_types';
 
+    /** Stały klucz typu (kolumna `code`, np. `placowka`). */
+    public const string CODE = 'code';
+
     /** Najdłuższy prefiks numeru (kolumna `number_prefix`). */
     public const int PREFIX_MAX_LENGTH = 8;
 
@@ -79,6 +82,6 @@ final class OrganizationUnitType extends DataModel
      */
     protected function casts(): array
     {
-        return ['code' => 'string', 'number_prefix' => 'string', 'icon' => 'string', 'is_internal' => 'boolean', 'is_public' => 'boolean'];
+        return [self::CODE => 'string', 'number_prefix' => 'string', 'icon' => 'string', 'is_internal' => 'boolean', 'is_public' => 'boolean'];
     }
 }

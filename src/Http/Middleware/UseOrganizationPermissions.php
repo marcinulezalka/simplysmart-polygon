@@ -14,22 +14,24 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Http\Middleware;
 
 use Closure;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Simplysmart\Polygon\Contracts\CurrentAccount;
 use Simplysmart\Polygon\Contracts\CurrentOrganization;
-use Spatie\Permission\PermissionRegistrar;
+use Simplysmart\Polygon\Models\ZoneAccount;
+use Simplysmart\Polygon\Permissions\OrganizationRoles;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Zespół spatie żądania strefy: role i uprawnienia konta liczą się w jego bieżącej organizacji
  * (Contracts\CurrentOrganization). Hero i konto bez organizacji mają role globalne (zespół null). Stoi po StartSession
- * (sesja strefy z wyborem organizacji); po odpowiedzi przywraca poprzedni zespół.
+ * (sesja strefy z wyborem organizacji); zespół przełącza i po odpowiedzi przywraca Permissions\OrganizationRoles, który
+ * też wczytuje od nowa role konta z guarda (to samo konto mogło mieć role wczytane w innym zespole, np. w kolejnych
+ * żądaniach testu).
  */
 final readonly class UseOrganizationPermissions
 {
     public function __construct(
-        private PermissionRegistrar $registrar,
+        private OrganizationRoles $roles,
         private CurrentOrganization $organization,
         private CurrentAccount $account,
     ) {}
@@ -39,26 +41,12 @@ final readonly class UseOrganizationPermissions
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $previous = $this->registrar->getPermissionsTeamId();
-        $this->registrar->setPermissionsTeamId($this->organization->isHero() ? null : $this->organization->id());
-        $this->forgetLoadedRoles();
-
-        try {
-            return $next($request);
-        } finally {
-            $this->registrar->setPermissionsTeamId($previous);
-        }
-    }
-
-    /**
-     * Konto z guarda może mieć role wczytane w innym zespole (to samo konto w kolejnych żądaniach testu).
-     */
-    private function forgetLoadedRoles(): void
-    {
         $account = $this->account->get();
 
-        if ($account instanceof Model) {
-            $account->unsetRelation('roles')->unsetRelation('permissions');
-        }
+        return $this->roles->within(
+            $account instanceof ZoneAccount ? $account : null,
+            $this->organization->isHero() ? null : $this->organization->id(),
+            static fn(): Response => $next($request),
+        );
     }
 }
