@@ -21,7 +21,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * Trasy strefy pod hashem sesji (`/<hash>/<slug>/…`): hash spoza bieżącej sesji to 404 (zanim zadziała logowanie),
+ * Trasy strefy pod hashem sesji (`/<slug>/<hash>/…`): hash spoza bieżącej sesji to 404 (zanim zadziała logowanie),
  * a poprawny zostaje usunięty z parametrów trasy, więc kontrolery go nie widzą.
  */
 final readonly class RequireZoneUrlKey

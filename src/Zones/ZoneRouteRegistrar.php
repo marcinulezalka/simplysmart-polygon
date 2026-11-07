@@ -26,7 +26,7 @@ use Simplysmart\Polygon\Localization\DictionaryLocales;
  * poziomu dostępu każdego pliku tras (public.php, account.php, zone.php; brakujący plik jest pomijany, pliki definiują
  * ścieżki względne i krótkie nazwy). Strefa z logowaniem i kompletem ekranów (ZoneDefinition::hasScreens()) dostaje
  * też trasy logowania (Http\SignInRoutes) i konta (Http\AccountRoutes). Strefa z `url_key` ma trasy po zalogowaniu (konto,
- * account.php, zone.php) pod hashem sesji: `/<hash>/<slug>/…` (Zones\ZoneUrlKey, Http\Middleware\RequireZoneUrlKey),
+ * account.php, zone.php) pod hashem sesji: `/<slug>/<hash>/…` (Zones\ZoneUrlKey, Http\Middleware\RequireZoneUrlKey),
  * a logowanie i public.php zostają pod `/<slug>/…`.
  */
 final readonly class ZoneRouteRegistrar
@@ -86,7 +86,7 @@ final readonly class ZoneRouteRegistrar
             $this->registerFiles($zone, false);
         });
 
-        $hashed = [...$attributes, 'prefix' => '{' . ZoneUrlKey::PARAMETER . '}/' . $zone->slug, 'middleware' => [...$attributes['middleware'], RequireZoneUrlKey::class], 'where' => [ZoneUrlKey::PARAMETER => ZoneUrlKey::PATTERN]];
+        $hashed = [...$attributes, 'prefix' => $zone->slug . '/{' . ZoneUrlKey::PARAMETER . '}', 'middleware' => [...$attributes['middleware'], RequireZoneUrlKey::class], 'where' => [ZoneUrlKey::PARAMETER => ZoneUrlKey::PATTERN]];
 
         $this->router->group($hashed, function () use ($zone): void {
             if ($zone->hasScreens()) {

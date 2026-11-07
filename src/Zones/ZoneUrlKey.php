@@ -17,7 +17,7 @@ use Illuminate\Contracts\Session\Session;
 use Illuminate\Support\Str;
 
 /**
- * Hash sesji w adresie ekranów strefy po zalogowaniu (`url_key` strefy): `/<hash>/<slug>/…`. Losowy dla każdej sesji
+ * Hash sesji w adresie ekranów strefy po zalogowaniu (`url_key` strefy): `/<slug>/<hash>/…`. Losowy dla każdej sesji
  * strefy (nowy po wylogowaniu, gdy sesja jest unieważniana), więc link skopiowany przez robota albo z innej sesji nie
  * prowadzi do ekranu (404). Trasy dostają go z URL::defaults (Http\Middleware\ApplyZoneUrlKey), a sprawdza go
  * Http\Middleware\RequireZoneUrlKey.

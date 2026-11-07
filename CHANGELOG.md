@@ -4,6 +4,10 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Hash sesji w adresie (`url_key` strefy) stoi teraz po slugu strefy: `/<slug>/<hash>/…` zamiast `/<hash>/<slug>/…` — wszystkie adresy strefy zaczynają się od jej sluga.
+
 ## [0.11.0] - 2026-11-07
 
 ### Added
