@@ -8,6 +8,7 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 - Assety paczek budowane Vite (`docs/assety.md`): orkiestrator `bin/assets.mjs {build|dev}` (skrypty `npm run build`/`dev` projektu) buduje każdą paczkę z `vite.config.js` do jej `public/build/` Vite i preprocesorami z projektu; `Assets\PackageAssets` (rejestr paczek, dyrektywa `@packageAssets`), `php artisan polygon:assets` (symlink albo `--copy` do `public/vendor/<paczka>`), krok `polygon:assets` w deployu.
 - Tryby kolorystyczne `Enums\ColorTheme` (automatyczny, jasny, ciemny, WCAG, WCAG duży kontrast) i `View\ColorThemePreference` (ciasteczko `polygon_theme` bez szyfrowania) dla `data-theme` na `<html>`.
+- Strona startowa konta po zalogowaniu (klucz `home` configu strefy, `Contracts\ZoneHome`): strefa wybiera trasę dla konta (np. pulpit roli) w zespole spatie bieżącej organizacji; bez niej, bez wyboru albo gdy trasy nie ma — jak dotąd `<strefa>.dashboard`.
 
 ### Changed
 

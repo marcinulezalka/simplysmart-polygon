@@ -17,13 +17,14 @@ use Illuminate\Config\Repository;
 use Illuminate\Support\Arr;
 use InvalidArgumentException;
 use Simplysmart\Polygon\Auth\ZoneAuthSettingsFactory;
+use Simplysmart\Polygon\Contracts\ZoneHome;
 use Simplysmart\Polygon\PolygonConfig;
 use Simplysmart\Polygon\Models\ZoneAccount;
 
 /**
  * Buduje i waliduje ZoneDefinition z configu paczki strefy (docs/strefy.md): `name` (wymagane), `slug`, `guard`,
  * `provider`, `model` (z nim strefa ma logowanie), `session`, `auth` (nadpisania `polygon.auth`), `texts`, `views`
- * (ekrany ZoneView) i `mail.views`.
+ * (ekrany ZoneView), `mail.views`, `url_key` i `home` (Contracts\ZoneHome).
  */
 final readonly class ZoneDefinitionFactory
 {
@@ -67,6 +68,7 @@ final readonly class ZoneDefinitionFactory
             views: $this->views($name, Arr::array($config, 'views', [])),
             mailViews: $this->mailViews($name, Arr::array($config, 'mail', [])),
             urlKey: $model !== null && ($this->nullableBool($config, 'url_key', false) ?? false),
+            home: $model !== null ? $this->home($config['home'] ?? null, $name) : null,
         );
     }
 
@@ -84,6 +86,22 @@ final readonly class ZoneDefinitionFactory
         }
 
         return $model;
+    }
+
+    /**
+     * @return class-string<ZoneHome>|null
+     */
+    private function home(mixed $home, string $zone): ?string
+    {
+        if ($home === null) {
+            return null;
+        }
+
+        if (! is_string($home) || ! is_subclass_of($home, ZoneHome::class)) {
+            throw new InvalidArgumentException("Zone [{$zone}] home must implement " . ZoneHome::class . '.');
+        }
+
+        return $home;
     }
 
     /**

@@ -15,6 +15,7 @@ namespace Simplysmart\Polygon\Zones;
 
 use LogicException;
 use Simplysmart\Polygon\Auth\ZoneAuthSettings;
+use Simplysmart\Polygon\Contracts\ZoneHome;
 use Simplysmart\Polygon\Models\ZoneAccount;
 
 /**
@@ -37,6 +38,8 @@ final readonly class ZoneDefinition
      * @param string|null $mailViews Prefiks widoków e-maili strefy (`mail.views`, np. `shop::mail`): `<prefiks>.layout`,
      *                               `<prefiks>.<szablon>` (HTML) i opcjonalnie `<prefiks>.text.<szablon>`.
      * @param bool $urlKey Hash sesji w adresie ekranów po zalogowaniu (`url_key`, `/<slug>/<hash>/…`, Zones\ZoneUrlKey).
+     * @param class-string<ZoneHome>|null $home Strona startowa konta po zalogowaniu (`home`, Contracts\ZoneHome); null —
+     *                                         pulpit strefy.
      */
     public function __construct(
         public string $name,
@@ -52,6 +55,7 @@ final readonly class ZoneDefinition
         public array $views = [],
         public ?string $mailViews = null,
         public bool $urlKey = false,
+        public ?string $home = null,
     ) {}
 
     /**

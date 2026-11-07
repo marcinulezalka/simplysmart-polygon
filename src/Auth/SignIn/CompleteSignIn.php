@@ -25,14 +25,16 @@ use Simplysmart\Polygon\Auth\SignIn\Steps\EmailCodeStep;
 use Simplysmart\Polygon\Auth\SignIn\Steps\PinSetupStep;
 use Simplysmart\Polygon\Contracts\AccountStore;
 use Simplysmart\Polygon\Contracts\CurrentZone;
+use Simplysmart\Polygon\Models\ZoneAccount;
 use Simplysmart\Polygon\Zones\ZoneRedirects;
 
 /**
  * Wszystkie kroki wykonane: logowanie w guardzie strefy, nowa sesja z epoką konta, zapis
  * udanego logowania (zeruje błędy i blokady), zapamiętanie urządzenia, jeśli konto o to poprosiło,
- * i powrót na zamierzoną stronę albo dashboard. Pierwsze
- * logowanie (z ustawieniem PIN-u) zawsze kończy się na dashboardzie strefy: zamierzona strona sprzed logowania jest
- * pomijana, bo nowe konto zaczyna od pulpitu swojej roli, a nie od strony, którą ktoś otworzył przed nim.
+ * i powrót na zamierzoną stronę albo stronę startową konta (Zones\ZoneRedirects::homeFor(): Contracts\ZoneHome strefy,
+ * np. pulpit roli, a bez niej dashboard strefy). Pierwsze logowanie (z ustawieniem PIN-u) zawsze kończy się na stronie
+ * startowej: zamierzona strona sprzed logowania jest pomijana, bo nowe konto zaczyna od pulpitu swojej roli, a nie od
+ * strony, którą ktoś otworzył przed nim.
  */
 final readonly class CompleteSignIn
 {
@@ -77,7 +79,7 @@ final readonly class CompleteSignIn
 
         $this->events->dispatch(new SignInSucceeded($zone->name, $account, $request->ip()));
 
-        $home = $this->redirects->homeFor($zone);
+        $home = $this->redirects->homeFor($zone, $account instanceof ZoneAccount ? $account : null);
 
         if ($signIn->hasCompleted(PinSetupStep::KEY)) {
             $request->session()->forget(self::INTENDED_SESSION_KEY);

@@ -48,6 +48,7 @@ Migracje paczki strefy (`database/migrations/`) tworzą tylko schemat; dane refe
 | `guard`, `provider` | domyślnie nazwa strefy i `<strefa>_accounts` |
 | `model` | model kont, podklasa `Models\ZoneAccount`; bez niego strefa jest publiczna (tylko `public.php`) |
 | `url_key` | `true` — ekrany po zalogowaniu (konto, `account.php`, `zone.php`) pod hashem sesji: `/<slug>/<hash>/…` (`Zones\ZoneUrlKey`: 20 znaków `[a-z0-9]`, losowy dla sesji strefy, nowy po wylogowaniu). `route()` dokłada hash sam (`Http\Middleware\ApplyZoneUrlKey`); brak, zły albo cudzy hash to 404, zanim zadziała logowanie (`RequireZoneUrlKey`) — linki z innej sesji, zakładki i adresy zebrane przez roboty nie działają. Logowanie i `public.php` zostają pod `/<slug>/…`; maile linkują do logowania. Domyślnie `false`, tylko strefa z logowaniem |
+| `home` | klasa `Contracts\ZoneHome` — strona startowa konta po zalogowaniu: `routeFor($account)` zwraca trasę strefy bez prefiksu (np. pulpit roli `registration.dashboard`), liczoną w zespole spatie bieżącej organizacji konta; `null` albo nieistniejąca trasa — `<strefa>.dashboard`. Pierwsze logowanie zawsze tu trafia, kolejne wracają na zamierzoną stronę, jeśli była. Domyślnie brak, tylko strefa z logowaniem |
 | `session` | nadpisania sesji strefy (`lifetime`, `table`…); domyślny czas `polygon.zones.session_lifetime` |
 | `auth` | nadpisania `polygon.auth` (np. `['trusted_devices' => ['enabled' => false]]`) |
 | `texts` | namespace tekstów paczki (`<namespace>::sign_in.*`, `roles.<strefa>.*`) |
