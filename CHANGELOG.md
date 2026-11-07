@@ -4,6 +4,8 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-07
+
 ### Added
 
 - Zasoby organizacji (`organization_resources`, docs/baza-danych.md §17): gabinety, sprzęt i inne zasoby organizacji z rodzajem (`Enums\ResourceKind`) i kodem unikalnym w organizacji, model `Models\OrganizationResource`, relacja `Organization::resources()`, odczyt `Queries\Organizations\OrganizationResources` (zasoby organizacji i jej przodków) oraz zasoby startowe w plikach instalacji (`organizations.<klucz>.resources`, zakładane tylko brakujące).
