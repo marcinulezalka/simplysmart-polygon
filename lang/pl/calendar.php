@@ -17,6 +17,8 @@ return [
         'resource_unavailable' => 'Zasób nie należy do jednostki ani jej organizacji nadrzędnej.',
         'resource_taken' => 'Zasób jest wtedy zajęty przez inny grafik.',
         'performer_busy' => 'Wykonawca jest wtedy w innym miejscu grafiku.',
+        'leased_out' => 'Zasób jest wtedy wynajęty innej organizacji.',
+        'outside_lease' => 'Grafik na wynajętym zasobie musi mieścić się w oknach i okresie umowy najmu (przy umowie z końcem podaj koniec grafiku).',
     ],
     'has_bookings' => 'W tym grafiku są przyszłe rezerwacje — najpierw je odwołaj.',
     'slot_unavailable' => 'Ten termin nie jest już wolny — wybierz inny.',

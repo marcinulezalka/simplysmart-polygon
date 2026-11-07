@@ -4,6 +4,10 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Najem zasobów i kooperacja (docs/baza-danych.md §20): `resource_leases` (`Models\ResourceLease`) — zasób właściciela wynajęty organizacji najemcy z jej podorganizacją kooperacji (`organizations.is_cooperation`), okresem, oknami godzinowymi (`Leases\LeaseWindows`, kilka okien w dniu), poziomami udostępnienia (`Enums\LeaseAccess`: zapis wizyt, podgląd, publiczna tablica) i tokenem tablicy; `Leases\SaveLease` (kolizje `LeaseConflict`, wypowiedzenie skracające grafik najemcy, nowy token tablicy), `Queries\Leases\ResourceLeases` (umowy właściciela, kanały kooperacji), `Leases\Wallboard` (godziny przyjęć bez danych osób). Kalendarz pilnuje najmu: grafik właściciela nie wchodzi w wynajęte okna (`ScheduleConflict::LeasedOut`), grafik najemcy mieści się w umowie (`OutsideLease`), a po końcu umowy nie ma wolnych terminów. Umowy startowe w plikach instalacji (`organizations.<klucz>.leases`, `is_cooperation`).
+
 ## [0.5.0] - 2026-11-07
 
 ### Added

@@ -53,6 +53,14 @@ final class InstallCommand extends Command
             $this->line("Zasób już istnieje: {$name} (bez zmian).");
         }
 
+        foreach ($report->leasesCreated as $description) {
+            $this->info("Najem założony: {$description}.");
+        }
+
+        foreach ($report->leasesKept as $description) {
+            $this->line("Najem już istnieje: {$description} (bez zmian).");
+        }
+
         foreach ($report->created as $email) {
             $this->info("Konto założone: {$email} (PIN przy pierwszym logowaniu).");
         }

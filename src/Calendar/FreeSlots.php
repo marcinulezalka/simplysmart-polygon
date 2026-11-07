@@ -24,16 +24,22 @@ use Simplysmart\Polygon\Models\ResourceBooking;
 use Simplysmart\Polygon\Models\ResourceSchedule;
 use Simplysmart\Polygon\Models\ZoneAccount;
 use Simplysmart\Polygon\Queries\Dictionaries\HolidaysIn;
+use Simplysmart\Polygon\Queries\Leases\ResourceLeases;
+use Simplysmart\Polygon\Queries\Organizations\OrganizationResources;
 
 /**
  * Wolne terminy wykonawcy w jednostce: sloty po `slot_minutes` w jego grafiku obowiązującym w danym dniu (grafik bez
  * slotów nie daje terminów), bez terminów zajętych przez rezerwacje tego wykonawcy albo tego zasobu (w dowolnej
- * jednostce), bez minionych i bez dni wolnych kraju aplikacji (Queries\Dictionaries\HolidaysIn).
+ * jednostce), bez minionych i bez dni wolnych kraju aplikacji (Queries\Dictionaries\HolidaysIn). Grafik na zasobie
+ * wynajętym jednostce (kooperacja najemcy) daje terminy tylko w dniu, w którym umowa najmu obowiązuje i obejmuje jego
+ * godziny — po końcu albo wypowiedzeniu umowy terminów nie ma, więc BookSlot ich też nie zapisze.
  */
 final readonly class FreeSlots
 {
     public function __construct(
         private HolidaysIn $holidays,
+        private OrganizationResources $resources,
+        private ResourceLeases $leases,
     ) {}
 
     /**
@@ -153,7 +159,25 @@ final readonly class FreeSlots
         $query->where(ResourceSchedule::WEEKDAY, $day->dayOfWeekIso);
         $query->where(ColumnNames::IS_ACTIVE, true);
 
-        return $query->get()->filter(static fn(ResourceSchedule $schedule): bool => $schedule->appliesOn($day))->values();
+        return $query->get()->filter(fn(ResourceSchedule $schedule): bool => $schedule->appliesOn($day) && $this->leaseAllows($unit, $schedule, $day))->values();
+    }
+
+    /**
+     * Grafik na własnym zasobie zawsze; na wynajętym — gdy w dniu obowiązuje umowa jednostki obejmująca jego godziny.
+     */
+    private function leaseAllows(Organization $unit, ResourceSchedule $schedule, CarbonImmutable $day): bool
+    {
+        if ($this->resources->owns($unit, $schedule->resource_id)) {
+            return true;
+        }
+
+        foreach ($this->leases->ofCooperation($unit, $schedule->resource_id) as $lease) {
+            if ($lease->inForceOn($day) && $lease->leaseWindows()->covers($schedule->weekday, $schedule->from(), $schedule->to())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

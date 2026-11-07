@@ -17,7 +17,7 @@ use Simplysmart\Polygon\Models\Organization;
 
 /**
  * Organizacje ze wszystkich plików instalacji: plik stosowany później zastępuje organizację o tym samym kluczu (jak
- * role). Sprawdza organizacje nadrzędne (istnieją albo to organizacja hero — Organization::HERO_KEY; bez cykli) i organizacje kont stref, zanim cokolwiek trafi do bazy,
+ * role). Sprawdza organizacje najemców i kooperacji w umowach najmu, organizacje nadrzędne (istnieją albo to organizacja hero — Organization::HERO_KEY; bez cykli) i organizacje kont stref, zanim cokolwiek trafi do bazy,
  * i zwraca organizacje w kolejności zakładania — organizacja nadrzędna przed podrzędną.
  */
 final readonly class InstallOrganizations
@@ -47,6 +47,20 @@ final readonly class InstallOrganizations
                     if (! array_key_exists($key, $organizations)) {
                         throw InvalidInstallFile::merged("account [{$account->email}] of zone [{$zone->zone}] belongs to the undefined organization [{$key}].");
                     }
+                }
+            }
+        }
+
+        foreach ($organizations as $organization) {
+            foreach ($organization->leases as $lease) {
+                foreach ([$lease->lessee, $lease->cooperation] as $key) {
+                    if (! array_key_exists($key, $organizations)) {
+                        throw InvalidInstallFile::merged("organization [{$organization->key}] leases to the undefined organization [{$key}].");
+                    }
+                }
+
+                if (! $organizations[$lease->cooperation]->isCooperation || $organizations[$lease->cooperation]->parent !== $lease->lessee) {
+                    throw InvalidInstallFile::merged("organization [{$lease->cooperation}] must have \"is_cooperation\": true and \"parent\": \"{$lease->lessee}\" to be the cooperation of a lease.");
                 }
             }
         }

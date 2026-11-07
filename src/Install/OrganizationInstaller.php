@@ -79,6 +79,7 @@ final readonly class OrganizationInstaller
             ColumnNames::PARENT_ID => $organization->parent === null ? null : $installed[$organization->parent]->getKey(),
             Organization::SHORT_NAME => $organization->shortName,
             Organization::IS_DEPARTMENT => $organization->isDepartment,
+            Organization::IS_COOPERATION => $organization->isCooperation,
             Organization::UNIT_TYPE_ID => $organization->unitType === null ? null : $this->unitType($organization),
             ColumnNames::JSON_ATTRIBUTES => [self::INSTALL_KEY => $organization->key],
             ...$organization->details,

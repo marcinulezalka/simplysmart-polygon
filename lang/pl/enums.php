@@ -51,6 +51,11 @@ return [
         'cancelled' => 'odwołana',
         'no_show' => 'nieobecność',
     ],
+    'lease_access' => [
+        'book' => 'zapis wizyt',
+        'view' => 'podgląd grafiku',
+        'wallboard' => 'tablica publiczna',
+    ],
     'contract_status' => [
         'upcoming' => 'przyszła',
         'active' => 'obowiązuje',

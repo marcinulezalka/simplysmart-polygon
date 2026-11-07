@@ -14,13 +14,15 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Install;
 
 use Simplysmart\Polygon\Database\ColumnNames;
+use Simplysmart\Polygon\Enums\LeaseAccess;
 use Simplysmart\Polygon\Enums\ResourceKind;
 use Simplysmart\Polygon\Models\Organization;
 use Simplysmart\Polygon\Models\OrganizationResource;
 
 /**
  * Organizacje w pliku instalacji (docs/instalacja.md): sekcja `organizations` (klucz => `name`, opcjonalnie
- * `short_name`, `parent`, `unit_type`, `is_department`, dane firmy i `resources` — zasoby organizacji) oraz `organizations` kont stref (organizacje konta
+ * `short_name`, `parent`, `unit_type`, `is_department`, `is_cooperation`, dane firmy, `resources` — zasoby organizacji,
+ * `schedule` — grafik i `leases` — umowy najmu jej zasobów) oraz `organizations` kont stref (organizacje konta
  * z jego rolami w każdej z nich). Istnienie organizacji nadrzędnych i organizacji kont sprawdza InstallOrganizations
  * po połączeniu plików.
  */
@@ -40,6 +42,14 @@ final readonly class InstallOrganizationParser
 
     private const string SCHEDULE = 'schedule';
 
+    private const string LEASES = 'leases';
+
+    /** Pola umowy najmu. */
+    private const array LEASE_FIELDS = ['resource', 'lessee', 'cooperation', 'number', 'from', 'to', 'windows', 'access'];
+
+    /** Pola okna umowy najmu. */
+    private const array WINDOW_FIELDS = ['days', 'from', 'to'];
+
     /** Pola wpisu grafiku organizacji. */
     private const array SCHEDULE_FIELDS = ['resource', 'performer', 'weekday', 'from', 'to', 'slot', 'valid_from', 'valid_to'];
 
@@ -55,7 +65,7 @@ final readonly class InstallOrganizationParser
     private const int NAME_MAX_LENGTH = 255;
 
     /** Pola organizacji poza danymi firmy. */
-    private const array ORGANIZATION_FIELDS = [ColumnNames::NAME, Organization::SHORT_NAME, self::PARENT, self::UNIT_TYPE, Organization::IS_DEPARTMENT, self::RESOURCES, self::SCHEDULE];
+    private const array ORGANIZATION_FIELDS = [ColumnNames::NAME, Organization::SHORT_NAME, self::PARENT, self::UNIT_TYPE, Organization::IS_DEPARTMENT, Organization::IS_COOPERATION, self::RESOURCES, self::SCHEDULE, self::LEASES];
 
     public function __construct(
         private InstallValues $values,
@@ -63,7 +73,8 @@ final readonly class InstallOrganizationParser
 
     /**
      * Organizacje: klucz => `name` (wymagana), opcjonalnie `short_name`, `parent` (klucz), `unit_type` (kod typu
-     * jednostki), `is_department` i dane firmy (Organization::DETAIL_LENGTHS); inne pola to błąd.
+     * jednostki), `is_department`, `is_cooperation`, dane firmy (Organization::DETAIL_LENGTHS), `resources`, `schedule`
+     * i `leases`; inne pola to błąd.
      *
      * @return list<InstallOrganization>
      *
@@ -109,6 +120,8 @@ final readonly class InstallOrganizationParser
                 $this->details($path, $definition, $where),
                 $this->resources($path, $definition[self::RESOURCES] ?? [], "{$where}." . self::RESOURCES),
                 $this->schedule($path, $definition[self::SCHEDULE] ?? [], "{$where}." . self::SCHEDULE),
+                $this->values->flag($path, $definition, Organization::IS_COOPERATION, $where),
+                $this->leases($path, $definition[self::LEASES] ?? [], "{$where}." . self::LEASES),
             );
         }
 
@@ -255,6 +268,103 @@ final readonly class InstallOrganizationParser
                 $this->values->reference($path, $entry, 'valid_from', $at, self::DATE_PATTERN),
                 $this->values->reference($path, $entry, 'valid_to', $at, self::DATE_PATTERN),
             );
+        }
+
+        return $result;
+    }
+
+    /**
+     * Umowy najmu zasobów organizacji: lista obiektów `resource` (klucz zasobu tej organizacji), `lessee` i `cooperation`
+     * (klucze organizacji najemcy i jej podorganizacji z `is_cooperation`), `number` (numer umowy), opcjonalnie `from`,
+     * `to` (RRRR-MM-DD), `windows` (lista `{"days": [1–7], "from": "HH:MM", "to": "HH:MM"}`, bez okien — cały zasób)
+     * i `access` (Enums\LeaseAccess: `book`, `view`, `wallboard`); inne pola to błąd. Istnienie organizacji sprawdza
+     * InstallOrganizations, zasób i kolizje — LeaseInstaller.
+     *
+     * @return list<InstallLease>
+     *
+     * @throws InvalidInstallFile
+     */
+    private function leases(string $path, mixed $entries, string $where): array
+    {
+        if (! is_array($entries) || ! array_is_list($entries)) {
+            throw InvalidInstallFile::in($path, "{$where} must be a list.");
+        }
+
+        $result = [];
+
+        foreach ($entries as $index => $entry) {
+            $at = "{$where}[{$index}]";
+
+            if (! is_array($entry) || array_is_list($entry)) {
+                throw InvalidInstallFile::in($path, "{$at} must be an object.");
+            }
+
+            $unknown = array_diff(array_keys($entry), self::LEASE_FIELDS);
+
+            if ($unknown !== []) {
+                throw InvalidInstallFile::in($path, "{$at} has unknown fields: " . implode(', ', $unknown) . '.');
+            }
+
+            $from = $this->values->reference($path, $entry, 'from', $at, self::DATE_PATTERN);
+            $to = $this->values->reference($path, $entry, 'to', $at, self::DATE_PATTERN);
+
+            if ($from !== null && $to !== null && $to < $from) {
+                throw InvalidInstallFile::in($path, "{$at}: \"to\" cannot be before \"from\".");
+            }
+
+            $result[] = new InstallLease(
+                $this->values->reference($path, $entry, 'resource', $at, self::KEY_PATTERN) ?? throw InvalidInstallFile::in($path, "{$at} needs a \"resource\"."),
+                $this->values->reference($path, $entry, 'lessee', $at, self::KEY_PATTERN) ?? throw InvalidInstallFile::in($path, "{$at} needs a \"lessee\"."),
+                $this->values->reference($path, $entry, 'cooperation', $at, self::KEY_PATTERN) ?? throw InvalidInstallFile::in($path, "{$at} needs a \"cooperation\"."),
+                $this->values->text($path, $entry, 'number', $at, self::NAME_MAX_LENGTH) ?? throw InvalidInstallFile::in($path, "{$at} needs a \"number\"."),
+                $from,
+                $to,
+                $this->windows($path, $entry['windows'] ?? [], "{$at}.windows"),
+                array_map(static fn(string $value): LeaseAccess => LeaseAccess::from($value), $this->values->names($path, $entry['access'] ?? [], "{$at}.access", InstallValues::ROLE_PATTERN, LeaseAccess::values())),
+            );
+        }
+
+        return $result;
+    }
+
+    /**
+     * Okna umowy najmu: lista `{"days": [1–7], "from": "HH:MM", "to": "HH:MM"}` (`from` przed `to`) rozwinięta do
+     * [dzień, od, do].
+     *
+     * @return list<array{int, string, string}>
+     *
+     * @throws InvalidInstallFile
+     */
+    private function windows(string $path, mixed $windows, string $where): array
+    {
+        if (! is_array($windows) || ! array_is_list($windows)) {
+            throw InvalidInstallFile::in($path, "{$where} must be a list.");
+        }
+
+        $result = [];
+
+        foreach ($windows as $index => $window) {
+            $at = "{$where}[{$index}]";
+
+            if (! is_array($window) || array_is_list($window) || array_diff(array_keys($window), self::WINDOW_FIELDS) !== []) {
+                throw InvalidInstallFile::in($path, "{$at} must be {\"days\": [1–7], \"from\": \"HH:MM\", \"to\": \"HH:MM\"}.");
+            }
+
+            $days = $window['days'] ?? null;
+            $from = $this->values->reference($path, $window, 'from', $at, self::TIME_PATTERN);
+            $to = $this->values->reference($path, $window, 'to', $at, self::TIME_PATTERN);
+
+            if (! is_array($days) || $days === [] || ! array_is_list($days) || $from === null || $to === null || $from >= $to) {
+                throw InvalidInstallFile::in($path, "{$at} needs \"days\" (list of 1–7) and \"from\" before \"to\" (HH:MM).");
+            }
+
+            foreach ($days as $day) {
+                if (! is_int($day) || $day < 1 || $day > 7) {
+                    throw InvalidInstallFile::in($path, "{$at}.days must list ISO weekdays 1–7.");
+                }
+
+                $result[] = [$day, $from, $to];
+            }
         }
 
         return $result;

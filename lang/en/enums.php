@@ -51,6 +51,11 @@ return [
         'cancelled' => 'cancelled',
         'no_show' => 'no-show',
     ],
+    'lease_access' => [
+        'book' => 'booking',
+        'view' => 'schedule view',
+        'wallboard' => 'public board',
+    ],
     'contract_status' => [
         'upcoming' => 'upcoming',
         'active' => 'in force',

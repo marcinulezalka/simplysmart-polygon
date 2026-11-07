@@ -23,7 +23,8 @@ use Simplysmart\Polygon\Models\Relations\BelongsToOrganization;
  * (`organization_id`) w dniu tygodnia ISO (`weekday`, 1 = poniedziałek), w przedziale `starts_at`–`ends_at`
  * (`HH:MM:SS`), opcjonalnie z wykonawcą (`performer` — konto strefy, np. lekarz) i podziałem na sloty po
  * `slot_minutes` minut, ważna od `valid_from` do `valid_to` (bez końca: null). `name` to przedział „HH:MM–HH:MM”.
- * Zapisywany tylko przez Calendar\SaveSchedule (bez kolizji zasobu i wykonawcy) i instalator.
+ * Zapisywany tylko przez Calendar\SaveSchedule (bez kolizji zasobu, wykonawcy i najmu), instalator i wypowiedzenie
+ * najmu (Leases\SaveLease::terminate() skraca okres grafiku najemcy).
  *
  * @property int $organization_id
  * @property int $resource_id

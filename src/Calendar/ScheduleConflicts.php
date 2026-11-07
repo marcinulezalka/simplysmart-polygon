@@ -18,13 +18,16 @@ use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Models\Organization;
 use Simplysmart\Polygon\Models\OrganizationResource;
 use Simplysmart\Polygon\Models\ResourceSchedule;
+use Simplysmart\Polygon\Queries\Leases\ResourceLeases;
 use Simplysmart\Polygon\Queries\Organizations\OrganizationResources;
 
 /**
  * Kolizje grafiku przed zapisem: przedział musi mieścić co najmniej jeden slot (albo minutę bez slotów), a okres
- * ważności nie może kończyć się przed początkiem; zasób musi być aktywnym zasobem jednostki albo jej przodka; w tym dniu
- * tygodnia, w pokrywającym się okresie ważności, przedział nie może nachodzić na inny grafik tego zasobu (dowolny
- * wykonawca i jednostka) ani tego wykonawcy (dowolny zasób i jednostka).
+ * ważności nie może kończyć się przed początkiem; zasób musi być aktywnym zasobem jednostki albo jej przodka albo
+ * zasobem wynajętym jej jako kooperacji; w tym dniu tygodnia, w pokrywającym się okresie ważności, przedział nie może
+ * nachodzić na inny grafik tego zasobu (dowolny wykonawca i jednostka) ani tego wykonawcy (dowolny zasób i jednostka).
+ * Najem (Models\ResourceLease): właściciel nie układa grafiku w oknach wynajętych w tym okresie (LeasedOut), a najemca
+ * tylko w oknach i okresie swojej umowy (OutsideLease; umowa z końcem wymaga grafiku z końcem nie później).
  */
 final readonly class ScheduleConflicts
 {
@@ -33,6 +36,7 @@ final readonly class ScheduleConflicts
 
     public function __construct(
         private OrganizationResources $resources,
+        private ResourceLeases $leases,
     ) {}
 
     /**
@@ -52,6 +56,12 @@ final readonly class ScheduleConflicts
 
         if (! $unit instanceof Organization || ! $this->resources->includes($unit, $schedule->resourceId)) {
             $conflicts[] = ScheduleConflict::ResourceUnavailable;
+        } else {
+            $lease = $this->leaseConflict($unit, $schedule);
+
+            if ($lease !== null) {
+                $conflicts[] = $lease;
+            }
         }
 
         if ($this->overlapping($schedule, $ignoreId)->where(OrganizationResource::FOREIGN_KEY, $schedule->resourceId)->exists()) {
@@ -65,6 +75,34 @@ final readonly class ScheduleConflicts
         }
 
         return $conflicts;
+    }
+
+    /**
+     * Najem zasobu: grafik na własnym zasobie nie wchodzi w okno aktywnego najmu w nakładającym się okresie (LeasedOut),
+     * a grafik na zasobie wynajętym mieści się w oknach i okresie jednej umowy jednostki kooperacji (OutsideLease).
+     */
+    private function leaseConflict(Organization $unit, ScheduleInput $schedule): ?ScheduleConflict
+    {
+        $from = substr($schedule->startTime(), 0, 5);
+        $to = substr($schedule->endTime(), 0, 5);
+
+        if ($this->resources->owns($unit, $schedule->resourceId)) {
+            foreach ($this->leases->overlapping($schedule->resourceId, $schedule->validFrom, $schedule->validTo) as $lease) {
+                if ($lease->leaseWindows()->overlaps($schedule->weekday, $from, $to)) {
+                    return ScheduleConflict::LeasedOut;
+                }
+            }
+
+            return null;
+        }
+
+        foreach ($this->leases->ofCooperation($unit, $schedule->resourceId) as $lease) {
+            if ($lease->coversPeriod($schedule->validFrom, $schedule->validTo) && $lease->leaseWindows()->covers($schedule->weekday, $from, $to)) {
+                return null;
+            }
+        }
+
+        return ScheduleConflict::OutsideLease;
     }
 
     /**

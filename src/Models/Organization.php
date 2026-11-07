@@ -36,7 +36,12 @@ use Simplysmart\Polygon\Models\Relations\LocatedInCountry;
  * Departament (`is_department`, isDepartment()) to wewnętrzna agregacja: dział jednostki nadrzędnej (organizacji bez
  * flagi), z własnymi członkami, ale bez własnych danych. Departament nie ma pod sobą innych organizacji.
  *
+ * Kooperacja (`is_cooperation`, isCooperation()) to podorganizacja najemcy związana z umową najmu zasobu
+ * (Models\ResourceLease): w niej jest grafik najemcy na wynajętym zasobie, a właściciel zasobu widzi i zapisuje tylko
+ * przez nią, w zakresie poziomów udostępnienia umowy (§20).
+ *
  * @property bool $is_department
+ * @property bool $is_cooperation
  * @property-read Organization|null $parent
  * @property ?string $short_name
  * @property ?string $color
@@ -83,6 +88,9 @@ final class Organization extends DataModel
     public const string SHORT_NAME = 'short_name';
 
     public const string IS_DEPARTMENT = 'is_department';
+
+    /** Podorganizacja kooperacji najemcy w umowie najmu zasobu (isCooperation()). */
+    public const string IS_COOPERATION = 'is_cooperation';
 
     /** Typ jednostki ze słownika OrganizationUnitType (np. poradnia, filia, dział administracyjny); null — bez typu. */
     public const string UNIT_TYPE_ID = 'unit_type_id';
@@ -166,7 +174,7 @@ final class Organization extends DataModel
      *
      * @var array<string, mixed>
      */
-    protected $attributes = [self::IS_DEPARTMENT => false];
+    protected $attributes = [self::IS_DEPARTMENT => false, self::IS_COOPERATION => false];
 
     /**
      * Czy to organizacja hero (operatora aplikacji, HERO_ID).
@@ -179,6 +187,11 @@ final class Organization extends DataModel
     public function isDepartment(): bool
     {
         return $this->getAttribute(self::IS_DEPARTMENT) === true;
+    }
+
+    public function isCooperation(): bool
+    {
+        return $this->getAttribute(self::IS_COOPERATION) === true;
     }
 
     /**
@@ -246,6 +259,6 @@ final class Organization extends DataModel
      */
     protected function casts(): array
     {
-        return [self::SHORT_NAME => 'string', self::IS_DEPARTMENT => 'boolean', self::UNIT_TYPE_ID => 'integer', ...array_fill_keys(array_keys(self::DETAIL_LENGTHS), 'string')];
+        return [self::SHORT_NAME => 'string', self::IS_DEPARTMENT => 'boolean', self::IS_COOPERATION => 'boolean', self::UNIT_TYPE_ID => 'integer', ...array_fill_keys(array_keys(self::DETAIL_LENGTHS), 'string')];
     }
 }

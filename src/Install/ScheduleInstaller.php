@@ -28,7 +28,7 @@ use Simplysmart\Polygon\Queries\Organizations\OrganizationResources;
 
 /**
  * Zakłada grafik organizacji z plików instalacji (`organizations.<klucz>.schedule`) po strefach (konta już są):
- * zasób po kluczu z pliku wśród zasobów organizacji i jej przodków, wykonawca po strefie i adresie. Wpis o tym samym
+ * zasób po kluczu z pliku wśród zasobów organizacji i jej przodków oraz zasobów wynajętych jej jako kooperacji, wykonawca po strefie i adresie. Wpis o tym samym
  * zasobie, wykonawcy, dniu i godzinach zostaje bez zmian; nowy przechodzi przez Calendar\SaveSchedule (kolizje). Brak
  * zasobu, strefy, konta albo kolizja to InvalidInstallFile — transakcja instalatora jest wycofywana.
  */
@@ -93,11 +93,15 @@ final readonly class ScheduleInstaller
 
     private function resource(Organization $unit, string $key): ?OrganizationResource
     {
-        $query = OrganizationResource::query();
-        $query->whereIn(Organization::FOREIGN_KEY, $this->resources->lineage($unit));
-        $query->where(ColumnNames::JSON_ATTRIBUTES . '->' . OrganizationInstaller::INSTALL_KEY, $key);
+        foreach ($this->resources->available($unit) as $resource) {
+            $attributes = $resource->getAttribute(ColumnNames::JSON_ATTRIBUTES);
 
-        return $query->first();
+            if (is_array($attributes) && ($attributes[OrganizationInstaller::INSTALL_KEY] ?? null) === $key) {
+                return $resource;
+            }
+        }
+
+        return null;
     }
 
     private function performer(InstallSchedule $entry): ?ZoneAccount

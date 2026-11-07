@@ -19,7 +19,7 @@ use Spatie\Permission\PermissionRegistrar;
 /**
  * Domyślna konfiguracja systemu z plików instalacji (InstallFiles): najpierw waliduje wszystkie pliki
  * (InstallFileParser) i łączy strefy (ZoneInstallMerger) oraz organizacje (InstallOrganizations), potem w jednej
- * transakcji zakłada brakujące organizacje (OrganizationInstaller) i każdą strefę z uprawnieniami, rolami i kontami
+ * transakcji zakłada brakujące organizacje (OrganizationInstaller), umowy najmu ich zasobów (LeaseInstaller), każdą strefę z uprawnieniami, rolami i kontami
  * startowymi (ZoneInstaller). Idempotentny: wolno go uruchomić ponownie i na produkcji; uprawnień, ról i członkostw
  * spoza plików nie usuwa.
  */
@@ -34,6 +34,7 @@ final readonly class Installer
         private OrganizationInstaller $organizationInstaller,
         private ZoneInstaller $zoneInstaller,
         private ScheduleInstaller $scheduleInstaller,
+        private LeaseInstaller $leaseInstaller,
         private PermissionRegistrar $permissions,
     ) {}
 
@@ -49,6 +50,7 @@ final readonly class Installer
         $report = $this->db->transaction(function () use ($zones, $organizations): InstallReport {
             $report = new InstallReport();
             $installed = $this->organizationInstaller->install($organizations, $report);
+            $this->leaseInstaller->install($organizations, $installed, $report);
 
             foreach ($zones as $zone) {
                 $this->zoneInstaller->install($zone, $report, $installed);

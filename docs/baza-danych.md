@@ -278,7 +278,7 @@ i zarządzanie organizacjami dodaje paczka strefy.
 
 | Tabela | Model | Standard | Kolumny domenowe |
 | --- | --- | --- | --- |
-| `organizations` | `Models\Organization` | pełny, drzewo przez `parent_id` | `is_department`, `unit_type_id`, `short_name`, `color`, dane firmy (`Organization::DETAIL_LENGTHS`) |
+| `organizations` | `Models\Organization` | pełny, drzewo przez `parent_id` | `is_department`, `is_cooperation` (§20), `unit_type_id`, `short_name`, `color`, dane firmy (`Organization::DETAIL_LENGTHS`) |
 | `organization_unit_types` | `Models\OrganizationUnitType` | pełny | `code` (unikalny), `number_prefix`, `icon`, `is_internal`, `is_public`; `json_attributes.fields` — pola podorganizacji typu |
 | `organization_members` | `Models\OrganizationMember` | łącząca, z historią | `organization_id`, `model_type`, `model_id`, `timestamps`; unikalne organizacja + konto |
 
@@ -348,7 +348,8 @@ przed zapisem grafiku.
   się przed początkiem, zasób spoza jednostki i jej przodków oraz nakładanie się na inny grafik tego zasobu albo tego
   wykonawcy w tym dniu tygodnia i pokrywającym się okresie ważności. Grafiku z przyszłymi rezerwacjami nie można usunąć.
 - **Wolne terminy** (`Calendar\FreeSlots`, `Slot`): sloty grafiku wykonawcy w jednostce w danym dniu, bez minionych,
-  zajętych przez rezerwacje wykonawcy albo zasobu (w dowolnej jednostce) i dni wolnych kraju aplikacji (`HolidaysIn`);
+  zajętych przez rezerwacje wykonawcy albo zasobu (w dowolnej jednostce), dni wolnych kraju aplikacji (`HolidaysIn`)
+  i — na zasobie wynajętym — dni, w których umowa najmu nie obowiązuje (§20);
   `days()` — najbliższe dni z wolnymi terminami.
 - **Rezerwacja** (`Calendar\BookSlot`): blokuje (`FOR UPDATE`) wiersz zasobu, potem wykonawcy i dopiero wtedy sprawdza
   slot — równoległa rezerwacja tego terminu czeka na blokadę i kończy się `SlotUnavailable`. Wywołana w transakcji
@@ -379,3 +380,35 @@ organizacji i jest dostępny także w jej jednostkach podrzędnych. Paczki stref
 - **Identyfikatory** (`Identifiers\Nip`, `Regon`, `Pesel` — z datą urodzenia i płcią) i reguły walidacji
   `Rules\Nip`, `Rules\Regon`, `Rules\Pesel` (komunikaty `identifiers.*`).
 
+## 20. Najem zasobów i kooperacja
+
+Właściciel zasobu (np. gabinetu) wynajmuje go innej organizacji-klientowi na okres i w oknach godzinowych. Najemca
+prowadzi na nim własny grafik i rezerwacje w **podorganizacji kooperacji** (`organizations.is_cooperation`, `parent_id`
+= organizacja najemcy); właściciel widzi i zapisuje w kalendarzu najemcy tylko przez nią, w zakresie poziomów
+udostępnienia umowy.
+
+| Tabela | Model | Kolumny domenowe |
+| --- | --- | --- |
+| `resource_leases` | `Models\ResourceLease` | `organization_id` (właściciel zasobu), `resource_id`, `lessee_organization_id`, `cooperation_organization_id`, `contractor_contract_id` (opcjonalna umowa kontrahenta właściciela, §19), `name` (numer umowy), `valid_from`, `valid_to` (null — bezterminowo), `windows` (JSON `[dzień ISO, "HH:MM", "HH:MM"]`, bez okien — cały zasób), `access` (JSON, `Enums\LeaseAccess`), `wallboard_token` (losowy token publicznej tablicy) |
+
+- **Okna** (`Leases\LeaseWindows`): kilka okien w jednym dniu (np. 08:00–12:00 i 18:00–22:00); `covers()` — blok mieści
+  się w jednym oknie, `overlaps()`, `isValid()` (bez nakładania się w dniu), `label()`.
+- **Udostępnienie** (`Enums\LeaseAccess`): `book` — właściciel zapisuje wizyty w kooperacji (daje też podgląd),
+  `view` — grafik i zapisy tylko do odczytu, `wallboard` — publiczna tablica online (`grants()`).
+- **Zapis** (`Leases\SaveLease`, `LeaseInput`, `LeaseConflicts`): w transakcji z blokadą wiersza zasobu (jak grafik)
+  odrzuca (`LeaseRejected`, `LeaseConflict`) brak numeru, błędne okna albo okres, zasób spoza organizacji właściciela
+  i jej przodków, najemcę w drzewie właściciela, kooperację bez flagi, nieaktywną albo nie najemcy, umowę kontrahenta
+  spoza właściciela, nakładanie się okien z innym najmem zasobu w pokrywającym się okresie, grafik innej jednostki
+  w oknach, a przy zmianie umowy — grafik kooperacji poza nowymi oknami albo okresem. `terminate()` — umowa obowiązuje
+  do podanego dnia, grafik kooperacji na zasobie kończy się tego dnia, a zwrócone zapisy po nim są do odwołania;
+  `renewWallboardToken()` unieważnia stary link tablicy.
+- **Grafik** (§18): właściciel nie układa grafiku w wynajętych oknach (`ScheduleConflict::LeasedOut`), kooperacja tylko
+  w oknach i okresie swojej umowy (`OutsideLease`; umowa z końcem wymaga grafiku z końcem). Lekarz może mieć w dniu
+  kilka bloków z przerwą — każdy blok to osobny wiersz grafiku. `OrganizationResources` daje kooperacji zasoby
+  wynajęte jej w umowach obowiązujących dziś albo później; `owns()` — zasób własny (nie wynajęty).
+- **Odczyt** (`Queries\Leases\ResourceLeases`): `ofOwner()`, `findOfOwner()`, `overlapping()`, `ofCooperation()`,
+  `channels(owner, access)` — najmy zasobów właściciela (z przodkami) obowiązujące dziś albo później, dające poziom
+  udostępnienia; `byWallboardToken()` — obowiązująca dziś umowa z poziomem `wallboard`.
+- **Tablica** (`Leases\Wallboard`, `WallboardEntry`): godziny przyjęć kooperacji na zasobie w dniu (blok grafiku
+  w oknach umowy, wykonawca, zasób, liczba zajętych terminów) — bez danych osób zapisanych.
+- Umowy startowe: pliki instalacji, `organizations.<właściciel>.leases` i `is_cooperation` ([instalacja.md](instalacja.md)).

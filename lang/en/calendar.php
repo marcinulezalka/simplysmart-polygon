@@ -17,6 +17,8 @@ return [
         'resource_unavailable' => 'The resource belongs neither to the unit nor to its parent organization.',
         'resource_taken' => 'The resource is taken by another schedule at that time.',
         'performer_busy' => 'The performer is scheduled elsewhere at that time.',
+        'leased_out' => 'The resource is leased to another organization at that time.',
+        'outside_lease' => 'A schedule on a leased resource must fit the windows and period of the lease (give an end date when the lease has one).',
     ],
     'has_bookings' => 'There are future bookings in this schedule — cancel them first.',
     'slot_unavailable' => 'This slot is no longer free — choose another one.',

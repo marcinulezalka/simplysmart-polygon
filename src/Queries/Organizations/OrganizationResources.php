@@ -19,16 +19,20 @@ use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Enums\ResourceKind;
 use Simplysmart\Polygon\Models\Organization;
 use Simplysmart\Polygon\Models\OrganizationResource;
+use Simplysmart\Polygon\Queries\Leases\ResourceLeases;
 
 /**
- * Zasoby dostępne dla organizacji: aktywne zasoby jej samej i jej przodków (np. gabinet siedziby dostępny w poradni),
- * opcjonalnie jednego rodzaju, po `sort_order` i nazwie. Wyszukiwanie po tokenie i sprawdzenie id działają w tym
- * samym zakresie, więc formularz jednostki nie wskaże zasobu cudzej organizacji.
+ * Zasoby dostępne dla organizacji: aktywne zasoby jej samej i jej przodków (np. gabinet siedziby dostępny w poradni)
+ * oraz zasoby wynajęte jej (albo przodkowi) jako kooperacji najemcy w umowie obowiązującej dziś albo później
+ * (Queries\Leases\ResourceLeases), opcjonalnie jednego rodzaju, po `sort_order` i nazwie. Wyszukiwanie po tokenie
+ * i sprawdzenie id działają w tym samym zakresie, więc formularz jednostki nie wskaże zasobu cudzej organizacji.
+ * owns() — czy zasób należy do organizacji albo jej przodka (nie jest wynajęty).
  */
 final readonly class OrganizationResources
 {
     public function __construct(
         private OrganizationUnits $units,
+        private ResourceLeases $leases,
     ) {}
 
     /**
@@ -55,6 +59,16 @@ final readonly class OrganizationResources
     }
 
     /**
+     * Czy zasób należy do organizacji albo jej przodka (bez najmu).
+     */
+    public function owns(Organization $organization, int $resourceId): bool
+    {
+        $owner = OrganizationResource::query()->whereKey($resourceId)->value(Organization::FOREIGN_KEY);
+
+        return is_numeric($owner) && in_array((int) $owner, $this->lineage($organization), true);
+    }
+
+    /**
      * Id organizacji i jej przodków, od niej w górę (OrganizationUnits::lineage()).
      *
      * @return list<int>
@@ -69,8 +83,12 @@ final readonly class OrganizationResources
      */
     private function query(Organization $organization, ?ResourceKind $kind): Builder
     {
+        $lineage = $this->lineage($organization);
+        $leased = $this->leases->leasedResourceIds($organization);
         $query = OrganizationResource::query();
-        $query->whereIn(Organization::FOREIGN_KEY, $this->lineage($organization));
+        $query->where(static function (Builder $scope) use ($lineage, $leased): void {
+            $scope->whereIn(Organization::FOREIGN_KEY, $lineage)->orWhereIn(ColumnNames::ID, $leased);
+        });
         $query->where(ColumnNames::IS_ACTIVE, true);
 
         if ($kind !== null) {
