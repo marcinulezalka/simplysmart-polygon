@@ -4,6 +4,8 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-07
+
 ### Added
 
 - Hash sesji w adresie (`url_key` strefy, `Zones\ZoneUrlKey`): ekrany po zalogowaniu pod `/<hash>/<slug>/…`, losowy hash dla sesji (nowy po wylogowaniu), `route()` dokłada go sam (`Http\Middleware\ApplyZoneUrlKey`), a brak albo zły hash to 404 przed logowaniem (`RequireZoneUrlKey`) — utrudnia robotom i linkom spoza sesji; logowanie i trasy publiczne bez zmian, mail o nowym urządzeniu linkuje wtedy do logowania. Domyślnie wyłączony.
