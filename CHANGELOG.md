@@ -4,6 +4,8 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-07
+
 ### Added
 
 - Cykl tygodni w kalendarzu (`Calendar\WeekCycle`): grafik (`resource_schedules.week_interval`, `ScheduleInput::$weekInterval`) i okna umowy najmu (`resource_leases.week_interval`, `LeaseInput::$weekInterval`) co 1–8 tygodni, licząc od tygodnia `valid_from`; kolizje tylko przy wspólnych tygodniach, grafik najemcy w cyklu umowy, wolne terminy i tablica tylko w tygodniach cyklu. W plikach instalacji `every_weeks` grafiku i umowy.
