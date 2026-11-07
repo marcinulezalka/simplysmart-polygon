@@ -19,7 +19,9 @@ namespace Simplysmart\Polygon\Deploy\Deployment;
  * zawierają sekrety). Katalog projektu ma pierwszeństwo; plik instalacji `<projekt>.json` leży obok znalezionego `.env`.
  *
  * Przed-produkcja to katalog projektu na tym komputerze (`PREPRODUCTION_PATH`, PHP i Composer do skryptu serwerowego),
- * produkcja to serwer SSH (`DEPLOY_SSH`, `DEPLOY_PATH`, `DEPLOY_PHP`, `REMOTE_COMPOSER`, `GITHUB_TOKEN`).
+ * produkcja to serwer SSH (`DEPLOY_SSH`, `DEPLOY_PATH`, `DEPLOY_PHP`, `REMOTE_COMPOSER`, `GITHUB_TOKEN`). Opcjonalne
+ * `PREPRODUCTION_RELOAD` i `DEPLOY_RELOAD` to polecenia powłoki uruchamiane na końcu wdrożenia (np. przeładowanie PHP-FPM,
+ * żeby opcache nie serwował starego kodu i starego cache tras).
  * Wzór: `resources/deploy/deploy-vendor.env.example` tej paczki.
  */
 final readonly class ProjectConfig
@@ -45,6 +47,12 @@ final readonly class ProjectConfig
     public const string REMOTE_COMPOSER = 'REMOTE_COMPOSER';
 
     public const string GITHUB_TOKEN = 'GITHUB_TOKEN';
+
+    /** Polecenie po wdrożeniu przed-produkcji (np. przeładowanie PHP-FPM). */
+    public const string PREPRODUCTION_RELOAD = 'PREPRODUCTION_RELOAD';
+
+    /** Polecenie po wdrożeniu produkcji na serwerze (np. przeładowanie PHP-FPM). */
+    public const string RELOAD = 'DEPLOY_RELOAD';
 
     /** Domyślne PHP przed-produkcji. */
     public const string DEFAULT_PREPRODUCTION_PHP = 'php';
@@ -76,6 +84,8 @@ final readonly class ProjectConfig
      * @param  string|null  $remoteComposer  Plik Composera na serwerze; null — ~/bin/composer.
      * @param  string|null  $githubToken  Token GitHub tylko do odczytu, zapisywany w Composerze serwera.
      * @param  string  $directory  Katalog, w którym leży `<projekt>.env` (katalog projektu albo katalog konfiguracji).
+     * @param  string|null  $reload  Polecenie powłoki na serwerze po wdrożeniu (DEPLOY_RELOAD); null — brak.
+     * @param  string|null  $preproductionReload  Polecenie po wdrożeniu przed-produkcji (PREPRODUCTION_RELOAD); null — brak.
      */
     public function __construct(
         public string $name,
@@ -88,6 +98,8 @@ final readonly class ProjectConfig
         public ?string $remoteComposer,
         public ?string $githubToken,
         public string $directory,
+        public ?string $reload = null,
+        public ?string $preproductionReload = null,
     ) {}
 
     /**
@@ -140,6 +152,8 @@ final readonly class ProjectConfig
             remoteComposer: self::optional($values, self::REMOTE_COMPOSER),
             githubToken: self::optional($values, self::GITHUB_TOKEN),
             directory: $projectDirectory,
+            reload: self::optional($values, self::RELOAD),
+            preproductionReload: self::optional($values, self::PREPRODUCTION_RELOAD),
         );
     }
 

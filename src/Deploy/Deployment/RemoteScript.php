@@ -23,7 +23,8 @@ namespace Simplysmart\Polygon\Deploy\Deployment;
  * skrypt dostaje jego nazwę (`DEPLOY_COMPOSER_MANIFEST`) i instaluje paczki z niego zamiast z `composer.lock`, a gdy
  * przesłał plik instalacji projektu — jego ścieżkę (`DEPLOY_INSTALL_FILE`), którą `polygon:install` dopisuje do
  * `POLYGON_INSTALL_FILES` z `.env`. Z `--fresh` (po potwierdzeniu) skrypt dostaje `DEPLOY_FRESH=1` i zamiast migracji
- * odtwarza bazę od nowa: `migrate:fresh` i `db:seed` z tymi samymi plikami instalacji.
+ * odtwarza bazę od nowa: `migrate:fresh` i `db:seed` z tymi samymi plikami instalacji. Polecenie po wdrożeniu
+ * (`DEPLOY_RELOAD` / `PREPRODUCTION_RELOAD` z konfiguracji projektu) trafia do skryptu jako `DEPLOY_RELOAD`.
  */
 final readonly class RemoteScript
 {
@@ -52,6 +53,7 @@ final readonly class RemoteScript
     private const string ENV_INSTALL_FILE = 'DEPLOY_INSTALL_FILE';
 
     private const string ENV_FRESH = 'DEPLOY_FRESH';
+    private const string ENV_RELOAD = 'DEPLOY_RELOAD';
 
     /**
      * @param  string  $serverScript  Treść remote.sh.
@@ -102,7 +104,7 @@ final readonly class RemoteScript
     public function production(ProjectConfig $config, ?string $manifest = null, ?string $installFile = null, bool $fresh = false): string
     {
         return $this->script(
-            [self::ENV_PHP => $config->php, self::ENV_GITHUB_TOKEN => $config->githubToken ?? '', self::ENV_COMPOSER => $config->remoteComposer, self::ENV_MANIFEST => $manifest, self::ENV_INSTALL_FILE => $installFile, self::ENV_FRESH => $fresh ? '1' : null],
+            [self::ENV_PHP => $config->php, self::ENV_GITHUB_TOKEN => $config->githubToken ?? '', self::ENV_COMPOSER => $config->remoteComposer, self::ENV_MANIFEST => $manifest, self::ENV_INSTALL_FILE => $installFile, self::ENV_FRESH => $fresh ? '1' : null, self::ENV_RELOAD => $config->reload],
             $config->path,
         );
     }
@@ -117,7 +119,7 @@ final readonly class RemoteScript
     public function preproduction(ProjectConfig $config, ?string $manifest = null, ?string $installFile = null, bool $fresh = false): string
     {
         return $this->script(
-            [self::ENV_PHP => $config->preproductionPhp, self::ENV_KEEP_ENV => '1', self::ENV_COMPOSER => $config->preproductionComposer, self::ENV_MANIFEST => $manifest, self::ENV_INSTALL_FILE => $installFile, self::ENV_FRESH => $fresh ? '1' : null],
+            [self::ENV_PHP => $config->preproductionPhp, self::ENV_KEEP_ENV => '1', self::ENV_COMPOSER => $config->preproductionComposer, self::ENV_MANIFEST => $manifest, self::ENV_INSTALL_FILE => $installFile, self::ENV_FRESH => $fresh ? '1' : null, self::ENV_RELOAD => $config->preproductionReload],
             $config->preproductionPath,
         );
     }

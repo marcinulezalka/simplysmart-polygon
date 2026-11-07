@@ -9,7 +9,10 @@
 #   4. paczki z composer.lock (--no-dev) albo z manifestu wdrożeniowego przesłanego przez deploy
 #      (DEPLOY_COMPOSER_MANIFEST, np. composer.deploy.json z composer.deploy.lock — paczki z repozytoriów git),
 #   5. APP_KEY, migracje, typy jednostek i organizacja hero (polygon:organizations:seed), pliki instalacji (polygon:install: uprawnienia, role i konta z plików paczek, POLYGON_INSTALL_FILES
-#      z .env i pliku przesłanego przez deploy — DEPLOY_INSTALL_FILE), cache konfiguracji, tras i widoków.
+#      z .env i pliku przesłanego przez deploy — DEPLOY_INSTALL_FILE), cache konfiguracji, tras i widoków: czyszczone zaraz
+#      po instalacji paczek (nowy kod nie działa ze starym cache tras i widoków) i budowane od nowa na końcu, restart
+#      workerów kolejki (queue:restart) i opcjonalne polecenie DEPLOY_RELOAD (np. przeładowanie PHP-FPM — opcache
+#      serwera trzyma stary kod i stary plik tras, a artisan czyści tylko cache CLI).
 #      Z DEPLOY_FRESH=1 (vendor/bin/deploy --fresh, po potwierdzeniu) zamiast migracji, seedera typów jednostek i instalacji:
 #      baza od nowa — migrate:fresh (USUWA WSZYSTKIE DANE) i db:seed z tymi samymi plikami instalacji.
 # Z DEPLOY_KEEP_ENV=1 (przed-produkcja na komputerze deweloperskim) .env zostaje bez zmian, a bez COMPOSER_BIN
@@ -29,6 +32,7 @@ keep_env="${DEPLOY_KEEP_ENV:-}"
 manifest="${DEPLOY_COMPOSER_MANIFEST:-}"
 install_file="${DEPLOY_INSTALL_FILE:-}"
 fresh="${DEPLOY_FRESH:-}"
+reload="${DEPLOY_RELOAD:-}"
 
 fail() { echo "BŁĄD: $*" >&2; exit 1; }
 step() { echo "--> $*"; }
@@ -123,8 +127,14 @@ if [[ -n "$install_file" ]]; then
     esac
 fi
 
-# Config bez cache, żeby migracje czytały bieżący .env, a nie konfigurację z poprzedniego wdrożenia.
+step "Czyszczę cache konfiguracji, tras, widoków i zdarzeń"
+# Nowy kod bez starego cache: migracje czytają bieżący .env, a trasy i widoki nie pochodzą z poprzedniego wdrożenia.
+# Magazyn cache (cache:clear w optimize:clear) dopiero po migracjach — przy pierwszym wdrożeniu tabeli cache jeszcze nie ma.
 "$php_bin" artisan config:clear >/dev/null
+"$php_bin" artisan route:clear >/dev/null
+"$php_bin" artisan view:clear >/dev/null
+"$php_bin" artisan event:clear >/dev/null
+"$php_bin" artisan clear-compiled >/dev/null
 
 if [[ "$fresh" == 1 ]]; then
     step "Baza od nowa: migrate:fresh (usuwa wszystkie dane)"
@@ -154,5 +164,13 @@ step "Cache konfiguracji, tras i widoków"
 "$php_bin" artisan config:cache
 "$php_bin" artisan route:cache
 "$php_bin" artisan view:cache
+
+step "Restart workerów kolejki (queue:restart)"
+"$php_bin" artisan queue:restart
+
+if [[ -n "$reload" ]]; then
+    step "Polecenie po wdrożeniu (DEPLOY_RELOAD): $reload"
+    bash -c "$reload" || fail "Polecenie po wdrożeniu się nie udało ($reload) — PHP może serwować stary kod z opcache."
+fi
 
 step "Wdrożenie zakończone: $("$php_bin" artisan --version)"

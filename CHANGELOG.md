@@ -6,12 +6,14 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Added
 
+- Polecenie po wdrożeniu w konfiguracji projektu: `DEPLOY_RELOAD` (serwer) i `PREPRODUCTION_RELOAD` (przed-produkcja), np. przeładowanie PHP-FPM, żeby opcache nie serwował starego kodu i starego cache tras (`docs/deploy.md`, „Cache i opcache”).
 - Assety paczek budowane Vite (`docs/assety.md`): orkiestrator `bin/assets.mjs {build|dev}` (skrypty `npm run build`/`dev` projektu) buduje każdą paczkę z `vite.config.js` do jej `public/build/` Vite i preprocesorami z projektu; `Assets\PackageAssets` (rejestr paczek, dyrektywa `@packageAssets`), `php artisan polygon:assets` (symlink albo `--copy` do `public/vendor/<paczka>`), krok `polygon:assets` w deployu.
 - Tryby kolorystyczne `Enums\ColorTheme` (automatyczny, jasny, ciemny, WCAG, WCAG duży kontrast) i `View\ColorThemePreference` (ciasteczko `polygon_theme` bez szyfrowania) dla `data-theme` na `<html>`.
 - Strona startowa konta po zalogowaniu (klucz `home` configu strefy, `Contracts\ZoneHome`): strefa wybiera trasę dla konta (np. pulpit roli) w zespole spatie bieżącej organizacji; bez niej, bez wyboru albo gdy trasy nie ma — jak dotąd `<strefa>.dashboard`.
 
 ### Changed
 
+- Deploy (`remote.sh`) czyści cache konfiguracji, tras, widoków i zdarzeń zaraz po instalacji paczek (wcześniej dopiero na końcu), a na końcu restartuje workery kolejki (`queue:restart`).
 - Hash sesji w adresie (`url_key` strefy) stoi teraz po slugu strefy: `/<slug>/<hash>/…` zamiast `/<hash>/<slug>/…` — wszystkie adresy strefy zaczynają się od jej sluga.
 
 ## [0.11.0] - 2026-11-07

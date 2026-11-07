@@ -51,17 +51,19 @@ final class ProjectConfigTest extends TestCase
         $this->assertNull($config->preproductionComposer);
         $this->assertNull($config->remoteComposer);
         $this->assertNull($config->githubToken);
+        $this->assertNull($config->reload);
+        $this->assertNull($config->preproductionReload);
         $this->assertSame('shop@prod:~/shop.pl', $config->productionTarget());
     }
 
     #[Test]
     public function given_values_are_kept(): void
     {
-        $this->write('shop', "PREPRODUCTION_PATH=/pp\nPREPRODUCTION_PHP=php85\nPREPRODUCTION_COMPOSER=/opt/c.phar\nDEPLOY_SSH=s\nDEPLOY_PATH=/app\nDEPLOY_PHP=php85\nREMOTE_COMPOSER=c.phar\nGITHUB_TOKEN=t\n");
+        $this->write('shop', "PREPRODUCTION_PATH=/pp\nPREPRODUCTION_PHP=php85\nPREPRODUCTION_COMPOSER=/opt/c.phar\nDEPLOY_SSH=s\nDEPLOY_PATH=/app\nDEPLOY_PHP=php85\nREMOTE_COMPOSER=c.phar\nGITHUB_TOKEN=t\nDEPLOY_RELOAD=\"sudo systemctl reload php8.4-fpm\"\nPREPRODUCTION_RELOAD=reload-pp\n");
 
         $config = ProjectConfig::load($this->directory, 'shop');
 
-        $this->assertSame(['php85', '/opt/c.phar', 'php85', 'c.phar', 't'], [$config->preproductionPhp, $config->preproductionComposer, $config->php, $config->remoteComposer, $config->githubToken]);
+        $this->assertSame(['php85', '/opt/c.phar', 'php85', 'c.phar', 't', 'sudo systemctl reload php8.4-fpm', 'reload-pp'], [$config->preproductionPhp, $config->preproductionComposer, $config->php, $config->remoteComposer, $config->githubToken, $config->reload, $config->preproductionReload]);
     }
 
     #[Test]

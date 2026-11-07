@@ -63,6 +63,20 @@ Oba pliki dodaj do `.gitignore` projektu.
 3. Aktualizuje przed-produkcję (`PREPRODUCTION_PATH`, klon repozytorium na tym komputerze): kopiuje do niej manifest (i plik instalacji, niżej) i uruchamia `remote.sh`: `git pull`, `composer install --no-dev` z manifestu (bez niego z `composer.lock`), migracje, `polygon:install`, assety paczek (`polygon:assets`, [assety.md](assety.md)), cache. Jej `.env` zostaje bez zmian (środowisko serwera i kolejka — niżej).
 4. Pyta, czy wdrożyć produkcję (bez terminala odpowiedź to „nie”; `--production` / `--no-production` pomija pytanie), wysyła manifest do `DEPLOY_PATH` (`scp`) i uruchamia ten sam skrypt na serwerze przez `ssh`. Skrypt dostaje nazwę manifestu w `DEPLOY_COMPOSER_MANIFEST`; bez niej (ręczne uruchomienie) instaluje z `composer.lock`.
 
+### Cache i opcache
+
+`remote.sh` zaraz po instalacji paczek czyści cache konfiguracji, tras, widoków i zdarzeń oraz skompilowane pliki
+(`config:clear`, `route:clear`, `view:clear`, `event:clear`, `clear-compiled`), więc migracje i instalacja działają na
+nowym kodzie bez cache z poprzedniego wdrożenia. Po migracjach `optimize:clear` czyści też magazyn cache (przy pierwszym
+wdrożeniu tabela cache powstaje dopiero w migracjach), a na końcu skrypt buduje od nowa `config:cache`, `route:cache`
+i `view:cache` i restartuje workery kolejki (`queue:restart`).
+
+Artisan czyści tylko cache CLI. PHP-FPM z opcache bez sprawdzania zmian plików (`opcache.validate_timestamps=0`) dalej
+serwuje stary kod i stary plik tras — objaw to np. 404 na trasie, którą `route:list` pokazuje. Wtedy w konfiguracji
+projektu ustaw `DEPLOY_RELOAD` (serwer) i `PREPRODUCTION_RELOAD` (przed-produkcja): polecenie powłoki uruchamiane na
+końcu wdrożenia, np. `sudo systemctl reload php8.4-fpm` (konto deployu potrzebuje do niego uprawnień) albo polecenie
+panelu hostingu. Błąd polecenia zatrzymuje wdrożenie z komunikatem.
+
 ### Plik instalacji projektu
 
 Gdy obok konfiguracji projektu (`<projekt>.env`, niżej) leży `<projekt>.json` (format z [instalacja.md](instalacja.md):

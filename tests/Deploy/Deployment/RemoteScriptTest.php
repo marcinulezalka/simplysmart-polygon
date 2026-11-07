@@ -95,6 +95,31 @@ final class RemoteScriptTest extends TestCase
     }
 
     #[Test]
+    public function the_reload_command_is_passed_only_when_configured(): void
+    {
+        $script = new RemoteScript("echo remote\n");
+        $config = new ProjectConfig('shop', '/pp', 'php', null, 'shop@prod', '~/shop.pl', 'php84', null, null, '/vendors', 'sudo systemctl reload php8.4-fpm', 'touch /tmp/pp');
+
+        $this->assertStringContainsString("export DEPLOY_RELOAD='sudo systemctl reload php8.4-fpm'\n", $script->production($config));
+        $this->assertStringContainsString("export DEPLOY_RELOAD='touch /tmp/pp'\n", $script->preproduction($config));
+        $this->assertStringNotContainsString('DEPLOY_RELOAD', $script->production($this->config()));
+    }
+
+    #[Test]
+    public function the_server_script_clears_caches_before_migrations_and_rebuilds_them_at_the_end(): void
+    {
+        $script = RemoteScript::fromFile()->production($this->config());
+        $migrate = (int) strpos($script, 'artisan migrate --force');
+
+        foreach (['config:clear', 'route:clear', 'view:clear', 'event:clear', 'clear-compiled'] as $clear) {
+            $this->assertLessThan($migrate, (int) strpos($script, 'artisan ' . $clear), $clear);
+        }
+        $this->assertGreaterThan($migrate, (int) strpos($script, 'artisan optimize:clear'), 'Magazyn cache czyszczony po migracjach.');
+        $this->assertGreaterThan((int) strpos($script, 'artisan view:cache'), (int) strpos($script, 'artisan queue:restart'));
+        $this->assertGreaterThan((int) strpos($script, 'artisan queue:restart'), (int) strpos($script, 'bash -c "$reload"'));
+    }
+
+    #[Test]
     public function commands_read_the_script_from_standard_input(): void
     {
         $script = new RemoteScript('');
