@@ -20,7 +20,8 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Konfiguracja projektu z `infrastructure/deploy/vendors/<projekt>.env`: wartości domyślne, wymagane klucze i lista projektów.
+ * Konfiguracja projektu z `infrastructure/deploy/vendors/<projekt>/<projekt>.env` albo `<projekt>.env`: wartości domyślne,
+ * wymagane klucze, katalog projektu i lista projektów.
  */
 final class ProjectConfigTest extends TestCase
 {
@@ -119,13 +120,64 @@ final class ProjectConfigTest extends TestCase
         $this->write('shop', "PREPRODUCTION_PATH=/pp\nDEPLOY_SSH=s\nDEPLOY_PATH=/app\n");
         $config = ProjectConfig::load($this->directory, 'shop');
 
-        $this->assertNull($config->installSource($this->directory));
+        $this->assertNull($config->installSource());
 
         file_put_contents("{$this->directory}/shop.json", '{}');
 
-        $this->assertSame("{$this->directory}/shop.json", $config->installSource($this->directory));
+        $this->assertSame("{$this->directory}/shop.json", $config->installSource());
         $this->assertSame('storage/app/shop.install.json', $config->installTarget());
         $this->assertSame(['shop'], ProjectConfig::available($this->directory));
+    }
+
+    #[Test]
+    public function the_project_directory_wins_over_the_flat_file(): void
+    {
+        $this->write('shop', "PREPRODUCTION_PATH=/flat\nDEPLOY_SSH=s\nDEPLOY_PATH=/app\n");
+        mkdir("{$this->directory}/shop");
+        file_put_contents("{$this->directory}/shop/shop.env", "PREPRODUCTION_PATH=/nested\nDEPLOY_SSH=s\nDEPLOY_PATH=/app\n");
+        file_put_contents("{$this->directory}/shop/shop.json", '{}');
+        file_put_contents("{$this->directory}/shop.json", '{}');
+
+        $config = ProjectConfig::load($this->directory, 'shop');
+
+        $this->assertSame('/nested', $config->preproductionPath);
+        $this->assertSame("{$this->directory}/shop", $config->directory);
+        $this->assertSame("{$this->directory}/shop/shop.json", $config->installSource());
+    }
+
+    #[Test]
+    public function a_directory_without_its_env_file_falls_back_to_the_flat_file(): void
+    {
+        $this->write('shop', "PREPRODUCTION_PATH=/flat\nDEPLOY_SSH=s\nDEPLOY_PATH=/app\n");
+        mkdir("{$this->directory}/shop");
+        file_put_contents("{$this->directory}/shop/other.env", '');
+
+        $config = ProjectConfig::load($this->directory, 'shop');
+
+        $this->assertSame('/flat', $config->preproductionPath);
+        $this->assertSame($this->directory, $config->directory);
+    }
+
+    #[Test]
+    public function a_missing_project_names_both_layouts(): void
+    {
+        $this->expectException(MissingConfigException::class);
+        $this->expectExceptionMessage("{$this->directory}/shop/shop.env ani {$this->directory}/shop.env");
+
+        ProjectConfig::load($this->directory, 'shop');
+    }
+
+    #[Test]
+    public function available_projects_include_project_directories_once(): void
+    {
+        $this->write('blog', '');
+        mkdir("{$this->directory}/shop");
+        file_put_contents("{$this->directory}/shop/shop.env", '');
+        mkdir("{$this->directory}/blog");
+        file_put_contents("{$this->directory}/blog/blog.env", '');
+        mkdir("{$this->directory}/empty");
+
+        $this->assertSame(['blog', 'shop'], ProjectConfig::available($this->directory));
     }
 
     private function write(string $name, string $contents): void

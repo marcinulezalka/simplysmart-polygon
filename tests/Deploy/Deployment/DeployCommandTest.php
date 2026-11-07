@@ -254,6 +254,21 @@ final class DeployCommandTest extends TestCase
     }
 
     #[Test]
+    public function a_project_directory_provides_the_config_and_the_install_file(): void
+    {
+        $vendors = "{$this->root}/" . ProjectConfig::DIRECTORY;
+        mkdir("{$vendors}/shop");
+        rename("{$vendors}/shop.env", "{$vendors}/shop/shop.env");
+        file_put_contents("{$vendors}/shop/shop.json", '{"zones": {}}');
+
+        [$exitCode, , $stderr] = $this->deploy(['shop', '--production']);
+
+        $this->assertSame(ExitCode::SUCCESS, $exitCode, $stderr);
+        $this->assertFileEquals("{$vendors}/shop/shop.json", "{$this->preproduction}/storage/app/shop.install.json");
+        $this->assertSame(['scp', '-q', "{$vendors}/shop/shop.json", 'shop@prod:~/shop.pl/storage/app/shop.install.json'], $this->processes->runs[1]['command']);
+    }
+
+    #[Test]
     public function without_an_install_file_nothing_is_sent_and_the_script_gets_no_path(): void
     {
         $this->deploy(['shop', '--production']);

@@ -64,7 +64,7 @@ Oba pliki dodaj do `.gitignore` projektu.
 
 ### Plik instalacji projektu
 
-Gdy obok `infrastructure/deploy/vendors/<projekt>.env` leży `<projekt>.json` (format z [instalacja.md](instalacja.md):
+Gdy obok konfiguracji projektu (`<projekt>.env`, niżej) leży `<projekt>.json` (format z [instalacja.md](instalacja.md):
 konta, role, uprawnienia stref — np. z prawdziwymi adresami personelu, więc poza repozytorium), deploy kopiuje go do
 przed-produkcji i wysyła na serwer (`scp`) jako `storage/app/<projekt>.install.json` (zawartość `storage/app/` jest poza
 gitem, prawa `600`). `remote.sh` po migracjach uruchamia `php artisan polygon:organizations:seed` (brakujące typy jednostek i organizacja hero, idempotentnie) i `php artisan polygon:install` z plikami z `POLYGON_INSTALL_FILES`
@@ -73,7 +73,10 @@ wdrożeniu (także bez pliku projektu), więc nowe uprawnienia i role z plików 
 jest idempotentna — tworzy tylko brakujące uprawnienia, role i konta, a istniejącym kontom niczego nie odbiera. Słowników
 deploy nie seeduje (pierwsza instalacja: `php artisan db:seed --force`).
 
-Błąd przed-produkcji zatrzymuje wdrożenie. Na serwerze musi istnieć klon repozytorium z `.env.production`, który skrypt kopiuje jako `.env` (APP_KEY serwera zostaje, gdy plik go nie podaje). Konfiguracja projektu: `infrastructure/deploy/vendors/<projekt>.env` w repozytorium projektu (ignorowana przez git), wzór `resources/deploy/deploy-vendor.env.example`.
+Błąd przed-produkcji zatrzymuje wdrożenie. Na serwerze musi istnieć klon repozytorium z `.env.production`, który skrypt kopiuje jako `.env` (APP_KEY serwera zostaje, gdy plik go nie podaje). Konfiguracja projektu (ignorowana przez git, wzór `resources/deploy/deploy-vendor.env.example`) leży w repozytorium projektu w jednym z dwóch układów — katalog projektu ma pierwszeństwo, a plik instalacji `<projekt>.json` deploy bierze z tego samego katalogu co `.env`:
+
+- katalog projektu: `infrastructure/deploy/vendors/<projekt>/<projekt>.env` (i `<projekt>.json`); w katalogu mogą leżeć inne pliki projektu, deploy ich nie wysyła;
+- układ płaski: `infrastructure/deploy/vendors/<projekt>.env` (i `<projekt>.json`).
 
 ## Instalacja w projekcie
 

@@ -98,7 +98,7 @@ final readonly class DeployCommand
 
         $files = $private->existingDeployFiles();
         $manifest = $files === [] ? null : PrivatePackages::DEPLOY_MANIFEST;
-        $installSource = $project->installSource("{$options->root}/" . ProjectConfig::DIRECTORY);
+        $installSource = $project->installSource();
         $installTarget = $installSource === null ? null : $project->installTarget();
         $preproduction = $this->preproduction($project, $files, $manifest, $installSource, $output);
 

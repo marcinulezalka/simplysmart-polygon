@@ -36,7 +36,7 @@ php artisan polygon:account:create jan@example.com "Jan Kowalski" --role=owner  
 
 Paczka jest w `require`, bo jej migracje i modele działają też na serwerach. Ustawienia (`config/polygon.php`) zmienia się przez `.env`: `APP_CURRENCY`, `APP_LOCALES`, `APP_COUNTRY`.
 
-Konfiguracje wdrażanych projektów leżą w projekcie: `infrastructure/deploy/vendors/<projekt>.env` (wzór `resources/deploy/deploy-vendor.env.example`).
+Konfiguracje wdrażanych projektów leżą w projekcie: `infrastructure/deploy/vendors/<projekt>/<projekt>.env` albo `infrastructure/deploy/vendors/<projekt>.env` (wzór `resources/deploy/deploy-vendor.env.example`).
 
 ## Jakość kodu
 

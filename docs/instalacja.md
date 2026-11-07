@@ -15,8 +15,8 @@ php artisan db:seed             # słowniki, organizacje (hero), pliki instalacj
    `$this->callAfterResolving(InstallFiles::class, static fn(InstallFiles $files) => $files->add($path))`.
 3. Pliki projektu z `.env`: `POLYGON_INSTALL_FILES=install/strefy.json,install/konta.json` (`polygon.install.files`,
    ścieżki względem katalogu projektu albo absolutne), w podanej kolejności.
-4. Przy wdrożeniu `vendor/bin/deploy <projekt>`: plik `infrastructure/deploy/vendors/<projekt>.json` z komputera
-   deweloperskiego, przesłany jako `storage/app/<projekt>.install.json` i dopisany na końcu ([deploy.md](deploy.md)).
+4. Przy wdrożeniu `vendor/bin/deploy <projekt>`: plik `<projekt>.json` obok konfiguracji wdrożenia
+   (`infrastructure/deploy/vendors/<projekt>/` albo `infrastructure/deploy/vendors/`) z komputera deweloperskiego, przesłany jako `storage/app/<projekt>.install.json` i dopisany na końcu ([deploy.md](deploy.md)).
 
 Pliki są łączone per strefa: uprawnienia się sumują, rola z pliku stosowanego później zastępuje rolę o tej samej nazwie,
 konta są dopisywane (ten sam adres w dwóch plikach to błąd). Organizacje (sekcja główna `organizations`) są wspólne dla

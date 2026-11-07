@@ -95,6 +95,6 @@ final class RemoteScriptTest extends TestCase
 
     private function config(): ProjectConfig
     {
-        return new ProjectConfig('shop', '/var/www/pp shop', 'php', null, 'shop@prod', '~/shop.pl', 'php84', 'composer.phar', "it's");
+        return new ProjectConfig('shop', '/var/www/pp shop', 'php', null, 'shop@prod', '~/shop.pl', 'php84', 'composer.phar', "it's", '/vendors');
     }
 }

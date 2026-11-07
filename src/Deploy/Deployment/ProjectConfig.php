@@ -14,8 +14,9 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Deploy\Deployment;
 
 /**
- * Konfiguracja wdrożenia projektu z `infrastructure/deploy/vendors/<projekt>.env` w repozytorium projektu (pliki ignorowane
- * przez git, bo zawierają sekrety).
+ * Konfiguracja wdrożenia projektu z `infrastructure/deploy/vendors/<projekt>/<projekt>.env` (katalog projektu) albo
+ * `infrastructure/deploy/vendors/<projekt>.env` (układ płaski) w repozytorium projektu (pliki ignorowane przez git, bo
+ * zawierają sekrety). Katalog projektu ma pierwszeństwo; plik instalacji `<projekt>.json` leży obok znalezionego `.env`.
  *
  * Przed-produkcja to katalog projektu na tym komputerze (`PREPRODUCTION_PATH`, PHP i Composer do skryptu serwerowego),
  * produkcja to serwer SSH (`DEPLOY_SSH`, `DEPLOY_PATH`, `DEPLOY_PHP`, `REMOTE_COMPOSER`, `GITHUB_TOKEN`).
@@ -74,6 +75,7 @@ final readonly class ProjectConfig
      * @param  string  $php  Polecenie PHP 8.4+ na serwerze.
      * @param  string|null  $remoteComposer  Plik Composera na serwerze; null — ~/bin/composer.
      * @param  string|null  $githubToken  Token GitHub tylko do odczytu, zapisywany w Composerze serwera.
+     * @param  string  $directory  Katalog, w którym leży `<projekt>.env` (katalog projektu albo katalog konfiguracji).
      */
     public function __construct(
         public string $name,
@@ -85,6 +87,7 @@ final readonly class ProjectConfig
         public string $php,
         public ?string $remoteComposer,
         public ?string $githubToken,
+        public string $directory,
     ) {}
 
     /**
@@ -108,10 +111,11 @@ final readonly class ProjectConfig
             throw new DeployConfigException("Niepoprawna nazwa projektu: {$name}.");
         }
 
-        $file = "{$directory}/{$name}" . self::EXTENSION;
+        $projectDirectory = self::projectDirectory($directory, $name);
+        $file = "{$projectDirectory}/{$name}" . self::EXTENSION;
 
         if (! is_file($file)) {
-            throw MissingConfigException::project($name, $file, self::available($directory), $example);
+            throw MissingConfigException::project($name, "{$directory}/{$name}/{$name}" . self::EXTENSION . " ani {$directory}/{$name}" . self::EXTENSION, self::available($directory), $example);
         }
 
         $values = EnvFile::read($file, $file);
@@ -135,20 +139,29 @@ final readonly class ProjectConfig
             php: self::optional($values, self::PHP) ?? self::DEFAULT_PRODUCTION_PHP,
             remoteComposer: self::optional($values, self::REMOTE_COMPOSER),
             githubToken: self::optional($values, self::GITHUB_TOKEN),
+            directory: $projectDirectory,
         );
     }
 
     /**
-     * Projekty z plikami `*.env` w katalogu konfiguracji, posortowane.
+     * Projekty z konfiguracją w katalogu konfiguracji (`<projekt>/<projekt>.env` albo `<projekt>.env`), posortowane, bez powtórzeń.
      *
      * @return list<string>
      */
     public static function available(string $directory): array
     {
-        $names = array_map(
+        $flat = array_map(
             fn(string $file): string => basename($file, self::EXTENSION),
             glob("{$directory}/*" . self::EXTENSION) ?: [],
         );
+        $nested = array_map(
+            fn(string $projectDirectory): string => basename($projectDirectory),
+            array_filter(
+                glob("{$directory}/*", GLOB_ONLYDIR) ?: [],
+                fn(string $projectDirectory): bool => is_file("{$projectDirectory}/" . basename($projectDirectory) . self::EXTENSION),
+            ),
+        );
+        $names = array_values(array_unique([...$flat, ...$nested]));
         sort($names);
 
         return $names;
@@ -163,17 +176,21 @@ final readonly class ProjectConfig
     }
 
     /**
-     * Cel produkcji w formacie ssh: `konto:katalog`.
+     * Ścieżka pliku instalacji projektu obok jego `.env` (`<projekt>.json`), także gdy go nie ma — do opisu planu.
      */
+    public function installFile(): string
+    {
+        return "{$this->directory}/{$this->name}" . self::INSTALL_EXTENSION;
+    }
+
     /**
-     * Plik instalacji projektu w katalogu konfiguracji (`<projekt>.json`), jeśli istnieje.
+     * Plik instalacji projektu obok jego `.env` (`<projekt>.json`), jeśli istnieje.
      *
-     * @param  string  $directory  Katalog konfiguracji projektów (`<repozytorium>/` . DIRECTORY).
      * @return string|null Ścieżka pliku albo null, gdy projekt go nie ma.
      */
-    public function installSource(string $directory): ?string
+    public function installSource(): ?string
     {
-        $file = "{$directory}/{$this->name}" . self::INSTALL_EXTENSION;
+        $file = $this->installFile();
 
         return is_file($file) ? $file : null;
     }
@@ -186,9 +203,25 @@ final readonly class ProjectConfig
         return sprintf(self::INSTALL_TARGET, $this->name);
     }
 
+    /**
+     * Cel produkcji w formacie ssh: `konto:katalog`.
+     */
     public function productionTarget(): string
     {
         return "{$this->ssh}:{$this->path}";
+    }
+
+    /**
+     * Katalog z konfiguracją projektu: `<katalog>/<projekt>`, gdy leży w nim `<projekt>.env`, w przeciwnym razie `<katalog>`.
+     *
+     * @param  string  $directory  Katalog konfiguracji projektów.
+     * @param  string  $name  Poprawna nazwa projektu.
+     */
+    private static function projectDirectory(string $directory, string $name): string
+    {
+        $nested = "{$directory}/{$name}";
+
+        return is_file("{$nested}/{$name}" . self::EXTENSION) ? $nested : $directory;
     }
 
     /**
