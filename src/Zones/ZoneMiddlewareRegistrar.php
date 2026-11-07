@@ -19,6 +19,7 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Routing\Router;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Simplysmart\Polygon\Http\Middleware\ApplyZoneUrlKey;
 use Simplysmart\Polygon\Http\Middleware\PreventRequestForgeryWithoutCookie;
 use Simplysmart\Polygon\Http\Middleware\RecordHistoryActor;
 use Simplysmart\Polygon\Http\Middleware\UseOrganizationPermissions;
@@ -54,6 +55,7 @@ final readonly class ZoneMiddlewareRegistrar
             AddQueuedCookiesToResponse::class,
             UseZone::class . ':' . $zone->name,
             StartSession::class,
+            ...($zone->urlKey ? [ApplyZoneUrlKey::class] : []),
             ShareErrorsFromSession::class,
             PreventRequestForgeryWithoutCookie::class,
             RecordHistoryActor::class,

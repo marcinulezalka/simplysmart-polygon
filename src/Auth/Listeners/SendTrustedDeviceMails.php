@@ -21,6 +21,7 @@ use Simplysmart\Polygon\Auth\Events\AccountAccessRevoked;
 use Simplysmart\Polygon\Auth\Events\TrustedDeviceRegistered;
 use Simplysmart\Polygon\Contracts\ZoneRegistry;
 use Simplysmart\Polygon\Http\AccountRoutes;
+use Simplysmart\Polygon\Zones\ZoneRedirects;
 use Simplysmart\Polygon\Mail\DeviceTokenReusedMail;
 use Simplysmart\Polygon\Mail\NewTrustedDeviceMail;
 
@@ -41,7 +42,9 @@ final readonly class SendTrustedDeviceMails
         $zone = $this->zones->get($event->zone);
 
         if ($event instanceof TrustedDeviceRegistered) {
-            $devices = $this->url->route($zone->routeName(AccountRoutes::SECURITY)) . '#' . AccountRoutes::SECTION_DEVICES;
+            $devices = $zone->urlKey
+                ? $this->url->route($zone->routeName(ZoneRedirects::LOGIN_ROUTE))
+                : $this->url->route($zone->routeName(AccountRoutes::SECURITY)) . '#' . AccountRoutes::SECTION_DEVICES;
             $this->mailer->to($account->emailAddress())->queue(new NewTrustedDeviceMail($zone->name, $account->displayName(), $event->deviceName, Carbon::now(), $devices));
         } elseif ($event->reason === AccessRevocationReason::DeviceTokenReused) {
             $this->mailer->to($account->emailAddress())->queue(new DeviceTokenReusedMail($zone->name, $account->displayName()));

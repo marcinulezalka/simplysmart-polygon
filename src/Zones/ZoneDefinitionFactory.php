@@ -66,6 +66,7 @@ final readonly class ZoneDefinitionFactory
             textNamespace: $this->nullableString($config, 'texts', null),
             views: $this->views($name, Arr::array($config, 'views', [])),
             mailViews: $this->mailViews($name, Arr::array($config, 'mail', [])),
+            urlKey: $model !== null && ($this->nullableBool($config, 'url_key', false) ?? false),
         );
     }
 

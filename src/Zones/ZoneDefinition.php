@@ -36,6 +36,7 @@ final readonly class ZoneDefinition
      * @param array<string, string> $views Widoki ekranów logowania i konta (`views`: ZoneView → nazwa widoku).
      * @param string|null $mailViews Prefiks widoków e-maili strefy (`mail.views`, np. `shop::mail`): `<prefiks>.layout`,
      *                               `<prefiks>.<szablon>` (HTML) i opcjonalnie `<prefiks>.text.<szablon>`.
+     * @param bool $urlKey Hash sesji w adresie ekranów po zalogowaniu (`url_key`, `/<hash>/<slug>/…`, Zones\ZoneUrlKey).
      */
     public function __construct(
         public string $name,
@@ -50,6 +51,7 @@ final readonly class ZoneDefinition
         public ?string $textNamespace = null,
         public array $views = [],
         public ?string $mailViews = null,
+        public bool $urlKey = false,
     ) {}
 
     /**

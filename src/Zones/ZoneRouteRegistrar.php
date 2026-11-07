@@ -17,6 +17,7 @@ use Illuminate\Routing\Router;
 use InvalidArgumentException;
 use LogicException;
 use Simplysmart\Polygon\Http\AccountRoutes;
+use Simplysmart\Polygon\Http\Middleware\RequireZoneUrlKey;
 use Simplysmart\Polygon\Http\SignInRoutes;
 use Simplysmart\Polygon\Localization\DictionaryLocales;
 
@@ -24,7 +25,9 @@ use Simplysmart\Polygon\Localization\DictionaryLocales;
  * Rejestruje trasy strefy: prefiks URL (slug), prefiks nazw `<strefa>.`, grupę middleware strefy oraz middleware
  * poziomu dostępu każdego pliku tras (public.php, account.php, zone.php; brakujący plik jest pomijany, pliki definiują
  * ścieżki względne i krótkie nazwy). Strefa z logowaniem i kompletem ekranów (ZoneDefinition::hasScreens()) dostaje
- * też trasy logowania (Http\SignInRoutes) i konta (Http\AccountRoutes).
+ * też trasy logowania (Http\SignInRoutes) i konta (Http\AccountRoutes). Strefa z `url_key` ma trasy po zalogowaniu (konto,
+ * account.php, zone.php) pod hashem sesji: `/<hash>/<slug>/…` (Zones\ZoneUrlKey, Http\Middleware\RequireZoneUrlKey),
+ * a logowanie i public.php zostają pod `/<slug>/…`.
  */
 final readonly class ZoneRouteRegistrar
 {
@@ -60,16 +63,50 @@ final readonly class ZoneRouteRegistrar
             'as' => $zone->routeNamePrefix . '.',
         ];
 
+        if (! $zone->urlKey) {
+            $this->router->group($attributes, function () use ($zone): void {
+                if ($zone->hasScreens()) {
+                    $this->signIn->register($zone);
+                    $this->account->register($zone);
+                }
+
+                foreach (self::ROUTE_FILES as $file => $tier) {
+                    $this->registerFile($zone, $zone->routesPath . '/' . $file, $tier);
+                }
+            });
+
+            return;
+        }
+
         $this->router->group($attributes, function () use ($zone): void {
             if ($zone->hasScreens()) {
                 $this->signIn->register($zone);
+            }
+
+            $this->registerFiles($zone, false);
+        });
+
+        $hashed = [...$attributes, 'prefix' => '{' . ZoneUrlKey::PARAMETER . '}/' . $zone->slug, 'middleware' => [...$attributes['middleware'], RequireZoneUrlKey::class], 'where' => [ZoneUrlKey::PARAMETER => ZoneUrlKey::PATTERN]];
+
+        $this->router->group($hashed, function () use ($zone): void {
+            if ($zone->hasScreens()) {
                 $this->account->register($zone);
             }
 
-            foreach (self::ROUTE_FILES as $file => $tier) {
+            $this->registerFiles($zone, true);
+        });
+    }
+
+    /**
+     * Pliki tras jednego poziomu: z logowaniem ($authenticated) albo publiczne.
+     */
+    private function registerFiles(ZoneDefinition $zone, bool $authenticated): void
+    {
+        foreach (self::ROUTE_FILES as $file => $tier) {
+            if ($tier->requiresLogin() === $authenticated) {
                 $this->registerFile($zone, $zone->routesPath . '/' . $file, $tier);
             }
-        });
+        }
     }
 
     private function registerFile(ZoneDefinition $zone, string $path, AccessTier $tier): void
