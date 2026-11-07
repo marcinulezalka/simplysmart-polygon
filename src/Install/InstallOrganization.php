@@ -18,7 +18,7 @@ namespace Simplysmart\Polygon\Install;
  * zapisany w `json_attributes.install_key`), nazwa, opcjonalnie nazwa skrócona, organizacja nadrzędna (klucz), kod typu
  * jednostki (`organization_unit_types.code`), flaga departamentu, dane firmy (kolumny Organization::DETAIL_LENGTHS)
  * zasoby organizacji (gabinety, sprzęt), jej grafik (kalendarz zasobów), flaga kooperacji (podorganizacja najemcy)
- * i umowy najmu jej zasobów.
+ * i umowy najmu jej zasobów oraz atrybuty (`json_attributes`).
  */
 final readonly class InstallOrganization
 {
@@ -27,6 +27,7 @@ final readonly class InstallOrganization
      * @param list<InstallResource> $resources Zasoby organizacji z pliku.
      * @param list<InstallSchedule> $schedules Grafik organizacji z pliku.
      * @param list<InstallLease> $leases Umowy najmu zasobów organizacji z pliku.
+     * @param array<string, mixed> $attributes Atrybuty organizacji do `json_attributes` (np. identyfikatory rejestrowe).
      */
     public function __construct(
         public string $key,
@@ -40,5 +41,6 @@ final readonly class InstallOrganization
         public array $schedules = [],
         public bool $isCooperation = false,
         public array $leases = [],
+        public array $attributes = [],
     ) {}
 }

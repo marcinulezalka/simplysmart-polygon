@@ -16,8 +16,8 @@ namespace Simplysmart\Polygon\Install;
 use Simplysmart\Polygon\Permissions\RequiredRole;
 
 /**
- * Konto startowe strefy z pliku instalacji: adres, nazwa, role, organizacje (personel) z rolami w każdej z nich i czy
- * dostaje losowe id z puli seederów (1–999).
+ * Konto startowe strefy z pliku instalacji: adres, nazwa, role, organizacje (personel) z rolami w każdej z nich, czy
+ * dostaje losowe id z puli seederów (1–999) i atrybuty konta (`json_attributes`).
  *
  * Role `roles` są globalne, gdy konto nie ma organizacji albo jest hero (hero pracuje na rolach globalnych); w przeciwnym
  * razie konto dostaje je w każdej swojej organizacji. Role z `organizationRoles` dostaje tylko w danej organizacji.
@@ -28,6 +28,7 @@ final readonly class InstallAccount
      * @param list<string> $roles
      * @param list<string> $organizations Klucze organizacji z plików instalacji, których konto jest członkiem (personel).
      * @param array<string, list<string>> $organizationRoles Klucz organizacji => role konta tylko w niej.
+     * @param array<string, mixed> $attributes Atrybuty konta do `json_attributes` (np. identyfikatory zawodowe).
      */
     public function __construct(
         public string $email,
@@ -36,6 +37,7 @@ final readonly class InstallAccount
         public bool $randomId,
         public array $organizations = [],
         public array $organizationRoles = [],
+        public array $attributes = [],
     ) {}
 
     /**

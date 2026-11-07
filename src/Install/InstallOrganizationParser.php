@@ -44,6 +44,8 @@ final readonly class InstallOrganizationParser
 
     private const string LEASES = 'leases';
 
+    private const string ATTRIBUTES = 'attributes';
+
     /** Pola umowy najmu. */
     private const array LEASE_FIELDS = ['resource', 'lessee', 'cooperation', 'number', 'from', 'to', 'windows', 'access'];
 
@@ -65,7 +67,7 @@ final readonly class InstallOrganizationParser
     private const int NAME_MAX_LENGTH = 255;
 
     /** Pola organizacji poza danymi firmy. */
-    private const array ORGANIZATION_FIELDS = [ColumnNames::NAME, Organization::SHORT_NAME, self::PARENT, self::UNIT_TYPE, Organization::IS_DEPARTMENT, Organization::IS_COOPERATION, self::RESOURCES, self::SCHEDULE, self::LEASES];
+    private const array ORGANIZATION_FIELDS = [ColumnNames::NAME, Organization::SHORT_NAME, self::PARENT, self::UNIT_TYPE, Organization::IS_DEPARTMENT, Organization::IS_COOPERATION, self::RESOURCES, self::SCHEDULE, self::LEASES, self::ATTRIBUTES];
 
     public function __construct(
         private InstallValues $values,
@@ -74,7 +76,7 @@ final readonly class InstallOrganizationParser
     /**
      * Organizacje: klucz => `name` (wymagana), opcjonalnie `short_name`, `parent` (klucz), `unit_type` (kod typu
      * jednostki), `is_department`, `is_cooperation`, dane firmy (Organization::DETAIL_LENGTHS), `resources`, `schedule`
-     * i `leases`; inne pola to błąd.
+     * `leases` i `attributes` (InstallValues::attributes()); inne pola to błąd.
      *
      * @return list<InstallOrganization>
      *
@@ -122,6 +124,7 @@ final readonly class InstallOrganizationParser
                 $this->schedule($path, $definition[self::SCHEDULE] ?? [], "{$where}." . self::SCHEDULE),
                 $this->values->flag($path, $definition, Organization::IS_COOPERATION, $where),
                 $this->leases($path, $definition[self::LEASES] ?? [], "{$where}." . self::LEASES),
+                $this->values->attributes($path, $definition, self::ATTRIBUTES, $where),
             );
         }
 

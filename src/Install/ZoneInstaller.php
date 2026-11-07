@@ -33,7 +33,8 @@ use Spatie\Permission\PermissionRegistrar;
  * losowe id z puli seederów przy `"id": "random"`), dopisując im role i członkostwa organizacji z pliku (konto z rolą
  * hero zostaje też członkiem organizacji hero): role globalne (InstallAccount::globalRoles()) i role w każdej
  * organizacji konta (InstallAccount::rolesIn(), zespół spatie = organizacja). Uprawnień, ról i członkostw spoza plików
- * nie usuwa. Działa w transakcji instalatora (Installer).
+ * nie usuwa. Atrybuty konta z pliku (`attributes`) trafiają do jego `json_attributes` (InstallAttributes) — także
+ * istniejącego. Działa w transakcji instalatora (Installer).
  */
 final readonly class ZoneInstaller
 {
@@ -45,6 +46,7 @@ final readonly class ZoneInstaller
         private PermissionRegistrar $permissions,
         private OrganizationMembership $membership,
         private OrganizationRoles $roles,
+        private InstallAttributes $attributes,
     ) {}
 
     /**
@@ -73,6 +75,7 @@ final readonly class ZoneInstaller
                 $id = $account->randomId ? $this->slots->random((new $model())->getTable()) : null;
                 $created = $this->accounts->handle($definition, $account->name, $account->email, $account->globalRoles(), $id);
                 $this->joinOrganizations($created, $account, $installed);
+                $this->attributes->merge($created, $account->attributes);
                 $report->created[] = $account->email;
 
                 continue;
@@ -81,6 +84,7 @@ final readonly class ZoneInstaller
             $this->roles->assign($existing, $account->globalRoles(), null);
             $this->membership->joinHeroOrganization($existing, $account->globalRoles());
             $this->joinOrganizations($existing, $account, $installed);
+            $this->attributes->merge($existing, $account->attributes);
             $report->kept[] = $account->email;
         }
     }

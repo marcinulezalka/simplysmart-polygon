@@ -245,6 +245,7 @@ final readonly class InstallFileParser
                 $id === self::RANDOM_ID,
                 array_keys($organizationRoles),
                 array_filter($organizationRoles, static fn(array $roles): bool => $roles !== []),
+                $this->values->attributes($path, $account, 'attributes', $where),
             );
         }
 

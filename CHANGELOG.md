@@ -4,6 +4,10 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Pliki instalacji: `attributes` organizacji i konta strefy — dowolne atrybuty (np. identyfikatory rejestrowe placówki, numery zawodowe lekarza) zapisywane w `json_attributes` rekordu (`Install\InstallAttributes`), także w istniejącej organizacji i koncie (klucz z pliku zastępuje ten sam klucz, pozostałe zostają; zapis tylko przy zmianie).
+
 ## [0.6.0] - 2026-11-07
 
 ### Added

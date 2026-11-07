@@ -19,7 +19,8 @@ use Simplysmart\Polygon\Models\OrganizationUnitType;
 
 /**
  * Zakłada organizacje z plików instalacji, rozpoznawane po kluczu (`json_attributes.install_key`, także w koszu):
- * brakująca powstaje aktywna, istniejąca zostaje bez zmian (zmiany z aplikacji nie są cofane). `parent` =
+ * brakująca powstaje aktywna, istniejąca zostaje bez zmian (zmiany z aplikacji nie są cofane) — poza atrybutami z pliku
+ * (`attributes`), które InstallAttributes dopisuje do jej `json_attributes`. `parent` =
  * Organization::HERO_KEY wpina organizację pod organizację hero (HERO_ID, niewidoczną we frontendzie stref). Zasoby
  * organizacji (także istniejącej) zakłada ResourceInstaller. Działa w transakcji instalatora (Installer).
  */
@@ -27,6 +28,7 @@ final readonly class OrganizationInstaller
 {
     public function __construct(
         private ResourceInstaller $resources,
+        private InstallAttributes $attributes,
     ) {}
 
     /** Klucz organizacji z pliku instalacji w `json_attributes` organizacji. */
@@ -53,6 +55,7 @@ final readonly class OrganizationInstaller
 
             if ($existing !== null) {
                 $installed[$organization->key] = $existing;
+                $this->attributes->merge($existing, $organization->attributes);
                 $report->organizationsKept[] = $existing->name;
             } else {
                 $installed[$organization->key] = $this->create($organization, $installed);
@@ -81,7 +84,7 @@ final readonly class OrganizationInstaller
             Organization::IS_DEPARTMENT => $organization->isDepartment,
             Organization::IS_COOPERATION => $organization->isCooperation,
             Organization::UNIT_TYPE_ID => $organization->unitType === null ? null : $this->unitType($organization),
-            ColumnNames::JSON_ATTRIBUTES => [self::INSTALL_KEY => $organization->key],
+            ColumnNames::JSON_ATTRIBUTES => [...$organization->attributes, self::INSTALL_KEY => $organization->key],
             ...$organization->details,
         ])->save();
 
