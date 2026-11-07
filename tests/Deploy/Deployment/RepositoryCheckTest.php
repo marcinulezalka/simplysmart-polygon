@@ -55,7 +55,7 @@ final class RepositoryCheckTest extends TestCase
         $processes = new FakeProcessRunner(['rev-list' => '1']);
 
         $this->assertTrue((new RepositoryCheck($processes))->push('/repo'));
-        $this->assertSame([['git', '-C', '/repo', 'push', '--quiet']], $processes->commands());
+        $this->assertSame([['git', '-C', '/repo', 'push', '--quiet', '--set-upstream', 'origin', 'HEAD']], $processes->commands());
 
         $processes->exitCodes = ['git' => 1];
         $this->expectException(DeployException::class);

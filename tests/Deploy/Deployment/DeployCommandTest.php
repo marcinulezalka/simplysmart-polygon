@@ -133,7 +133,7 @@ final class DeployCommandTest extends TestCase
 
         $this->deploy(['shop', '--production', '--with-push']);
 
-        $this->assertContains(['git', '-C', $this->root, 'push', '--quiet'], $this->processes->commands());
+        $this->assertContains(['git', '-C', $this->root, 'push', '--quiet', '--set-upstream', 'origin', 'HEAD'], $this->processes->commands());
     }
 
     #[Test]

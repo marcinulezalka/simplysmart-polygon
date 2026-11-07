@@ -50,7 +50,8 @@ final readonly class RepositoryCheck
     }
 
     /**
-     * Wypycha projekt (`git push` do gałęzi śledzonej), gdy ma niewypchnięte commity.
+     * Wypycha projekt (`git push --set-upstream origin HEAD`: bieżąca gałąź pod tą samą nazwą, także bez gałęzi
+     * śledzonej), gdy ma commity nieobecne w `origin`.
      *
      * @param  string  $root  Katalog repozytorium projektu.
      * @return bool Czy coś zostało wypchnięte.
@@ -63,7 +64,7 @@ final readonly class RepositoryCheck
             return false;
         }
 
-        if ($this->processes->run($this->command($root, 'push', self::QUIET)) !== ExitCode::SUCCESS) {
+        if ($this->processes->run($this->command($root, 'push', self::QUIET, '--set-upstream', self::REMOTE, 'HEAD')) !== ExitCode::SUCCESS) {
             throw new DeployException('Nie udało się wypchnąć projektu (git push). Sprawdź dostęp do ' . self::REMOTE . ' i uruchom ponownie.');
         }
 
@@ -71,11 +72,11 @@ final readonly class RepositoryCheck
     }
 
     /**
-     * Czy gałąź ma commity przed gałęzią śledzoną (`@{u}..HEAD`); bez gałęzi śledzonej — nie.
+     * Czy bieżąca gałąź ma commity, których nie ma w żadnej gałęzi `origin` (także bez gałęzi śledzonej).
      */
     private function hasUnpushedCommits(string $root): bool
     {
-        $count = $this->git($root, 'rev-list', '--count', '@{u}..HEAD');
+        $count = $this->git($root, 'rev-list', '--count', 'HEAD', '--not', '--remotes=' . self::REMOTE);
 
         return $count !== null && ctype_digit($count) && (int) $count > 0;
     }

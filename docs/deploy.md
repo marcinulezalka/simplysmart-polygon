@@ -60,7 +60,7 @@ Oba pliki dodaj do `.gitignore` projektu.
 1. Z `--with-push` najpierw wypycha paczki z repozytoriów path wymagane przez projekt, które mają commity nieobecne w ich `origin` (`git push --set-upstream origin HEAD`, więc także paczkę bez gałęzi śledzonej), potem projekt; błąd `git push` zatrzymuje wdrożenie, a `--dry-run` tylko wymienia paczki do wypchnięcia.
    Potem sprawdza, czy repozytorium projektu jest wypchnięte. Niewypchnięte commity projektu zatrzymują wdrożenie, chyba że podasz `--with-push`; niewypchnięta paczka bez `--with-push` daje tylko ostrzeżenie (krok 2).
 2. Buduje świeży manifest wdrożeniowy (jak `composer-private --deploy`; `--dry-run` tylko wymienia paczki). Błąd zatrzymuje wdrożenie.
-3. Aktualizuje przed-produkcję (`PREPRODUCTION_PATH`, klon repozytorium na tym komputerze): kopiuje do niej manifest (i plik instalacji, niżej) i uruchamia `remote.sh`: `git pull`, `composer install --no-dev` z manifestu (bez niego z `composer.lock`), migracje, `polygon:install`, cache. Jej `.env` zostaje bez zmian.
+3. Aktualizuje przed-produkcję (`PREPRODUCTION_PATH`, klon repozytorium na tym komputerze): kopiuje do niej manifest (i plik instalacji, niżej) i uruchamia `remote.sh`: `git pull`, `composer install --no-dev` z manifestu (bez niego z `composer.lock`), migracje, `polygon:install`, cache. Jej `.env` zostaje bez zmian (środowisko serwera i kolejka — niżej).
 4. Pyta, czy wdrożyć produkcję (bez terminala odpowiedź to „nie”; `--production` / `--no-production` pomija pytanie), wysyła manifest do `DEPLOY_PATH` (`scp`) i uruchamia ten sam skrypt na serwerze przez `ssh`. Skrypt dostaje nazwę manifestu w `DEPLOY_COMPOSER_MANIFEST`; bez niej (ręczne uruchomienie) instaluje z `composer.lock`.
 
 ### Plik instalacji projektu
@@ -78,6 +78,35 @@ Błąd przed-produkcji zatrzymuje wdrożenie. Na serwerze musi istnieć klon rep
 
 - katalog projektu: `infrastructure/deploy/vendors/<projekt>/<projekt>.env` (i `<projekt>.json`); w katalogu mogą leżeć inne pliki projektu, deploy ich nie wysyła;
 - układ płaski: `infrastructure/deploy/vendors/<projekt>.env` (i `<projekt>.json`).
+
+### Środowisko serwera (`.env.production`)
+
+Wzorcem środowiska serwera jest plik na komputerze deweloperskim, w katalogu projektu obok konfiguracji wdrożenia:
+`infrastructure/deploy/vendors/<projekt>/<projekt>.env.production` (przed-produkcja:
+`<projekt>.env.local`; poza repozytorium, z sekretami). Zmianę środowiska (np. `<STREFA>_SLUG`, `QUEUE_CONNECTION`, poczta)
+wprowadza się najpierw w tym pliku, a potem przenosi go ręcznie na serwer jako `.env.production` w `DEPLOY_PATH`
+(np. `scp`) — deploy go **nie wysyła**. Przy każdym wdrożeniu `remote.sh` kopiuje `.env.production` serwera jako `.env`
+(APP_KEY serwera zostaje, gdy plik go nie podaje), więc zmiana wpisana tylko w `.env` na serwerze zniknie przy
+najbliższym wdrożeniu, a zmiana tylko w pliku wzorcowym nie zadziała, dopóki nie trafi na serwer. `.env` przed-produkcji
+deploy zostawia bez zmian.
+
+### Kolejka i worker
+
+Maile logowania i bezpieczeństwa stref (kod logowania `Auth\SignIn\IssueSignInCode`, kod odzyskania PIN-u, zmiana
+PIN-u, blokada konta, nowe zaufane urządzenie) idą przez kolejkę. Z `QUEUE_CONNECTION=database` (produkcja) zadania
+czekają w tabeli `jobs`, dopóki nie wykona ich worker — **deploy workera nie uruchamia**. Bez niego maile nie wychodzą,
+a `jobs` rośnie. Na serwerze bez supervisora worker uruchamia cron, co minutę, ścieżkami bezwzględnymi:
+
+```cron
+* * * * * cd /home/<konto>/<katalog-aplikacji> && /usr/local/bin/php84 artisan queue:work --stop-when-empty --max-time=55 >> storage/logs/queue.log 2>&1
+```
+
+- Cron ma ubogi `PATH`: podaj pełną ścieżkę PHP (`command -v php84` na serwerze) i katalogu aplikacji (bez `~`).
+- Kod logowania dochodzi wtedy z opóźnieniem do minuty. Z `QUEUE_CONNECTION=sync` (przed-produkcja) mail wychodzi
+  w żądaniu, bez workera, ale odpowiedź logowania trwa dłużej dla istniejącego konta niż dla nieznanego adresu.
+- Diagnoza: `php artisan tinker --execute 'echo DB::table("jobs")->count(), " / ", DB::table("failed_jobs")->count();'`
+  (zadania czekające / nieudane), `php artisan queue:work --once -v` (jedno zadanie ręcznie, z błędem SMTP na ekranie).
+  Zadania z poprzednim `APP_KEY` (`ShouldBeEncrypted`) nie dadzą się odszyfrować — usuń je `php artisan queue:clear`.
 
 ## Instalacja w projekcie
 

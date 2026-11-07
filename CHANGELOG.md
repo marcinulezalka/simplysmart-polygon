@@ -4,6 +4,8 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-07
+
 ### Added
 
 - Baza danych polygon (tylko tabele bazowe, bez paczek stref): kolumny standardowe (`Database\Columns`, `ColumnNames`, `CodeColumns`), pule id (`IdSlots`), historia zmian triggerami MySQL/SQLite (`History`), tabele strefy `polygon_*` (`ZoneTables`), `Models\MainModel`/`DataModel`, wyrównanie tabeli `users` do standardu oraz słowniki lokalizacji (`locale_currencies`, `locale_languages`, `locale_countries`, `locale_country_language`, `locale_tax_rates`, `locale_exchange_rates`, `locale_holidays`, `locale_measure_units`) z modelami, enumami i seederami uruchamianymi przez `php artisan polygon:localization:seed`; migracje ładuje `PolygonServiceProvider`, ustawienia w `config/polygon.php`, etykiety enumów w `lang/<locale>/enums.php`; opis w `docs/baza-danych.md`.
@@ -39,6 +41,8 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 - `vendor/bin/deploy --with-push` wypycha też paczki z repozytoriów path wymagane przez projekt (przed projektem, `git push --set-upstream origin HEAD`), a `--dry-run --with-push` je wymienia; niewypchnięte commity paczki są wykrywane także bez gałęzi śledzonej (commity nieobecne w żadnej gałęzi `origin`).
 - Role konta per organizacja: zespoły spatie/laravel-permission, w których zespół to organizacja — migracja `add_organization_to_permission_tables` (`organization_id` w `roles`, `model_has_roles`, `model_has_permissions`; dotychczasowe przypisania zostają globalne), `Permissions\OrganizationRoles` (nadawanie i odczyt ról w organizacji) i `Http\Middleware\UseOrganizationPermissions` w grupie strefy (role i uprawnienia liczą się w bieżącej organizacji; hero i konta bez organizacji — role globalne). W plikach instalacji `accounts[].organizations` może być obiektem `{"<organizacja>": ["<rola>"]}` (np. właściciel w jednej organizacji, lekarz w drugiej), a `roles` konta z organizacjami trafiają do każdej z nich.
 - Marka simplysmart w `src/Brand/`: logotyp (SVG, czarny) z wersjami PNG na jasne i ciemne tło (800/1600/2400 px) i sygnet „S” 1024×1024 na jasne i ciemne tło; zasady użycia w `src/Brand/README.md`.
+- `docs/deploy.md`: środowisko serwera — wzorcem jest `infrastructure/deploy/vendors/<projekt>/<projekt>.env.production` przenoszony ręcznie na serwer jako `.env.production` (deploy go nie wysyła) — oraz kolejka i worker: maile logowania i bezpieczeństwa idą przez kolejkę, z `QUEUE_CONNECTION=database` potrzebny jest worker z crona (deploy go nie uruchamia), z przykładem i diagnozą.
+- `vendor/bin/deploy`: niewypchnięte commity projektu są wykrywane jak w paczkach — commity nieobecne w żadnej gałęzi `origin`, także bez gałęzi śledzonej — a `--with-push` wypycha projekt przez `git push --set-upstream origin HEAD`; plan (`--dry-run`) przypomina o ręcznym przeniesieniu `.env.production` i o workerze kolejki.
 
 ### Changed
 
