@@ -17,13 +17,14 @@ namespace Simplysmart\Polygon\Install;
  * Organizacja z pliku instalacji po walidacji: klucz z pliku (identyfikator organizacji założonej przez instalację,
  * zapisany w `json_attributes.install_key`), nazwa, opcjonalnie nazwa skrócona, organizacja nadrzędna (klucz), kod typu
  * jednostki (`organization_unit_types.code`), flaga departamentu, dane firmy (kolumny Organization::DETAIL_LENGTHS)
- * i zasoby organizacji (gabinety, sprzęt).
+ * zasoby organizacji (gabinety, sprzęt) i jej grafik (kalendarz zasobów).
  */
 final readonly class InstallOrganization
 {
     /**
      * @param array<string, string> $details Kolumna danych firmy => wartość.
      * @param list<InstallResource> $resources Zasoby organizacji z pliku.
+     * @param list<InstallSchedule> $schedules Grafik organizacji z pliku.
      */
     public function __construct(
         public string $key,
@@ -34,5 +35,6 @@ final readonly class InstallOrganization
         public bool $isDepartment,
         public array $details,
         public array $resources = [],
+        public array $schedules = [],
     ) {}
 }

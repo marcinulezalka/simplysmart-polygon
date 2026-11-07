@@ -45,6 +45,12 @@ return [
         'equipment' => 'Sprzęt',
         'other' => 'Inny zasób',
     ],
+    'booking_status' => [
+        'booked' => 'zapisana',
+        'confirmed' => 'potwierdzona',
+        'cancelled' => 'odwołana',
+        'no_show' => 'nieobecność',
+    ],
     'continent' => [
         'europe' => 'Europa',
         'asia' => 'Azja',

@@ -38,6 +38,15 @@ final readonly class InstallOrganizationParser
 
     private const string RESOURCES = 'resources';
 
+    private const string SCHEDULE = 'schedule';
+
+    /** Pola wpisu grafiku organizacji. */
+    private const array SCHEDULE_FIELDS = ['resource', 'performer', 'weekday', 'from', 'to', 'slot', 'valid_from', 'valid_to'];
+
+    private const string TIME_PATTERN = '/^([01]\\d|2[0-3]):[0-5]\\d$/';
+
+    private const string DATE_PATTERN = '/^\\d{4}-\\d{2}-\\d{2}$/';
+
     private const string KEY = 'key';
 
     /** Pola zasobu organizacji. */
@@ -46,7 +55,7 @@ final readonly class InstallOrganizationParser
     private const int NAME_MAX_LENGTH = 255;
 
     /** Pola organizacji poza danymi firmy. */
-    private const array ORGANIZATION_FIELDS = [ColumnNames::NAME, Organization::SHORT_NAME, self::PARENT, self::UNIT_TYPE, Organization::IS_DEPARTMENT, self::RESOURCES];
+    private const array ORGANIZATION_FIELDS = [ColumnNames::NAME, Organization::SHORT_NAME, self::PARENT, self::UNIT_TYPE, Organization::IS_DEPARTMENT, self::RESOURCES, self::SCHEDULE];
 
     public function __construct(
         private InstallValues $values,
@@ -99,6 +108,7 @@ final readonly class InstallOrganizationParser
                 $this->values->flag($path, $definition, Organization::IS_DEPARTMENT, $where),
                 $this->details($path, $definition, $where),
                 $this->resources($path, $definition[self::RESOURCES] ?? [], "{$where}." . self::RESOURCES),
+                $this->schedule($path, $definition[self::SCHEDULE] ?? [], "{$where}." . self::SCHEDULE),
             );
         }
 
@@ -182,6 +192,68 @@ final readonly class InstallOrganizationParser
                 $this->values->text($path, $definition, ColumnNames::NAME, $at, self::NAME_MAX_LENGTH) ?? throw InvalidInstallFile::in($path, "{$at} needs a \"name\"."),
                 $kind,
                 $code,
+            );
+        }
+
+        return $result;
+    }
+
+    /**
+     * Grafik organizacji: lista obiektów `resource` (klucz zasobu tej organizacji albo przodka), `performer`
+     * (`{"zone": "<strefa>", "email": "<adres>"}`), `weekday` (1–7, ISO), `from` i `to` („HH:MM”, `from` < `to`), `slot`
+     * (minuty, 5–240) i opcjonalnie `valid_from`, `valid_to` (RRRR-MM-DD); inne pola to błąd. Istnienie zasobu i konta
+     * sprawdza ScheduleInstaller.
+     *
+     * @return list<InstallSchedule>
+     *
+     * @throws InvalidInstallFile
+     */
+    private function schedule(string $path, mixed $entries, string $where): array
+    {
+        if (! is_array($entries) || ! array_is_list($entries)) {
+            throw InvalidInstallFile::in($path, "{$where} must be a list.");
+        }
+
+        $result = [];
+
+        foreach ($entries as $index => $entry) {
+            $at = "{$where}[{$index}]";
+
+            if (! is_array($entry) || array_is_list($entry)) {
+                throw InvalidInstallFile::in($path, "{$at} must be an object.");
+            }
+
+            $unknown = array_diff(array_keys($entry), self::SCHEDULE_FIELDS);
+            $performer = $entry['performer'] ?? null;
+            $weekday = $entry['weekday'] ?? null;
+            $slot = $entry['slot'] ?? null;
+            $from = $this->values->reference($path, $entry, 'from', $at, self::TIME_PATTERN);
+            $to = $this->values->reference($path, $entry, 'to', $at, self::TIME_PATTERN);
+
+            if ($unknown !== []) {
+                throw InvalidInstallFile::in($path, "{$at} has unknown fields: " . implode(', ', $unknown) . '.');
+            }
+
+            $email = is_array($performer) ? ($performer['email'] ?? null) : null;
+
+            if (! is_array($performer) || ! is_string($performer['zone'] ?? null) || ! is_string($email) || filter_var($email, FILTER_VALIDATE_EMAIL) === false || count($performer) !== 2) {
+                throw InvalidInstallFile::in($path, "{$at}.performer must be {\"zone\": \"<zone>\", \"email\": \"<address>\"}.");
+            }
+
+            if (! is_int($weekday) || $weekday < 1 || $weekday > 7 || ! is_int($slot) || $slot < 5 || $slot > 240 || $from === null || $to === null || $from >= $to) {
+                throw InvalidInstallFile::in($path, "{$at} needs \"weekday\" 1–7, \"from\" before \"to\" (HH:MM) and \"slot\" of 5–240 minutes.");
+            }
+
+            $result[] = new InstallSchedule(
+                $this->values->reference($path, $entry, 'resource', $at, self::KEY_PATTERN) ?? throw InvalidInstallFile::in($path, "{$at} needs a \"resource\"."),
+                $performer['zone'],
+                mb_strtolower(trim($email)),
+                $weekday,
+                $from,
+                $to,
+                $slot,
+                $this->values->reference($path, $entry, 'valid_from', $at, self::DATE_PATTERN),
+                $this->values->reference($path, $entry, 'valid_to', $at, self::DATE_PATTERN),
             );
         }
 

@@ -61,6 +61,14 @@ final class InstallCommand extends Command
             $this->line("Konto już istnieje: {$email} (role uzupełnione).");
         }
 
+        foreach ($report->schedulesCreated as $description) {
+            $this->info("Grafik założony: {$description}.");
+        }
+
+        foreach ($report->schedulesKept as $description) {
+            $this->line("Grafik już istnieje: {$description} (bez zmian).");
+        }
+
         $this->info('Instalacja zakończona.');
 
         return self::SUCCESS;

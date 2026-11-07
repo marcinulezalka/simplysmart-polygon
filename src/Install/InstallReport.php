@@ -15,7 +15,7 @@ namespace Simplysmart\Polygon\Install;
 
 /**
  * Wynik instalacji: adresy kont założonych teraz i już istniejących (tylko z dopisanymi rolami) oraz nazwy
- * organizacji i zasobów organizacji założonych teraz i już istniejących (bez zmian).
+ * organizacji, zasobów organizacji i wpisów grafiku założonych teraz i już istniejących (bez zmian).
  */
 final class InstallReport
 {
@@ -38,6 +38,16 @@ final class InstallReport
      * @var list<string>
      */
     public array $resourcesKept = [];
+
+    /**
+     * @var list<string>
+     */
+    public array $schedulesCreated = [];
+
+    /**
+     * @var list<string>
+     */
+    public array $schedulesKept = [];
 
     /**
      * @var list<string>

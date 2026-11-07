@@ -4,6 +4,12 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-07
+
+### Added
+
+- Kalendarz zasobów (docs/baza-danych.md §18): grafik zasobu (`resource_schedules`, `Models\ResourceSchedule`) z wykonawcą — kontem dowolnej strefy — i slotami oraz rezerwacje (`resource_bookings`, `Models\ResourceBooking`, `Enums\BookingStatus`, rodzaj z paczki strefy); `Calendar\SaveSchedule` (kolizje zasobu i wykonawcy, blokada), `FreeSlots` (bez minionych, zajętych i dni wolnych), `BookSlot` (blokada zasobu i wykonawcy przed podwójną rezerwacją), `BookingStatusChange`, `DayBookings`; `Queries\Organizations\OrganizationUnits` (organizacja i jej jednostki). Grafik startowy w plikach instalacji (`organizations.<klucz>.schedule`). Przeniesione z paczki strefy jako mechanizm ogólny.
+
 ## [0.3.0] - 2026-11-07
 
 ### Added

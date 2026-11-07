@@ -45,6 +45,12 @@ return [
         'equipment' => 'Equipment',
         'other' => 'Other resource',
     ],
+    'booking_status' => [
+        'booked' => 'booked',
+        'confirmed' => 'confirmed',
+        'cancelled' => 'cancelled',
+        'no_show' => 'no-show',
+    ],
     'continent' => [
         'europe' => 'Europe',
         'asia' => 'Asia',

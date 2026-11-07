@@ -5,7 +5,7 @@
 > checksum, scope'y, przejścia stanu `RecordStatusTransitions`, etykiety kolumn), krótkie tłumaczenia `json_i18n` (`HasI18n`), tabele strefy `polygon_*` (`Database\ZoneTables`),
 > stockowe tabele Laravela (`users`, `cache`, `jobs`) z wyrównaniem `users` do standardu, słowniki lokalizacji
 > z seederami (§14), tabele uprawnień spatie/laravel-permission z zespołami — zespół to organizacja (§15) oraz organizacje z typami jednostek
-> i członkostwem kont (§16) oraz zasoby organizacji (§17). Warstwa nie obejmuje audytu, cookies, dokumentów prawnych
+> i członkostwem kont (§16), zasoby organizacji (§17) oraz kalendarz zasobów (§18). Warstwa nie obejmuje audytu, cookies, dokumentów prawnych
 > ani widoków.
 
 Silniki: MySQL 8 / MariaDB i SQLite (testy, lokalnie). Zasady obowiązują każdą tabelę danych aplikacji.
@@ -329,4 +329,33 @@ Rezerwacje i grafiki zasobów dodają paczki stref, odwołując się do zasobu k
   zasobu sąsiedniej jednostki), `lineage()` — id organizacji i jej przodków.
 - `label()` — „kod · nazwa” do list i grafiku. Nowy zasób to aktywny gabinet (`kind` = `room`).
 - Zasoby startowe: pliki instalacji, `organizations.<klucz>.resources` ([instalacja.md](instalacja.md)).
+
+## 18. Kalendarz zasobów
+
+Kalendarz to dostępność zasobu organizacji (grafik) i interakcje na nim (rezerwacje): w przychodni wizyty u lekarza
+w gabinecie, w innej branży np. rezerwacje sal. Polygon zna zasób, jednostkę, wykonawcę (konto dowolnej strefy, np.
+lekarz) i przedział czasu; znaczenie rezerwacji (np. dane pacjenta) trzyma paczka strefy we własnej tabeli
+z kluczem `booking_id` (`ResourceBooking::FOREIGN_KEY`), a reguły wykonawcy (np. rola lekarza w jednostce) sprawdza ona
+przed zapisem grafiku.
+
+| Tabela | Model | Kolumny domenowe |
+| --- | --- | --- |
+| `resource_schedules` | `Models\ResourceSchedule` | `organization_id` (jednostka), `resource_id`, `performer_type`/`performer_id` (morph, opcjonalny), `weekday` (ISO 1–7), `starts_at`, `ends_at` (time), `slot_minutes` (null — bez slotów), `valid_from`, `valid_to` (null — bez końca) |
+| `resource_bookings` | `Models\ResourceBooking` | `organization_id`, `resource_id`, wykonawca (morph), `kind` (rodzaj z paczki strefy, np. `<strefa>.visit`), `starts_at`, `ends_at`, `status` (`Enums\BookingStatus`: booked, confirmed, cancelled, no_show — stan dziedzinowy zamiast RecordStatus), `booked_by` i `confirmed_by` (morph konta) |
+
+- **Grafik** (`Calendar\SaveSchedule`, `ScheduleInput`, `ScheduleConflicts`): w transakcji z blokadą wiersza zasobu
+  i wykonawcy odrzuca (`ScheduleRejected`, `ScheduleConflict`) przedział bez slotu albo z okresem ważności kończącym
+  się przed początkiem, zasób spoza jednostki i jej przodków oraz nakładanie się na inny grafik tego zasobu albo tego
+  wykonawcy w tym dniu tygodnia i pokrywającym się okresie ważności. Grafiku z przyszłymi rezerwacjami nie można usunąć.
+- **Wolne terminy** (`Calendar\FreeSlots`, `Slot`): sloty grafiku wykonawcy w jednostce w danym dniu, bez minionych,
+  zajętych przez rezerwacje wykonawcy albo zasobu (w dowolnej jednostce) i dni wolnych kraju aplikacji (`HolidaysIn`);
+  `days()` — najbliższe dni z wolnymi terminami.
+- **Rezerwacja** (`Calendar\BookSlot`): blokuje (`FOR UPDATE`) wiersz zasobu, potem wykonawcy i dopiero wtedy sprawdza
+  slot — równoległa rezerwacja tego terminu czeka na blokadę i kończy się `SlotUnavailable`. Wywołana w transakcji
+  paczki strefy staje się jej częścią (rezerwacja i dane dziedzinowe razem albo wcale).
+- **Stan** (`Calendar\BookingStatusChange`): zapisana → potwierdzona, odwołana, nieobecność; potwierdzona → odwołana,
+  nieobecność; odwołana zwalnia termin. **Lista dnia**: `Calendar\DayBookings` (jednostki, dzień, opcjonalnie rodzaj).
+- **Jednostki** (`Queries\Organizations\OrganizationUnits`): organizacja i jej aktywne jednostki podrzędne bez hero —
+  zakres pracy konta w strefie.
+- Grafik startowy: pliki instalacji, `organizations.<klucz>.schedule` ([instalacja.md](instalacja.md)).
 

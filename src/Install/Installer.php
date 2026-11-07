@@ -33,6 +33,7 @@ final readonly class Installer
         private ConnectionInterface $db,
         private OrganizationInstaller $organizationInstaller,
         private ZoneInstaller $zoneInstaller,
+        private ScheduleInstaller $scheduleInstaller,
         private PermissionRegistrar $permissions,
     ) {}
 
@@ -52,6 +53,8 @@ final readonly class Installer
             foreach ($zones as $zone) {
                 $this->zoneInstaller->install($zone, $report, $installed);
             }
+
+            $this->scheduleInstaller->install($organizations, $installed, $report);
 
             return $report;
         });
