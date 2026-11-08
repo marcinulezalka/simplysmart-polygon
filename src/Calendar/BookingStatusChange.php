@@ -22,8 +22,8 @@ use Simplysmart\Polygon\Models\ResourceBooking;
 use Simplysmart\Polygon\Models\ZoneAccount;
 
 /**
- * Zmiana stanu rezerwacji według BookingStatus::allows(): potwierdzenie (zapisuje, kto i kiedy potwierdził), odwołanie
- * (zwalnia termin) i nieobecność.
+ * Zmiana stanu rezerwacji według BookingStatus::allows(): potwierdzenie (zapisuje, kto i kiedy potwierdził), wykonanie,
+ * odwołanie (zwalnia termin) i nieobecność.
  */
 final readonly class BookingStatusChange
 {

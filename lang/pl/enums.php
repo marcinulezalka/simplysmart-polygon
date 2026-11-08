@@ -55,6 +55,7 @@ return [
     'booking_status' => [
         'booked' => 'zapisana',
         'confirmed' => 'potwierdzona',
+        'completed' => 'wykonana',
         'cancelled' => 'odwołana',
         'no_show' => 'nieobecność',
     ],

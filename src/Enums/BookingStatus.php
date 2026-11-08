@@ -16,13 +16,14 @@ namespace Simplysmart\Polygon\Enums;
 use Simplysmart\Polygon\Localization\PackageText;
 
 /**
- * Stan rezerwacji w kalendarzu (kolumna `status` tabeli `resource_bookings`): zapisana, potwierdzona, odwołana albo
- * nieobecność. Odwołana zwalnia termin; pozostałe go zajmują. Teksty: `enums.booking_status.<value>`.
+ * Stan rezerwacji w kalendarzu (kolumna `status` tabeli `resource_bookings`): zapisana, potwierdzona, wykonana, odwołana
+ * albo nieobecność. Odwołana zwalnia termin; pozostałe go zajmują. Teksty: `enums.booking_status.<value>`.
  */
 enum BookingStatus: string
 {
     case Booked = 'booked';
     case Confirmed = 'confirmed';
+    case Completed = 'completed';
     case Cancelled = 'cancelled';
     case NoShow = 'no_show';
 
@@ -33,7 +34,7 @@ enum BookingStatus: string
      */
     public static function occupying(): array
     {
-        return [self::Booked, self::Confirmed, self::NoShow];
+        return [self::Booked, self::Confirmed, self::Completed, self::NoShow];
     }
 
     /**
@@ -47,15 +48,15 @@ enum BookingStatus: string
     }
 
     /**
-     * Czy ze stanu wolno przejść do $next: zapisana → potwierdzona, odwołana, nieobecność; potwierdzona → odwołana,
-     * nieobecność; odwołana i nieobecność są końcowe.
+     * Czy ze stanu wolno przejść do $next: zapisana → potwierdzona, wykonana, odwołana, nieobecność; potwierdzona →
+     * wykonana, odwołana, nieobecność; wykonana, odwołana i nieobecność są końcowe.
      */
     public function allows(self $next): bool
     {
         return match ($this) {
             self::Booked => $next !== self::Booked,
-            self::Confirmed => in_array($next, [self::Cancelled, self::NoShow], true),
-            self::Cancelled, self::NoShow => false,
+            self::Confirmed => in_array($next, [self::Completed, self::Cancelled, self::NoShow], true),
+            self::Completed, self::Cancelled, self::NoShow => false,
         };
     }
 

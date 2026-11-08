@@ -55,6 +55,7 @@ return [
     'booking_status' => [
         'booked' => 'booked',
         'confirmed' => 'confirmed',
+        'completed' => 'completed',
         'cancelled' => 'cancelled',
         'no_show' => 'no-show',
     ],

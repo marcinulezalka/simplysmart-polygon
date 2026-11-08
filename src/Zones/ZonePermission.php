@@ -18,12 +18,16 @@ use Simplysmart\Polygon\Http\Middleware\RequireZonePermission;
 
 /**
  * Middleware trasy wymagającej uprawnienia w strefie, np. w `zone.php`:
- * `Route::get('settings', ...)->middleware(ZonePermission::middleware(Permission::SettingsView))`.
+ * `Route::get('settings', ...)->middleware(ZonePermission::middleware(Permission::SettingsView))`; z kilkoma uprawnieniami
+ * (`ZonePermission::middleware(A, B)`) wystarczy dowolne z nich.
  */
 final class ZonePermission
 {
-    public static function middleware(BackedEnum|string $permission): string
+    /**
+     * Middleware z jednym uprawnieniem albo kilkoma — wtedy wystarczy dowolne z nich.
+     */
+    public static function middleware(BackedEnum|string ...$permissions): string
     {
-        return RequireZonePermission::ALIAS . ':' . ($permission instanceof BackedEnum ? (string) $permission->value : $permission);
+        return RequireZonePermission::ALIAS . ':' . implode(',', array_map(static fn(BackedEnum|string $permission): string => $permission instanceof BackedEnum ? (string) $permission->value : $permission, $permissions));
     }
 }

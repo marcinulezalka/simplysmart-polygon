@@ -67,7 +67,7 @@ Pliki w `routesPath()` (ścieżki względne, krótkie nazwy; brakujący plik jes
 | `public.php` | każdy |
 | `account.php`, `zone.php` | zalogowane konto strefy (wymaga `model`); trasa `dashboard` to cel po zalogowaniu |
 
-Uprawnienie trasy: `->middleware(ZonePermission::middleware('reports.view'))` (alias `zone.permission`, uprawnienie spatie
+Uprawnienie trasy: `->middleware(ZonePermission::middleware('reports.view'))` — przy kilku (`ZonePermission::middleware('a', 'b')`) wystarczy dowolne — (alias `zone.permission`, uprawnienie spatie
 w guardzie strefy, brak = 403). Grupa `zone.<strefa>`: EncryptCookies → AddQueuedCookies → `UseZone` → StartSession →
 ShareErrors → `PreventRequestForgeryWithoutCookie` → `RecordHistoryActor` → SubstituteBindings. Każda strefa ma osobne
 ciasteczko sesji; konto jednej strefy jest gościem w innej.

@@ -22,8 +22,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
- * Trasa wymagająca uprawnienia (`zone.permission:<uprawnienie>`): konto z guarda bieżącej strefy z uprawnieniem spatie
- * w tym guardzie (bezpośrednio albo przez rolę). Brak uprawnienia, także nieznanego, to 403. Pliki tras strefy nie znają
+ * Trasa wymagająca uprawnienia (`zone.permission:<uprawnienie>[,<uprawnienie>…]`): konto z guarda bieżącej strefy
+ * z uprawnieniem spatie w tym guardzie (bezpośrednio albo przez rolę); przy kilku wystarczy dowolne. Brak uprawnienia, także nieznanego, to 403. Pliki tras strefy nie znają
  * guarda, więc używają Zones\ZonePermission::middleware().
  */
 final readonly class RequireZonePermission
@@ -38,11 +38,12 @@ final readonly class RequireZonePermission
     /**
      * @param Closure(Request): Response $next
      */
-    public function handle(Request $request, Closure $next, string $permission): Response
+    public function handle(Request $request, Closure $next, string ...$permissions): Response
     {
         $account = $this->account->get();
+        $guard = $this->zone->get()->guard;
 
-        if (! $account instanceof ZoneAccount || ! $account->checkPermissionTo($permission, $this->zone->get()->guard)) {
+        if (! $account instanceof ZoneAccount || array_filter($permissions, static fn(string $permission): bool => $account->checkPermissionTo($permission, $guard)) === []) {
             throw new AccessDeniedHttpException();
         }
 

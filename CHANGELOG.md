@@ -6,6 +6,7 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Added
 
+- Stan rezerwacji „wykonana” (`BookingStatus::Completed`): zajmuje termin, osiągalny z zapisanej i potwierdzonej, końcowy (`Calendar\BookingStatusChange`).
 - Czas potwierdzenia rezerwacji: kolumna `resource_bookings.confirmed_at` (`ResourceBooking::CONFIRMED_AT`, migracja z synchronizacją triggerów historii), ustawiana przez `Calendar\BookingStatusChange` przy potwierdzeniu obok `confirmed_by`.
 - Polecenie po wdrożeniu w konfiguracji projektu: `DEPLOY_RELOAD` (serwer) i `PREPRODUCTION_RELOAD` (przed-produkcja), np. przeładowanie PHP-FPM, żeby opcache nie serwował starego kodu i starego cache tras (`docs/deploy.md`, „Cache i opcache”).
 - Assety paczek budowane Vite (`docs/assety.md`): orkiestrator `bin/assets.mjs {build|dev}` (skrypty `npm run build`/`dev` projektu) buduje każdą paczkę z `vite.config.js` do jej `public/build/` Vite i preprocesorami z projektu; `Assets\PackageAssets` (rejestr paczek, dyrektywa `@packageAssets`), `php artisan polygon:assets` (symlink albo `--copy` do `public/vendor/<paczka>`), krok `polygon:assets` w deployu.
@@ -14,6 +15,7 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Changed
 
+- `Zones\ZonePermission::middleware()` przyjmuje kilka uprawnień — trasa otwiera się przy dowolnym z nich (`zone.permission:a,b`).
 - Deploy (`remote.sh`) czyści cache konfiguracji, tras, widoków i zdarzeń zaraz po instalacji paczek (wcześniej dopiero na końcu), a na końcu restartuje workery kolejki (`queue:restart`).
 - Hash sesji w adresie (`url_key` strefy) stoi teraz po slugu strefy: `/<slug>/<hash>/…` zamiast `/<hash>/<slug>/…` — wszystkie adresy strefy zaczynają się od jej sluga.
 
