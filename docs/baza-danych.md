@@ -341,7 +341,7 @@ przed zapisem grafiku.
 | Tabela | Model | Kolumny domenowe |
 | --- | --- | --- |
 | `resource_schedules` | `Models\ResourceSchedule` | `organization_id` (jednostka), `resource_id`, `performer_type`/`performer_id` (morph, opcjonalny), `weekday` (ISO 1–7), `starts_at`, `ends_at` (time), `slot_minutes` (null — bez slotów), `week_interval` (co ile tygodni od tygodnia `valid_from`, 1 — co tydzień), `fills_gaps` (wypełnia wolny czas zasobu, bez wyłączności), `valid_from`, `valid_to` (null — bez końca) |
-| `resource_bookings` | `Models\ResourceBooking` | `organization_id`, `resource_id`, wykonawca (morph), `kind` (rodzaj z paczki strefy, np. `<strefa>.visit`), `starts_at`, `ends_at`, `status` (`Enums\BookingStatus`: booked, confirmed, cancelled, no_show — stan dziedzinowy zamiast RecordStatus), `booked_by` i `confirmed_by` (morph konta) |
+| `resource_bookings` | `Models\ResourceBooking` | `organization_id`, `resource_id`, wykonawca (morph), `kind` (rodzaj z paczki strefy, np. `<strefa>.visit`), `starts_at`, `ends_at`, `status` (`Enums\BookingStatus`: booked, confirmed, cancelled, no_show — stan dziedzinowy zamiast RecordStatus), `booked_by` i `confirmed_by` (morph konta), `confirmed_at` (czas potwierdzenia) |
 
 - **Grafik** (`Calendar\SaveSchedule`, `ScheduleInput`, `ScheduleConflicts`): w transakcji z blokadą wiersza zasobu
   i wykonawcy odrzuca (`ScheduleRejected`, `ScheduleConflict`) przedział bez slotu albo z okresem ważności kończącym

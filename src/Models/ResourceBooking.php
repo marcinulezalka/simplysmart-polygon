@@ -40,6 +40,7 @@ use Simplysmart\Polygon\Models\Relations\BelongsToOrganization;
  * @property int|null $booked_by_id
  * @property string|null $confirmed_by_type
  * @property int|null $confirmed_by_id
+ * @property CarbonImmutable|null $confirmed_at
  * @property-read Organization|null $organization
  * @property-read OrganizationResource|null $resource
  * @property-read ZoneAccount|null $performer
@@ -62,6 +63,9 @@ final class ResourceBooking extends DataModel
     public const string BOOKED_BY = 'booked_by';
 
     public const string CONFIRMED_BY = 'confirmed_by';
+
+    /** Czas potwierdzenia (Calendar\BookingStatusChange). */
+    public const string CONFIRMED_AT = 'confirmed_at';
 
     protected $table = self::TABLE;
 
@@ -108,6 +112,7 @@ final class ResourceBooking extends DataModel
             'booked_by_type' => 'string',
             'booked_by_id' => 'integer',
             'confirmed_by_type' => 'string',
+            self::CONFIRMED_AT => 'immutable_datetime',
             'confirmed_by_id' => 'integer',
         ];
     }

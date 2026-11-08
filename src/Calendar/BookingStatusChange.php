@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Calendar;
 
+use Carbon\CarbonImmutable;
 use DomainException;
 use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Enums\BookingStatus;
@@ -21,7 +22,7 @@ use Simplysmart\Polygon\Models\ResourceBooking;
 use Simplysmart\Polygon\Models\ZoneAccount;
 
 /**
- * Zmiana stanu rezerwacji według BookingStatus::allows(): potwierdzenie (zapisuje, kto potwierdził), odwołanie
+ * Zmiana stanu rezerwacji według BookingStatus::allows(): potwierdzenie (zapisuje, kto i kiedy potwierdził), odwołanie
  * (zwalnia termin) i nieobecność.
  */
 final readonly class BookingStatusChange
@@ -38,7 +39,7 @@ final readonly class BookingStatusChange
         $booking->forceFill([ColumnNames::STATUS => $next]);
 
         if ($next === BookingStatus::Confirmed) {
-            $booking->forceFill(['confirmed_by_type' => $by->getMorphClass(), 'confirmed_by_id' => $by->id]);
+            $booking->forceFill(['confirmed_by_type' => $by->getMorphClass(), 'confirmed_by_id' => $by->id, ResourceBooking::CONFIRMED_AT => CarbonImmutable::now()]);
         }
 
         $booking->save();
