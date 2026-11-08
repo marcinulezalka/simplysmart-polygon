@@ -18,6 +18,7 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Fixed
 
+- Strona startowa konta (`home` strefy, np. pulpit roli) zamiast ogólnego pulpitu: dla zalogowanego na trasie tylko dla gości (`ZoneRedirects::userRedirect()`), na wejściu do strefy (nowe `ZoneRedirects::entry()`) i po zalogowaniu, gdy zamierzoną stroną był ogólny pulpit (`ZoneRedirects::isDashboard()` w `CompleteSignIn`).
 - Hash sesji w adresie (`url_key`): po ponownym zalogowaniu zamierzona strona zapamiętana z hashem poprzedniej sesji (po wylogowaniu albo wygaśnięciu sesji) dawała 404 — teraz dostaje hash nowej sesji (`Zones\ZoneUrlKey::rewrite()` w `Auth\SignIn\CompleteSignIn`).
 
 ## [0.11.0] - 2026-11-07

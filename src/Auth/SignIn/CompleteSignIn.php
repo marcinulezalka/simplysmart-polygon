@@ -36,7 +36,8 @@ use Simplysmart\Polygon\Zones\ZoneUrlKey;
  * np. pulpit roli, a bez niej dashboard strefy). Pierwsze logowanie (z ustawieniem PIN-u) zawsze kończy się na stronie
  * startowej: zamierzona strona sprzed logowania jest pomijana, bo nowe konto zaczyna od pulpitu swojej roli, a nie od
  * strony, którą ktoś otworzył przed nim. W strefie z `url_key` zamierzona strona dostaje hash bieżącej sesji
- * (Zones\ZoneUrlKey::rewrite()) — zapamiętana z hashem poprzedniej sesji dawałaby 404.
+ * (Zones\ZoneUrlKey::rewrite()) — zapamiętana z hashem poprzedniej sesji dawałaby 404. Zamierzona strona będąca
+ * ogólnym pulpitem strefy (np. po wejściu na `/<slug>`) nie zastępuje strony startowej konta (pulpitu jego roli).
  */
 final readonly class CompleteSignIn
 {
@@ -92,8 +93,14 @@ final readonly class CompleteSignIn
 
         $intended = $request->session()->get(self::INTENDED_SESSION_KEY);
 
-        if ($zone->urlKey && is_string($intended)) {
-            $request->session()->put(self::INTENDED_SESSION_KEY, $this->urlKeys->rewrite($intended, $zone->slug, $request->session()));
+        if (is_string($intended)) {
+            $intended = $zone->urlKey ? $this->urlKeys->rewrite($intended, $zone->slug, $request->session()) : $intended;
+
+            if ($this->redirects->isDashboard($intended)) {
+                $request->session()->forget(self::INTENDED_SESSION_KEY);
+            } else {
+                $request->session()->put(self::INTENDED_SESSION_KEY, $intended);
+            }
         }
 
         return $this->redirect->intended($home);

@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Zones;
 
+use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Routing\UrlGenerator;
 use Illuminate\Routing\Router;
@@ -25,7 +26,9 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Przekierowania middleware auth/guest liczone z bieżącej strefy (nie ma globalnej trasy `login`) i strona startowa
- * po zalogowaniu: trasa z Contracts\ZoneHome strefy (`home`), a bez niej pulpit strefy.
+ * po zalogowaniu: trasa z Contracts\ZoneHome strefy (`home`), a bez niej pulpit strefy. Zalogowany na trasie tylko dla
+ * gości (np. zakładka z logowaniem) i wejście do strefy (entry(), np. `/<slug>`) prowadzą na stronę startową konta,
+ * a nie na ogólny pulpit; isDashboard() rozpoznaje ogólny pulpit w zamierzonej stronie (Auth\SignIn\CompleteSignIn).
  */
 final readonly class ZoneRedirects
 {
@@ -40,6 +43,7 @@ final readonly class ZoneRedirects
         private Container $container,
         private OrganizationRoles $roles,
         private CurrentOrganization $organization,
+        private AuthFactory $auth,
     ) {}
 
     /**
@@ -68,13 +72,52 @@ final readonly class ZoneRedirects
     }
 
     /**
-     * Pulpit strefy dla zalogowanego, który wszedł na trasę tylko dla gości.
+     * Strona startowa konta (homeFor()) dla zalogowanego, który wszedł na trasę tylko dla gości; strefa bez pulpitu —
+     * strona główna witryny.
      */
     public function userRedirect(): string
     {
+        if ($this->route(self::HOME_ROUTE) === null) {
+            return $this->url->to('/');
+        }
+
+        $zone = $this->zone->get();
+
+        return $this->homeFor($zone, $this->account($zone));
+    }
+
+    /**
+     * Wejście do strefy: zalogowany — strona startowa konta, gość — logowanie (bez zapamiętanej strony, więc po
+     * zalogowaniu też strona startowa konta).
+     *
+     * @throws NotFoundHttpException Gdy strefa nie ma logowania.
+     */
+    public function entry(): string
+    {
+        return $this->zone->has() && $this->account($this->zone->get()) !== null ? $this->userRedirect() : $this->guestRedirect();
+    }
+
+    /**
+     * Czy adres to ogólny pulpit strefy (ta sama ścieżka, bez parametrów zapytania).
+     */
+    public function isDashboard(string $url): bool
+    {
         $route = $this->route(self::HOME_ROUTE);
 
-        return $route !== null ? $this->url->route($route) : $this->url->to('/');
+        if ($route === null) {
+            return false;
+        }
+
+        $candidate = parse_url($url);
+
+        return is_array($candidate) && ! isset($candidate['query']) && ($candidate['path'] ?? '') === parse_url($this->url->route($route), PHP_URL_PATH);
+    }
+
+    private function account(ZoneDefinition $zone): ?ZoneAccount
+    {
+        $account = $this->auth->guard($zone->guard)->user();
+
+        return $account instanceof ZoneAccount ? $account : null;
     }
 
     /**
