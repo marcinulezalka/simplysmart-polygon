@@ -27,7 +27,6 @@ use Simplysmart\Polygon\Contracts\AccountStore;
 use Simplysmart\Polygon\Contracts\CurrentZone;
 use Simplysmart\Polygon\Models\ZoneAccount;
 use Simplysmart\Polygon\Zones\ZoneRedirects;
-use Simplysmart\Polygon\Zones\ZoneUrlKey;
 
 /**
  * Wszystkie kroki wykonane: logowanie w guardzie strefy, nowa sesja z epoką konta, zapis
@@ -35,16 +34,12 @@ use Simplysmart\Polygon\Zones\ZoneUrlKey;
  * i powrót na zamierzoną stronę albo stronę startową konta (Zones\ZoneRedirects::homeFor(): Contracts\ZoneHome strefy,
  * np. pulpit roli, a bez niej dashboard strefy). Pierwsze logowanie (z ustawieniem PIN-u) zawsze kończy się na stronie
  * startowej: zamierzona strona sprzed logowania jest pomijana, bo nowe konto zaczyna od pulpitu swojej roli, a nie od
- * strony, którą ktoś otworzył przed nim. W strefie z `url_key` zamierzona strona dostaje hash bieżącej sesji
- * (Zones\ZoneUrlKey::rewrite()) — zapamiętana z hashem poprzedniej sesji dawałaby 404. Zamierzona strona będąca
- * ogólnym pulpitem strefy (np. po wejściu na `/<slug>`) nie zastępuje strony startowej konta (pulpitu jego roli).
+ * strony, którą ktoś otworzył przed nim. Zamierzoną stronę (hash bieżącej sesji, bez ogólnego pulpitu) przygotowuje
+ * IntendedPage.
  */
 final readonly class CompleteSignIn
 {
     public const string EPOCH_SESSION_KEY = 'auth_epoch';
-
-    /** Klucz sesji Laravela z zamierzoną stroną (Redirector::intended()). */
-    private const string INTENDED_SESSION_KEY = 'url.intended';
 
     public function __construct(
         private AuthManager $auth,
@@ -56,7 +51,7 @@ final readonly class CompleteSignIn
         private Redirector $redirect,
         private RegisterTrustedDevice $devices,
         private ZoneRedirects $redirects,
-        private ZoneUrlKey $urlKeys,
+        private IntendedPage $intended,
     ) {}
 
     public function handle(PendingSignIn $signIn, Request $request): RedirectResponse
@@ -86,22 +81,12 @@ final readonly class CompleteSignIn
         $home = $this->redirects->homeFor($zone, $account instanceof ZoneAccount ? $account : null);
 
         if ($signIn->hasCompleted(PinSetupStep::KEY)) {
-            $request->session()->forget(self::INTENDED_SESSION_KEY);
+            $this->intended->forget($request->session());
 
             return $this->redirect->to($home);
         }
 
-        $intended = $request->session()->get(self::INTENDED_SESSION_KEY);
-
-        if (is_string($intended)) {
-            $intended = $zone->urlKey ? $this->urlKeys->rewrite($intended, $zone->slug, $request->session()) : $intended;
-
-            if ($this->redirects->isDashboard($intended)) {
-                $request->session()->forget(self::INTENDED_SESSION_KEY);
-            } else {
-                $request->session()->put(self::INTENDED_SESSION_KEY, $intended);
-            }
-        }
+        $this->intended->prepare($zone, $request->session());
 
         return $this->redirect->intended($home);
     }
