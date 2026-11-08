@@ -19,7 +19,8 @@ use Illuminate\Support\Str;
 /**
  * Hash sesji w adresie ekranów strefy po zalogowaniu (`url_key` strefy): `/<slug>/<hash>/…`. Losowy dla każdej sesji
  * strefy (nowy po wylogowaniu, gdy sesja jest unieważniana), więc link skopiowany przez robota albo z innej sesji nie
- * prowadzi do ekranu (404). Trasy dostają go z URL::defaults (Http\Middleware\ApplyZoneUrlKey), a sprawdza go
+ * prowadzi do ekranu (404). Niezalogowany z takim linkiem trafia na logowanie (auth działa przed sprawdzeniem hasha),
+ * a po zalogowaniu Auth\SignIn\CompleteSignIn podmienia w zamierzonej stronie hash na bieżący (rewrite()). Trasy dostają go z URL::defaults (Http\Middleware\ApplyZoneUrlKey), a sprawdza go
  * Http\Middleware\RequireZoneUrlKey.
  */
 final readonly class ZoneUrlKey
@@ -49,6 +50,18 @@ final readonly class ZoneUrlKey
         }
 
         return $key;
+    }
+
+    /**
+     * Adres z hashem bieżącej sesji w miejscu hasha na początku ścieżki, po slugu strefy ($slug, '' — bez segmentu), np. zamierzona strona zapamiętana przed
+     * zalogowaniem z hashem poprzedniej sesji (po wylogowaniu albo wygaśnięciu sesji); adres bez hasha zostaje bez zmian.
+     */
+    public function rewrite(string $url, string $slug, Session $session): string
+    {
+        $segment = $slug === '' ? '' : preg_quote($slug, '#') . '/';
+        $pattern = '#^((?:[a-z][a-z0-9+.-]*://[^/]+)?/' . $segment . ')' . self::PATTERN . '(?=[/?\#]|$)#i';
+
+        return (string) preg_replace($pattern, '${1}' . $this->current($session), $url, 1);
     }
 
     public function matches(Session $session, mixed $candidate): bool

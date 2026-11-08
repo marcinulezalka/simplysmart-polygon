@@ -27,6 +27,7 @@ use Simplysmart\Polygon\Contracts\AccountStore;
 use Simplysmart\Polygon\Contracts\CurrentZone;
 use Simplysmart\Polygon\Models\ZoneAccount;
 use Simplysmart\Polygon\Zones\ZoneRedirects;
+use Simplysmart\Polygon\Zones\ZoneUrlKey;
 
 /**
  * Wszystkie kroki wykonane: logowanie w guardzie strefy, nowa sesja z epoką konta, zapis
@@ -34,7 +35,8 @@ use Simplysmart\Polygon\Zones\ZoneRedirects;
  * i powrót na zamierzoną stronę albo stronę startową konta (Zones\ZoneRedirects::homeFor(): Contracts\ZoneHome strefy,
  * np. pulpit roli, a bez niej dashboard strefy). Pierwsze logowanie (z ustawieniem PIN-u) zawsze kończy się na stronie
  * startowej: zamierzona strona sprzed logowania jest pomijana, bo nowe konto zaczyna od pulpitu swojej roli, a nie od
- * strony, którą ktoś otworzył przed nim.
+ * strony, którą ktoś otworzył przed nim. W strefie z `url_key` zamierzona strona dostaje hash bieżącej sesji
+ * (Zones\ZoneUrlKey::rewrite()) — zapamiętana z hashem poprzedniej sesji dawałaby 404.
  */
 final readonly class CompleteSignIn
 {
@@ -53,6 +55,7 @@ final readonly class CompleteSignIn
         private Redirector $redirect,
         private RegisterTrustedDevice $devices,
         private ZoneRedirects $redirects,
+        private ZoneUrlKey $urlKeys,
     ) {}
 
     public function handle(PendingSignIn $signIn, Request $request): RedirectResponse
@@ -85,6 +88,12 @@ final readonly class CompleteSignIn
             $request->session()->forget(self::INTENDED_SESSION_KEY);
 
             return $this->redirect->to($home);
+        }
+
+        $intended = $request->session()->get(self::INTENDED_SESSION_KEY);
+
+        if ($zone->urlKey && is_string($intended)) {
+            $request->session()->put(self::INTENDED_SESSION_KEY, $this->urlKeys->rewrite($intended, $zone->slug, $request->session()));
         }
 
         return $this->redirect->intended($home);

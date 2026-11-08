@@ -16,6 +16,10 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 - Deploy (`remote.sh`) czyści cache konfiguracji, tras, widoków i zdarzeń zaraz po instalacji paczek (wcześniej dopiero na końcu), a na końcu restartuje workery kolejki (`queue:restart`).
 - Hash sesji w adresie (`url_key` strefy) stoi teraz po slugu strefy: `/<slug>/<hash>/…` zamiast `/<hash>/<slug>/…` — wszystkie adresy strefy zaczynają się od jej sluga.
 
+### Fixed
+
+- Hash sesji w adresie (`url_key`): po ponownym zalogowaniu zamierzona strona zapamiętana z hashem poprzedniej sesji (po wylogowaniu albo wygaśnięciu sesji) dawała 404 — teraz dostaje hash nowej sesji (`Zones\ZoneUrlKey::rewrite()` w `Auth\SignIn\CompleteSignIn`).
+
 ## [0.11.0] - 2026-11-07
 
 ### Added
