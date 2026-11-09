@@ -24,9 +24,6 @@ enum RoomTakenBy: string
     /** Okno najmu na wyłączność innej jednostki. */
     case Lease = 'lease';
 
-    /** Zasób wynajęty jednostce bloku, ale jej najem po bloku nie obowiązuje. */
-    case NoLease = 'no_lease';
-
     /** Rezerwacja innego wykonawcy na tym zasobie. */
     case Booking = 'booking';
 }

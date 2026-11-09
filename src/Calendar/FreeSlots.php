@@ -153,8 +153,8 @@ final readonly class FreeSlots
     /**
      * Czy zasób bloku grafiku jest dostępny przez jeden slot po jego końcu — tam trafia rezerwacja nadliczbowa
      * (BookSlot::bookOverflow()). Null — dostępny; RoomTaken — pierwsza kolizja w oknie [koniec, koniec + slot): inny
-     * grafik zasobu (bez wypełniających), okno najmu na wyłączność innej jednostki, brak najmu jednostki na zasobie
-     * wynajętym albo rezerwacja zajmująca termin innego wykonawcy na zasobie.
+     * grafik zasobu (bez wypełniających), okno najmu na wyłączność innej jednostki albo rezerwacja zajmująca termin
+     * innego wykonawcy na zasobie. Koniec własnego najmu jednostki (kooperacji) po bloku kolizją nie jest.
      */
     public function roomTakenAfter(Organization $unit, ResourceSchedule $schedule, CarbonImmutable $day): ?RoomTaken
     {
@@ -198,20 +198,6 @@ final readonly class FreeSlots
                 if (self::within([[$from, $to]], $start, $end)) {
                     $taken[] = new RoomTaken($from->max($start), RoomTakenBy::Lease, null, $lease->cooperation);
                 }
-            }
-        }
-
-        if (! $this->resources->owns($unit, $schedule->resource_id)) {
-            $leased = false;
-
-            foreach ($this->leases->ofCooperation($unit, $schedule->resource_id) as $lease) {
-                if ($lease->occursOn($day) && $lease->leaseWindows()->covers($schedule->weekday, $start->format('H:i'), $end->format('H:i'))) {
-                    $leased = true;
-                }
-            }
-
-            if (! $leased) {
-                $taken[] = new RoomTaken($start, RoomTakenBy::NoLease);
             }
         }
 

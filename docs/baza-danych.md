@@ -363,8 +363,8 @@ przed zapisem grafiku.
   `isOverflow()`) ją odróżnia. Czy wykonawca przyjmuje nadliczbowo — decyduje paczka strefy. Blokady jak przy `book()`.
   **Dostępność zasobu po bloku** (`FreeSlots::roomTakenAfter()`): pierwsza kolizja w oknie jednego slotu po końcu bloku
   (`Calendar\RoomTaken` — od kiedy, powód `Enums\RoomTakenBy`, wykonawca i jednostka): inny grafik zasobu (bez
-  wypełniających), okno najmu na wyłączność innej jednostki, brak najmu jednostki na zasobie wynajętym, rezerwacja
-  zajmująca termin innego wykonawcy; null — zasób dostępny. Czy kolizja wyłącza zapis nadliczbowy — decyduje paczka strefy.
+  wypełniających), okno najmu na wyłączność innej jednostki, rezerwacja zajmująca termin innego wykonawcy (koniec
+  własnego najmu kooperacji po bloku kolizją nie jest); null — zasób dostępny. Czy kolizja wyłącza zapis nadliczbowy — decyduje paczka strefy.
 - **Stan** (`Calendar\BookingStatusChange`): zapisana → potwierdzona, wykonana, odwołana, nieobecność; potwierdzona →
   wykonana, odwołana, nieobecność; wykonana, odwołana i nieobecność są końcowe; odwołana zwalnia termin. **Lista dnia**: `Calendar\DayBookings` (jednostki, dzień, opcjonalnie rodzaj).
 - **Jednostki** (`Queries\Organizations\OrganizationUnits`): organizacja i jej aktywne jednostki podrzędne bez hero —
