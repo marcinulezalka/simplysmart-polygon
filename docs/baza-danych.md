@@ -400,7 +400,7 @@ udostępnienia umowy.
 
 | Tabela | Model | Kolumny domenowe |
 | --- | --- | --- |
-| `resource_leases` | `Models\ResourceLease` | `organization_id` (właściciel zasobu), `resource_id`, `lessee_organization_id`, `cooperation_organization_id`, `contractor_contract_id` (opcjonalna umowa kontrahenta właściciela, §19), `name` (numer umowy), `valid_from`, `valid_to` (null — bezterminowo), `windows` (JSON `[dzień ISO, "HH:MM", "HH:MM"]`, bez okien — cały zasób), `week_interval` (okna co ile tygodni od tygodnia `valid_from`), `mode` (`Enums\LeaseMode`: `windows` — na wyłączność, `on_demand` — na żądanie), `access` (JSON, `Enums\LeaseAccess`), `wallboard_token` (losowy token publicznej tablicy) |
+| `resource_leases` | `Models\ResourceLease` | `organization_id` (właściciel zasobu), `resource_id`, `lessee_organization_id`, `cooperation_organization_id`, `contractor_contract_id` (opcjonalna umowa kontrahenta właściciela, §19), `name` (numer umowy), `signed_on` (data zawarcia — tylko informacja, bez wpływu na grafik), `valid_from` (rozpoczęcie cyklu i okresu umowy), `valid_to` (null — bezterminowo), `windows` (JSON `[dzień ISO, "HH:MM", "HH:MM"]`, bez okien — cały zasób), `week_interval` (okna co ile tygodni od tygodnia `valid_from`), `mode` (`Enums\LeaseMode`: `windows` — na wyłączność, `on_demand` — na żądanie), `access` (JSON, `Enums\LeaseAccess`), `wallboard_token` (losowy token publicznej tablicy) |
 
 - **Okna** (`Leases\LeaseWindows`): kilka okien w jednym dniu (np. 08:00–12:00 i 18:00–22:00); `covers()` — blok mieści
   się w jednym oknie, `overlaps()`, `isValid()` (bez nakładania się w dniu), `label()`.

@@ -18,7 +18,8 @@ use Simplysmart\Polygon\Enums\LeaseMode;
 
 /**
  * Umowa najmu zasobu z pliku instalacji (`organizations.<właściciel>.leases`) po walidacji: klucz zasobu właściciela,
- * klucze organizacji najemcy i jej kooperacji, numer umowy, okres (RRRR-MM-DD, bez końca: null), okna
+ * klucze organizacji najemcy i jej kooperacji, numer umowy, data zawarcia (`signed`, RRRR-MM-DD, bez wpływu na grafik),
+ * okres od rozpoczęcia cyklu (`from`, RRRR-MM-DD, bez końca: null), okna
  * [dzień ISO, od, do] i poziomy udostępnienia.
  */
 final readonly class InstallLease
@@ -38,5 +39,6 @@ final readonly class InstallLease
         public array $access,
         public int $weekInterval = 1,
         public LeaseMode $mode = LeaseMode::Windows,
+        public ?string $signedOn = null,
     ) {}
 }

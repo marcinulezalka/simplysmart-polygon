@@ -83,6 +83,7 @@ final readonly class LeaseInstaller
                 null,
                 $entry->weekInterval,
                 $entry->mode,
+                $entry->signedOn === null ? null : CarbonImmutable::parse($entry->signedOn),
             ));
         } catch (LeaseRejected $rejected) {
             throw InvalidInstallFile::merged("{$where} [{$description}] is rejected: " . $rejected->getMessage());

@@ -49,7 +49,7 @@ final readonly class InstallOrganizationParser
     private const string ATTRIBUTES = 'attributes';
 
     /** Pola umowy najmu. */
-    private const array LEASE_FIELDS = ['resource', 'lessee', 'cooperation', 'number', 'from', 'to', 'windows', 'access', self::EVERY_WEEKS, 'mode'];
+    private const array LEASE_FIELDS = ['resource', 'lessee', 'cooperation', 'number', 'signed', 'from', 'to', 'windows', 'access', self::EVERY_WEEKS, 'mode'];
 
     /** Pola okna umowy najmu. */
     private const array WINDOW_FIELDS = ['days', 'from', 'to'];
@@ -285,8 +285,8 @@ final readonly class InstallOrganizationParser
 
     /**
      * Umowy najmu zasobów organizacji: lista obiektów `resource` (klucz zasobu tej organizacji), `lessee` i `cooperation`
-     * (klucze organizacji najemcy i jej podorganizacji z `is_cooperation`), `number` (numer umowy), opcjonalnie `from`,
-     * `to` (RRRR-MM-DD), `windows` (lista `{"days": [1–7], "from": "HH:MM", "to": "HH:MM"}`, bez okien — cały zasób)
+     * (klucze organizacji najemcy i jej podorganizacji z `is_cooperation`), `number` (numer umowy), opcjonalnie `signed`
+     * (data zawarcia, RRRR-MM-DD — bez wpływu na grafik), `from` (rozpoczęcie cyklu i okresu umowy) i `to` (RRRR-MM-DD), `windows` (lista `{"days": [1–7], "from": "HH:MM", "to": "HH:MM"}`, bez okien — cały zasób)
      * i `access` (Enums\LeaseAccess: `book`, `view`, `wallboard`); inne pola to błąd. Istnienie organizacji sprawdza
      * InstallOrganizations, zasób i kolizje — LeaseInstaller.
      *
@@ -333,6 +333,7 @@ final readonly class InstallOrganizationParser
                 array_map(static fn(string $value): LeaseAccess => LeaseAccess::from($value), $this->values->names($path, $entry['access'] ?? [], "{$at}.access", InstallValues::ROLE_PATTERN, LeaseAccess::values())),
                 $this->everyWeeks($path, $entry, $at),
                 $this->mode($path, $entry, $at),
+                $this->values->reference($path, $entry, 'signed', $at, self::DATE_PATTERN),
             );
         }
 

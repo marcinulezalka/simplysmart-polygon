@@ -42,6 +42,7 @@ final readonly class LeaseInput
         public ?int $contractId = null,
         public int $weekInterval = 1,
         public LeaseMode $mode = LeaseMode::Windows,
+        public ?CarbonImmutable $signedOn = null,
     ) {}
 
     /**

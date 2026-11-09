@@ -38,6 +38,7 @@ use Simplysmart\Polygon\Models\Relations\BelongsToOrganization;
  * @property int $lessee_organization_id
  * @property int $cooperation_organization_id
  * @property int|null $contractor_contract_id
+ * @property CarbonImmutable|null $signed_on
  * @property CarbonImmutable $valid_from
  * @property CarbonImmutable|null $valid_to
  * @property array<array-key, mixed>|null $windows
@@ -62,6 +63,9 @@ final class ResourceLease extends DataModel
     public const string COOPERATION_ID = 'cooperation_organization_id';
 
     public const string CONTRACT_ID = 'contractor_contract_id';
+
+    /** Data zawarcia umowy — informacja o podpisaniu, bez wpływu na grafik (okres i cykl liczą się od VALID_FROM). */
+    public const string SIGNED_ON = 'signed_on';
 
     public const string VALID_FROM = ValidityPeriod::FROM;
 
@@ -213,6 +217,7 @@ final class ResourceLease extends DataModel
             self::LESSEE_ID => 'integer',
             self::COOPERATION_ID => 'integer',
             self::CONTRACT_ID => 'integer',
+            self::SIGNED_ON => 'immutable_date',
             self::VALID_FROM => 'immutable_date',
             self::VALID_TO => 'immutable_date',
             self::WINDOWS => 'array',

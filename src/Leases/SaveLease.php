@@ -63,6 +63,7 @@ final readonly class SaveLease
                 ResourceLease::LESSEE_ID => $input->lessee->id,
                 ResourceLease::COOPERATION_ID => $input->cooperation->id,
                 ResourceLease::CONTRACT_ID => $input->contractId,
+                ResourceLease::SIGNED_ON => $input->signedOn?->toDateString(),
                 ResourceLease::VALID_FROM => $input->validFrom->toDateString(),
                 ResourceLease::VALID_TO => $input->validTo?->toDateString(),
                 ResourceLease::WINDOWS => $input->windows->toArray(),
