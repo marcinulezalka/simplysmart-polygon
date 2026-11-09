@@ -25,8 +25,9 @@ use Simplysmart\Polygon\Models\Relations\BelongsToOrganization;
  * jednostki (`organization_id`) w przedziale `starts_at`–`ends_at`, z rodzajem nadanym przez paczkę strefy (`kind`,
  * np. `<strefa>.visit`), stanem (`status`, Enums\BookingStatus — stan dziedzinowy zamiast RecordStatus), wykonawcą
  * (`performer`) oraz kontem, które zapisało (`booked_by`) i potwierdziło (`confirmed_by`). Dane osoby i inne dane
- * dziedzinowe trzyma paczka strefy w swojej tabeli. `name` to termin, bez danych osobowych. Zapisywana tylko przez
- * Calendar\BookSlot i Calendar\BookingStatusChange.
+ * dziedzinowe trzyma paczka strefy w swojej tabeli. `name` to termin, bez danych osobowych. Rezerwacja nadliczbowa
+ * (isOverflow()) ma zerową długość na końcu bloku grafiku. Zapisywana tylko przez Calendar\BookSlot
+ * i Calendar\BookingStatusChange.
  *
  * @property int $organization_id
  * @property int $resource_id
@@ -67,6 +68,12 @@ final class ResourceBooking extends DataModel
     /** Czas potwierdzenia (Calendar\BookingStatusChange). */
     public const string CONFIRMED_AT = 'confirmed_at';
 
+    /**
+     * Klucz `json_attributes` rezerwacji nadliczbowej (Calendar\BookSlot::bookOverflow()): dopisanej na koniec bloku
+     * grafiku ponad sloty — `starts_at` i `ends_at` równe końcowi bloku, więc nie zajmuje żadnego slotu.
+     */
+    public const string OVERFLOW = 'overflow';
+
     protected $table = self::TABLE;
 
     /**
@@ -77,6 +84,16 @@ final class ResourceBooking extends DataModel
     public function usesRecordStatus(): bool
     {
         return false;
+    }
+
+    /**
+     * Czy to rezerwacja nadliczbowa — ponad sloty, na końcu bloku grafiku (OVERFLOW).
+     */
+    public function isOverflow(): bool
+    {
+        $attributes = $this->getAttribute(ColumnNames::JSON_ATTRIBUTES);
+
+        return is_array($attributes) && ($attributes[self::OVERFLOW] ?? false) === true;
     }
 
     /**

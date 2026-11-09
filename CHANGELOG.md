@@ -6,6 +6,7 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Added
 
+- Rezerwacja nadliczbowa w kalendarzu (`Calendar\BookSlot::bookOverflow()`, `FreeSlots::scheduleEndingAt()`): ponad wolne sloty, na końcu bloku grafiku, o zerowej długości (nie zajmuje slotów), oznaczona `json_attributes.overflow` (`ResourceBooking::OVERFLOW`, `isOverflow()`); czy wykonawca przyjmuje nadliczbowo, decyduje paczka strefy. `FreeSlots::roomTakenAfter()` sprawdza dostępność zasobu przez slot po końcu bloku (`Calendar\RoomTaken`, `Enums\RoomTakenBy`: inny grafik, najem na wyłączność innej jednostki, brak najmu, rezerwacja innego wykonawcy).
 - Stan rezerwacji „wykonana” (`BookingStatus::Completed`): zajmuje termin, osiągalny z zapisanej i potwierdzonej, końcowy (`Calendar\BookingStatusChange`).
 - Czas potwierdzenia rezerwacji: kolumna `resource_bookings.confirmed_at` (`ResourceBooking::CONFIRMED_AT`, migracja z synchronizacją triggerów historii), ustawiana przez `Calendar\BookingStatusChange` przy potwierdzeniu obok `confirmed_by`.
 - Polecenie po wdrożeniu w konfiguracji projektu: `DEPLOY_RELOAD` (serwer) i `PREPRODUCTION_RELOAD` (przed-produkcja), np. przeładowanie PHP-FPM, żeby opcache nie serwował starego kodu i starego cache tras (`docs/deploy.md`, „Cache i opcache”).

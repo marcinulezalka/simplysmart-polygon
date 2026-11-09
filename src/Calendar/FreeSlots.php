@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Enums\BookingStatus;
+use Simplysmart\Polygon\Enums\RoomTakenBy;
 use Simplysmart\Polygon\Models\Organization;
 use Simplysmart\Polygon\Models\OrganizationResource;
 use Simplysmart\Polygon\Models\ResourceBooking;
@@ -131,6 +132,105 @@ final readonly class FreeSlots
         $time = $at->format('H:i:s');
 
         return $this->schedules($unit, $performer, $at)->first(static fn(ResourceSchedule $schedule): bool => $schedule->starts_at <= $time && $schedule->ends_at > $time);
+    }
+
+    /**
+     * Blok grafiku ze slotami wykonawcy w jednostce, który kończy się o $at (dzień tygodnia, okres ważności, cykl tygodni
+     * i najem jak przy wolnych slotach) — koniec bloku to miejsce rezerwacji nadliczbowej (BookSlot::bookOverflow()).
+     * Grafik na żądanie (`fills_gaps`) i bez slotów — pomijany.
+     */
+    public function scheduleEndingAt(Organization $unit, ZoneAccount $performer, CarbonImmutable $at): ?ResourceSchedule
+    {
+        if ($at->second !== 0) {
+            return null;
+        }
+
+        $time = $at->format('H:i');
+
+        return $this->schedules($unit, $performer, $at)->first(static fn(ResourceSchedule $schedule): bool => ! $schedule->fills_gaps && $schedule->slot_minutes !== null && $schedule->slot_minutes > 0 && $schedule->to() === $time);
+    }
+
+    /**
+     * Czy zasób bloku grafiku jest dostępny przez jeden slot po jego końcu — tam trafia rezerwacja nadliczbowa
+     * (BookSlot::bookOverflow()). Null — dostępny; RoomTaken — pierwsza kolizja w oknie [koniec, koniec + slot): inny
+     * grafik zasobu (bez wypełniających), okno najmu na wyłączność innej jednostki, brak najmu jednostki na zasobie
+     * wynajętym albo rezerwacja zajmująca termin innego wykonawcy na zasobie.
+     */
+    public function roomTakenAfter(Organization $unit, ResourceSchedule $schedule, CarbonImmutable $day): ?RoomTaken
+    {
+        $day = $day->startOfDay();
+        $start = $day->setTimeFromTimeString($schedule->ends_at);
+        $end = $start->addMinutes(max(1, (int) $schedule->slot_minutes));
+        $taken = [];
+        $query = ResourceSchedule::query();
+        $query->where(ColumnNames::IS_ACTIVE, true);
+        $query->where(OrganizationResource::FOREIGN_KEY, $schedule->resource_id);
+        $query->where(ResourceSchedule::WEEKDAY, $day->dayOfWeekIso);
+        $query->where(ResourceSchedule::FILLS_GAPS, false);
+        $query->whereKeyNot($schedule->id);
+
+        foreach ($query->get() as $other) {
+            $from = $day->setTimeFromTimeString($other->starts_at);
+
+            if ($other->appliesOn($day) && self::within([[$from, $day->setTimeFromTimeString($other->ends_at)]], $start, $end)) {
+                $performer = $other->performer;
+                $taken[] = new RoomTaken($from->max($start), RoomTakenBy::Schedule, $performer instanceof ZoneAccount ? $performer : null, $other->organization);
+            }
+        }
+
+        $lineage = $this->resources->lineage($unit);
+
+        foreach ($this->leases->overlapping($schedule->resource_id, $day, $day) as $lease) {
+            if (! $lease->isExclusive() || in_array($lease->cooperation_organization_id, $lineage, true) || ! $lease->occursOn($day)) {
+                continue;
+            }
+
+            $windows = $lease->leaseWindows();
+            $intervals = $windows->isWhole() ? [[$day, $day->addDay()]] : [];
+
+            foreach ($windows->windows as [$weekday, $from, $to]) {
+                if ($weekday === $day->dayOfWeekIso) {
+                    $intervals[] = [$day->setTimeFromTimeString($from), $day->setTimeFromTimeString($to)];
+                }
+            }
+
+            foreach ($intervals as [$from, $to]) {
+                if (self::within([[$from, $to]], $start, $end)) {
+                    $taken[] = new RoomTaken($from->max($start), RoomTakenBy::Lease, null, $lease->cooperation);
+                }
+            }
+        }
+
+        if (! $this->resources->owns($unit, $schedule->resource_id)) {
+            $leased = false;
+
+            foreach ($this->leases->ofCooperation($unit, $schedule->resource_id) as $lease) {
+                if ($lease->occursOn($day) && $lease->leaseWindows()->covers($schedule->weekday, $start->format('H:i'), $end->format('H:i'))) {
+                    $leased = true;
+                }
+            }
+
+            if (! $leased) {
+                $taken[] = new RoomTaken($start, RoomTakenBy::NoLease);
+            }
+        }
+
+        $bookings = ResourceBooking::query();
+        $bookings->whereIn(ColumnNames::STATUS, BookingStatus::occupyingValues());
+        $bookings->where(OrganizationResource::FOREIGN_KEY, $schedule->resource_id);
+        $bookings->where(ResourceBooking::STARTS_AT, '<', $end);
+        $bookings->where(ResourceBooking::ENDS_AT, '>', $start);
+
+        foreach ($bookings->get() as $booking) {
+            if ($booking->performer_type !== $schedule->performer_type || $booking->performer_id !== $schedule->performer_id) {
+                $performer = $booking->performer;
+                $taken[] = new RoomTaken($booking->starts_at->max($start), RoomTakenBy::Booking, $performer instanceof ZoneAccount ? $performer : null, $booking->organization);
+            }
+        }
+
+        usort($taken, static fn(RoomTaken $a, RoomTaken $b): int => $a->from <=> $b->from);
+
+        return $taken[0] ?? null;
     }
 
     /**

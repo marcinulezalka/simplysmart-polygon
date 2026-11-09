@@ -356,6 +356,15 @@ przed zapisem grafiku.
 - **Rezerwacja** (`Calendar\BookSlot`): blokuje (`FOR UPDATE`) wiersz zasobu, potem wykonawcy i dopiero wtedy sprawdza
   slot — równoległa rezerwacja tego terminu czeka na blokadę i kończy się `SlotUnavailable`. Wywołana w transakcji
   paczki strefy staje się jej częścią (rezerwacja i dane dziedzinowe razem albo wcale).
+- **Rezerwacja nadliczbowa** (`BookSlot::bookOverflow()`): ponad wolne sloty, na końcu bloku grafiku ze slotami
+  kończącego się o podanej godzinie (`FreeSlots::scheduleEndingAt()` — dzień, ważność, cykl i najem jak przy wolnych
+  terminach; blok nie może być miniony). Ma zerową długość (`starts_at` = `ends_at` = koniec bloku), więc nie zajmuje
+  slotu ani pierwszego slotu następnego bloku; `json_attributes.overflow` (`ResourceBooking::OVERFLOW`,
+  `isOverflow()`) ją odróżnia. Czy wykonawca przyjmuje nadliczbowo — decyduje paczka strefy. Blokady jak przy `book()`.
+  **Dostępność zasobu po bloku** (`FreeSlots::roomTakenAfter()`): pierwsza kolizja w oknie jednego slotu po końcu bloku
+  (`Calendar\RoomTaken` — od kiedy, powód `Enums\RoomTakenBy`, wykonawca i jednostka): inny grafik zasobu (bez
+  wypełniających), okno najmu na wyłączność innej jednostki, brak najmu jednostki na zasobie wynajętym, rezerwacja
+  zajmująca termin innego wykonawcy; null — zasób dostępny. Czy kolizja wyłącza zapis nadliczbowy — decyduje paczka strefy.
 - **Stan** (`Calendar\BookingStatusChange`): zapisana → potwierdzona, wykonana, odwołana, nieobecność; potwierdzona →
   wykonana, odwołana, nieobecność; wykonana, odwołana i nieobecność są końcowe; odwołana zwalnia termin. **Lista dnia**: `Calendar\DayBookings` (jednostki, dzień, opcjonalnie rodzaj).
 - **Jednostki** (`Queries\Organizations\OrganizationUnits`): organizacja i jej aktywne jednostki podrzędne bez hero —
