@@ -80,7 +80,10 @@ urządzenia (bez kodu, PIN nadal wymagany), reset PIN-u kodem na zapasowy adres,
 formularz (419) wraca do logowania. Kroki: `polygon.auth.steps` (`Contracts\SignInStep`).
 
 Konto (`<strefa>.account.*`, `/<slug>/account`): `security`, `lock`/`unlock` (blokada ekranu), zmiana PIN-u kodem,
-zapasowy e-mail, zaufane urządzenia, `security/sessions` (wyloguj wszędzie).
+reset PIN-u (`account.pin.reset`, `DELETE account/pin`, pole `reset_pin` = obecny PIN, `Auth\ResetOwnPin`: PIN usunięty,
+wszystkie sesje i zaufane urządzenia unieważnione, bieżąca sesja wylogowana, potwierdzenie e-mailem (`pin-reset`), logowanie z komunikatem
+`account.pin_reset_done`; nowy PIN przy następnym logowaniu kodem — `pin_setup`; teksty opisu procesu dla widoku:
+`account.pin_reset_*`), zapasowy e-mail, zaufane urządzenia, `security/sessions` (wyloguj wszędzie).
 
 ## Widoki strefy (`views`)
 
@@ -107,6 +110,7 @@ Szablony `<prefiks>.<szablon>` (HTML, wymagany) i opcjonalnie `<prefiks>.text.<s
 | `login-code`, `security-code` | `accountName`, `code`, `validForMinutes` (+ `purpose` w `security-code`) |
 | `account-locked` | `accountName`, `lockedUntil` |
 | `pin-changed` | `accountName`, `changedAt` |
+| `pin-reset` | `accountName`, `resetAt` (reset PIN-u przez właściciela, teksty `emails.pin_reset.*`) |
 | `new-trusted-device` | `accountName`, `deviceName`, `registeredAt`, `devicesUrl` |
 | `device-token-reused` | `accountName` |
 

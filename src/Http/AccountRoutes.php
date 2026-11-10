@@ -38,6 +38,9 @@ final readonly class AccountRoutes
 
     public const string PIN_UPDATE = 'account.pin.update';
 
+    /** Reset PIN-u obecnym PIN-em i wylogowanie (DELETE, PinChangeController::reset()); nowy PIN przy logowaniu. */
+    public const string PIN_RESET = 'account.pin.reset';
+
     /** Zapasowy adres e-mail: kod na nowy adres, potwierdzenie, usunięcie (sekcja `#recovery`). */
     public const string RECOVERY_EMAIL_CODE = 'account.recovery-email.code';
 
@@ -100,6 +103,7 @@ final readonly class AccountRoutes
             $this->router->get('pin', [SecurityController::class, 'section'])->defaults('section', self::SECTION_PIN)->name(self::PIN);
             $this->router->post('pin/code', [PinChangeController::class, 'sendCode'])->middleware($throttle)->name(self::PIN_CODE);
             $this->router->put('pin', [PinChangeController::class, 'update'])->middleware($throttle)->name(self::PIN_UPDATE);
+            $this->router->delete('pin', [PinChangeController::class, 'reset'])->middleware($throttle)->name(self::PIN_RESET);
             $this->router->post('recovery-email/code', [RecoveryEmailController::class, 'sendCode'])->middleware($throttle)->name(self::RECOVERY_EMAIL_CODE);
             $this->router->put('recovery-email', [RecoveryEmailController::class, 'update'])->middleware($throttle)->name(self::RECOVERY_EMAIL_UPDATE);
             $this->router->delete('recovery-email', [RecoveryEmailController::class, 'destroy'])->middleware($throttle)->name(self::RECOVERY_EMAIL_DESTROY);

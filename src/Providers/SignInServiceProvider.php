@@ -33,10 +33,12 @@ use Simplysmart\Polygon\Auth\EloquentAccountStore;
 use Simplysmart\Polygon\Auth\Events\AccountAccessRevoked;
 use Simplysmart\Polygon\Auth\Events\AccountLocked;
 use Simplysmart\Polygon\Auth\Events\PinChanged;
+use Simplysmart\Polygon\Auth\Events\PinReset;
 use Simplysmart\Polygon\Auth\Events\TrustedDeviceRegistered;
 use Simplysmart\Polygon\Auth\Listeners\RevokeTrustedDevicesOfAccount;
 use Simplysmart\Polygon\Auth\Listeners\SendAccountLockedMail;
 use Simplysmart\Polygon\Auth\Listeners\SendPinChangedMail;
+use Simplysmart\Polygon\Auth\Listeners\SendPinResetMail;
 use Simplysmart\Polygon\Auth\Listeners\SendTrustedDeviceMails;
 use Simplysmart\Polygon\Auth\SignIn\EloquentLoginChallengeRepository;
 use Simplysmart\Polygon\Auth\SignIn\LoginCodeGenerator;
@@ -73,6 +75,7 @@ final class SignInServiceProvider extends ServiceProvider
     {
         $events->listen(AccountLocked::class, SendAccountLockedMail::class);
         $events->listen(PinChanged::class, SendPinChangedMail::class);
+        $events->listen(PinReset::class, SendPinResetMail::class);
         $events->listen([AccountAccessRevoked::class, AccountLocked::class], RevokeTrustedDevicesOfAccount::class);
         $events->listen([TrustedDeviceRegistered::class, AccountAccessRevoked::class], SendTrustedDeviceMails::class);
 

@@ -13,24 +13,28 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Http\Controllers\Account;
 
-use Simplysmart\Polygon\Http\StatusMessage;
-use Simplysmart\Polygon\Contracts\CurrentAccount;
-use Simplysmart\Polygon\Models\ZoneAccount;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Redirector;
+use Illuminate\Validation\ValidationException;
 use Simplysmart\Polygon\Auth\ChangePin;
 use Simplysmart\Polygon\Auth\PinRules;
+use Simplysmart\Polygon\Auth\ResetOwnPin;
 use Simplysmart\Polygon\Auth\SignIn\IssueSignInCode;
 use Simplysmart\Polygon\Auth\SignIn\LoginAttemptLimiter;
+use Simplysmart\Polygon\Auth\SignIn\SignOut;
 use Simplysmart\Polygon\Auth\SignInLimit;
+use Simplysmart\Polygon\Contracts\CurrentAccount;
 use Simplysmart\Polygon\Contracts\CurrentZone;
 use Simplysmart\Polygon\Http\AccountRoutes;
+use Simplysmart\Polygon\Http\StatusMessage;
+use Simplysmart\Polygon\Models\ZoneAccount;
+use Simplysmart\Polygon\Zones\ZoneRedirects;
 
 /**
  * Zmiana PIN-u zalogowanego konta (formularz na stronie bezpieczeństwa, SecurityController): wysłanie kodu na adres
- * konta i zapis nowego PIN-u.
+ * konta i zapis nowego PIN-u albo reset PIN-u obecnym PIN-em z wylogowaniem (nowy PIN przy następnym logowaniu).
  */
 final readonly class PinChangeController
 {
@@ -68,6 +72,23 @@ final readonly class PinChangeController
         );
 
         return $this->back()->with(StatusMessage::KEY, text('account.pin_changed'));
+    }
+
+    /**
+     * Reset PIN-u: obecny PIN w polu ResetOwnPin::FIELD, potem PIN usunięty, wszystkie sesje i zaufane urządzenia
+     * unieważnione, bieżąca sesja wylogowana; powrót do logowania z komunikatem o dalszych krokach.
+     *
+     * @throws ValidationException Gdy PIN jest błędny albo limit prób wyczerpany.
+     */
+    public function reset(Request $request, ResetOwnPin $reset, SignOut $signOut): RedirectResponse
+    {
+        $validated = $request->validate([ResetOwnPin::FIELD => PinRules::forEnteredPin()]);
+        $pin = $validated[ResetOwnPin::FIELD];
+
+        $reset->handle($this->account(), is_string($pin) ? $pin : '', $request);
+        $signOut->handle($request);
+
+        return $this->redirect->route($this->zone->get()->routeName(ZoneRedirects::LOGIN_ROUTE))->with(StatusMessage::KEY, text('account.pin_reset_done'));
     }
 
     private function account(): ZoneAccount

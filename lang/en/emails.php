@@ -53,6 +53,14 @@ return [
         'warning' => 'If this was not you, contact your administrator immediately.',
     ],
 
+    'pin_reset' => [
+        'subject' => 'Your PIN was reset',
+        'greeting' => 'Hello, :name!',
+        'body' => 'The PIN of your account was reset on :at. We signed out all sessions and revoked remembered devices.',
+        'next' => 'At your next sign-in, enter your e-mail address and the code we send you, then set a new PIN.',
+        'warning' => 'If this was not you, contact your administrator immediately.',
+    ],
+
     'new_trusted_device' => [
         'subject' => 'New trusted device',
         'greeting' => 'Hello, :name!',

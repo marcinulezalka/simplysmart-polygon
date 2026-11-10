@@ -6,6 +6,7 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Added
 
+- Reset PIN-u przez właściciela konta (`Auth\ResetOwnPin`, trasa `<strefa>.account.pin.reset`): po obecnym PIN-ie (liczonym do blokady, wspólny limit ze zmianą PIN-u) PIN zostaje usunięty, wszystkie sesje i zaufane urządzenia unieważnione (`AccessRevocationReason::PinResetByOwner`), a konto wylogowane z komunikatem i potwierdzeniem e-mailem (`Mail\PinResetMail`, szablon strefy `pin-reset`, teksty `emails.pin_reset.*`); nowy PIN ustawia przy następnym logowaniu kodem. Teksty opisu procesu `account.pin_reset_*`.
 - Domyślna organizacja konta po zalogowaniu: zapisana per osoba w `json_default_settings.organization` konta strefy (`Organizations\DefaultOrganization`). Osoba ustawia ją sama (trasa `<strefa>.account.organization.default`, `OrganizationContext::$default` dla przełącznika) albo plik instalacji (`accounts[].defaults.organization`, tylko gdy konto nie ma jeszcze własnego wyboru). Organizacja, która przestała być kontekstem konta, jest pomijana — wtedy jak dotąd najstarsze członkostwo.
 
 ## [0.12.0] - 2026-11-10

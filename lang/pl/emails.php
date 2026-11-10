@@ -53,6 +53,14 @@ return [
         'warning' => 'Jeśli to nie Ty, natychmiast skontaktuj się z administratorem.',
     ],
 
+    'pin_reset' => [
+        'subject' => 'PIN został zresetowany',
+        'greeting' => 'Dzień dobry, :name!',
+        'body' => 'PIN do Twojego konta zresetowano :at. Wylogowaliśmy wszystkie sesje i odwołaliśmy zapamiętane urządzenia.',
+        'next' => 'Przy następnym logowaniu podaj swój adres e-mail i kod, który od nas otrzymasz, a potem ustaw nowy PIN.',
+        'warning' => 'Jeśli to nie Ty, natychmiast skontaktuj się z administratorem.',
+    ],
+
     'new_trusted_device' => [
         'subject' => 'Nowe zaufane urządzenie',
         'greeting' => 'Dzień dobry, :name!',

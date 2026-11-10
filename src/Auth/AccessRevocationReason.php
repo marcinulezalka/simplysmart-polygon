@@ -27,6 +27,9 @@ enum AccessRevocationReason: string
     /** Właściciel usunął zapomniany PIN kodem z zapasowego adresu e-mail; nowy ustawi przy logowaniu. */
     case PinResetWithRecoveryEmail = 'pin_reset_recovery_email';
 
+    /** Właściciel usunął PIN na stronie „Bezpieczeństwo” (obecnym PIN-em); nowy ustawi przy logowaniu. */
+    case PinResetByOwner = 'pin_reset_owner';
+
     /** Administrator zdjął blokadę po błędnych PIN-ach. */
     case Unlocked = 'unlocked';
 
