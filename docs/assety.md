@@ -35,3 +35,9 @@ Skrypty projektu wołają orkiestrator `node vendor/simplysmart/polygon/bin/asse
 - Każda strefa z widokami ma własne arkusze tokenów: `resources/scss/<strefa>/theme.scss` (jasny i ciemny, `auto`
   przez media query), `<strefa>/wcag/theme.scss` i `<strefa>/wcag-contrast/theme.scss`, ładowane w tej kolejności po
   arkuszu komponentów. Komponenty używają tylko tokenów strefy.
+- **Prefiks paczki:** każda paczka z widokami ma własny, krótki prefiks klas i zmiennych CSS (`.<prefiks>-*`,
+  `--<prefiks>-*`, znaczniki skryptów `data-<prefiks>-*`), różny od prefiksów innych paczek, więc arkusze stref się
+  nie nadpisują; selektory elementów (`body`, `h1`, `a`) tylko w arkuszu strefy, która ładuje go na własnych stronach.
+- **Wymagania WCAG** (kontrast tekstu 4.5:1 / 7:1, obramowania kontrolek 3:1, widoczny fokus) obowiązują w motywach
+  `wcag` i `wcag-contrast`; `light` i `dark` nie muszą ich w pełni spełniać. W trybach WCAG stanów treści nie
+  wyszarza się przezroczystością (obniża kontrast) — tylko elementy nieaktywne.
