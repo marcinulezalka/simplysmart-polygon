@@ -45,6 +45,12 @@ final class PolygonConfig
     /** Config strefy `polygon` (Providers\PolygonZoneServiceProvider). */
     public const string ZONE = self::KEY . '.zone';
 
+    /** Zestawy ikon Iconify dozwolone do wyboru przez użytkownika (`POLYGON_ICON_SETS`; Icons\IconCatalog). */
+    public const string ICON_SETS = self::KEY . '.icons.sets';
+
+    /** Adres API Iconify (`POLYGON_ICONIFY_API`; Icons\IconCatalog). */
+    public const string ICON_API = self::KEY . '.icons.api';
+
     /** Pliki instalacji projektu (`POLYGON_INSTALL_FILES`). */
     public const string INSTALL_FILES = self::KEY . '.install.files';
 }

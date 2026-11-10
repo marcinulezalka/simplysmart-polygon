@@ -15,7 +15,8 @@
  * Paczka z assetami ma w katalogu głównym `vite.config.js` eksportujący zwykły obiekt konfiguracji Vite (bez importu
  * `vite` — paczki leżą poza projektem i nie widzą jego `node_modules`), np.
  * `export default { build: { rollupOptions: { input: ['resources/scss/app.scss'] } } }`. Orkiestrator znajduje paczki
- * w `vendor/simplysmart/*`, używa Vite (i preprocesorów, np. `sass`) zainstalowanych raz w projekcie i buduje każdą do
+ * w `vendor/simplysmart/*`, używa Vite (i preprocesorów, np. `sass`) zainstalowanych raz w projekcie — tak samo pakietów
+ * npm importowanych w JS paczki (projectModules, np. `iconify-icon`) — i buduje każdą do
  * jej `public/build/` z `manifest.json` (Assets\PackageAssets, adresy `/vendor/<paczka>/build/`), a na końcu projekt
  * jego własnym `vite.config.js`. `build`: kolejno, błąd dowolnego builda kończy proces kodem 1. `dev`: paczki
  * w trybie watch (przebudowa przy zmianie) równolegle z serwerem dev Vite projektu.
@@ -63,6 +64,22 @@ function packages() {
         .map((name) => ({ name, root: realpathSync(join(PACKAGES, name)) }));
 }
 
+/**
+ * Pakiety npm dla paczek: gołe importy (`import 'iconify-icon'`) z plików paczki rozwiązywane od katalogu projektu,
+ * więc paczka używa zależności z `package.json` projektu (jak Vite i `sass`), choć leży poza nim i nie widzi jego
+ * `node_modules`. Ścieżki względne, bezwzględne i wirtualne moduły zostają bez zmian.
+ */
+const projectModules = {
+    name: 'polygon:project-modules',
+    async resolveId(source, importer, options) {
+        if (!importer || /^[./\0]/.test(source) || source.includes(':')) {
+            return null;
+        }
+
+        return this.resolve(source, join(project, 'package.json'), { ...options, skipSelf: true });
+    },
+};
+
 /** Konfiguracja Vite paczki scalona z ustawieniami builda do jej public/build. */
 async function packageConfig(vite, { name, root }, watch) {
     const own = (await import(pathToFileURL(join(root, CONFIG)).href + `?t=${Date.now()}`)).default ?? {};
@@ -72,6 +89,7 @@ async function packageConfig(vite, { name, root }, watch) {
         root,
         base: `/vendor/${name}/build/`,
         logLevel: 'info',
+        plugins: [projectModules],
         build: {
             outDir: join(root, 'public', 'build'),
             emptyOutDir: true,

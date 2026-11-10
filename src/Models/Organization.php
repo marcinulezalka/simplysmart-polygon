@@ -15,6 +15,7 @@ namespace Simplysmart\Polygon\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
+use Simplysmart\Polygon\Icons\IconifyIcon;
 use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Models\Dictionaries\Country;
 use Simplysmart\Polygon\Models\Relations\BelongsToParentOrganization;
@@ -195,14 +196,15 @@ final class Organization extends DataModel
     }
 
     /**
-     * Ikona organizacji z ICONS zapisana w `json_attributes.icon`, a bez niej (albo spoza listy) $fallback.
+     * Ikona organizacji zapisana w `json_attributes.icon` — nazwa z ICONS albo dowolna ikona Iconify „zestaw:ikona”
+     * (Icons\IconifyIcon, wybór użytkownika walidowany przez Rules\IconName); bez niej (albo niepoprawna) $fallback.
      */
     public function icon(string $fallback = self::ICONS[0]): string
     {
         $attributes = $this->getAttribute(ColumnNames::JSON_ATTRIBUTES);
         $icon = is_array($attributes) ? ($attributes[self::ICON_ATTRIBUTE] ?? null) : null;
 
-        return is_string($icon) && in_array($icon, self::ICONS, true) ? $icon : $fallback;
+        return is_string($icon) && (in_array($icon, self::ICONS, true) || IconifyIcon::tryFrom($icon) !== null) ? $icon : $fallback;
     }
 
     /**

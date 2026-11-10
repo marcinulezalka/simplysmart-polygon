@@ -14,11 +14,13 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon;
 
 use Illuminate\Support\ServiceProvider;
+use Simplysmart\Polygon\Console\IconPngCommand;
 use Simplysmart\Polygon\Console\CreateAccountCommand;
 use Simplysmart\Polygon\Console\ExportTranslationsCommand;
 use Simplysmart\Polygon\Console\ImportTranslationsCommand;
 use Simplysmart\Polygon\Console\InstallCommand;
 use Simplysmart\Polygon\Console\RepairOverflowQueue;
+use Simplysmart\Polygon\Console\SubsetIconsCommand;
 use Simplysmart\Polygon\Console\SeedLocalization;
 use Simplysmart\Polygon\Console\SeedOrganizations;
 use Simplysmart\Polygon\Providers\AccountsServiceProvider;
@@ -67,6 +69,8 @@ final class PolygonServiceProvider extends ServiceProvider
         ExportTranslationsCommand::class,
         ImportTranslationsCommand::class,
         RepairOverflowQueue::class,
+        SubsetIconsCommand::class,
+        IconPngCommand::class,
     ];
 
     public function register(): void

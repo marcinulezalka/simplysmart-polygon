@@ -140,6 +140,22 @@ return [
 
     ],
 
+    'icons' => [
+
+        /*
+         * Zestawy ikon Iconify (prefiksy, docs/ikony.md), z których użytkownik może wybrać ikonę elementu po nazwie
+         * „zestaw:ikona” (Rules\IconName) — rozdzielone przecinkami.
+         */
+        'sets' => array_values(array_filter(array_map(trim(...), explode(',', $envString('POLYGON_ICON_SETS', 'lucide,fluent,tabler,healthicons'))))),
+
+        /*
+         * API Iconify: sprawdzanie, czy wybrana ikona istnieje (wynik w cache), wycinki zestawów do lokalnych plików JSON
+         * i SVG do generowania PNG (komendy polygon:icons:*). Przeglądarka pobiera z niego ikony wybrane przez użytkownika.
+         */
+        'api' => rtrim($envString('POLYGON_ICONIFY_API', 'https://api.iconify.design'), '/'),
+
+    ],
+
     'install' => [
 
         /*
