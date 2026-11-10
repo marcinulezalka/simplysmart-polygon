@@ -29,6 +29,8 @@ final readonly class InstallAccount
      * @param list<string> $organizations Klucze organizacji z plików instalacji, których konto jest członkiem (personel).
      * @param array<string, list<string>> $organizationRoles Klucz organizacji => role konta tylko w niej.
      * @param array<string, mixed> $attributes Atrybuty konta do `json_attributes` (np. identyfikatory zawodowe).
+     * @param string|null $defaultOrganization Klucz organizacji z $organizations — domyślny kontekst konta po zalogowaniu
+     *                                         (`defaults.organization`, Organizations\DefaultOrganization).
      */
     public function __construct(
         public string $email,
@@ -38,6 +40,7 @@ final readonly class InstallAccount
         public array $organizations = [],
         public array $organizationRoles = [],
         public array $attributes = [],
+        public ?string $defaultOrganization = null,
     ) {}
 
     /**

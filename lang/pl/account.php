@@ -65,6 +65,9 @@ return [
         'switched' => 'Pracujesz teraz w organizacji :name.',
         'unavailable' => 'Ta organizacja nie jest dostępna dla Twojego konta.',
         'none' => 'Twoje konto nie należy jeszcze do żadnej organizacji.',
+        'default' => 'Domyślna po zalogowaniu',
+        'make_default' => 'Ustaw jako domyślną',
+        'default_saved' => 'Po zalogowaniu będziesz pracować w organizacji :name.',
     ],
 
 ];

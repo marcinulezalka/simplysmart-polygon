@@ -118,9 +118,9 @@ własny kontekst):
 
 | Metoda | Wynik |
 | --- | --- |
-| `get()`, `id()` | bieżąca organizacja; bez wyboru (albo gdy wybrana przestała być dostępna) domyślna, zapisana w sesji: hero — organizacja hero, pozostali — najstarsze członkostwo; gość i konto bez organizacji — null |
+| `get()`, `id()` | bieżąca organizacja; bez wyboru (albo gdy wybrana przestała być dostępna) domyślna, zapisana w sesji: domyślna organizacja konta (`json_default_settings.organization`), o ile nadal jest jego kontekstem, inaczej hero — organizacja hero, pozostali — najstarsze członkostwo; gość i konto bez organizacji — null |
 | `visible()` | bieżąca organizacja do pokazania we frontendzie (organizacja hero → null) |
-| `contexts()` | `list<Organizations\OrganizationContext>` (organizacja, `current`) do przełącznika, bez organizacji hero |
+| `contexts()` | `list<Organizations\OrganizationContext>` (organizacja, `current`, `default`) do przełącznika, bez organizacji hero |
 | `isHero()` | czy konto jest członkiem organizacji hero |
 | `choose()` | ustawia kontekst; false dla organizacji spoza kontekstów konta |
 
@@ -131,6 +131,13 @@ własny kontekst):
   `organization` = token organizacji, `Http\Controllers\Account\OrganizationSwitchController`); potem pulpit z
   komunikatem `status` (`account.organization.switched`), a organizacja spoza kontekstów to błąd pola
   (`account.organization.unavailable`). Teksty przełącznika: `account.organization.*`.
+- **Domyślna organizacja po zalogowaniu** (`Organizations\DefaultOrganization`): zapisana per konto w
+  `json_default_settings.organization` (id organizacji; inne klucze kolumny zostają). Ustawia ją sama osoba —
+  formularz POST na `<strefa>.account.organization.default` (`account/organization/default`, to samo pole
+  `organization`, `Http\Controllers\Account\OrganizationDefaultController`; powrót na poprzednią stronę z komunikatem
+  `account.organization.default_saved`, bieżący kontekst się nie zmienia) — albo plik instalacji
+  (`accounts[].defaults.organization`, docs/instalacja.md). Działa od następnej sesji; organizacja, która przestała być
+  kontekstem konta, jest pomijana.
 - Kontekst wybiera też uprawnienia: role i uprawnienia konta liczą się w bieżącej organizacji (zespół spatie =
   organizacja, `Http\Middleware\UseOrganizationPermissions`; docs/baza-danych.md §15). Hero i konto bez organizacji
   mają role globalne.

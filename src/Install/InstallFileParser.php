@@ -14,8 +14,9 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Install;
 
 use JsonException;
-use Simplysmart\Polygon\Permissions\RequiredRole;
 use Simplysmart\Polygon\Contracts\ZoneRegistry;
+use Simplysmart\Polygon\Organizations\DefaultOrganization;
+use Simplysmart\Polygon\Permissions\RequiredRole;
 
 /**
  * Czyta i waliduje plik instalacji, zanim cokolwiek trafi do bazy (docs/instalacja.md):
@@ -246,10 +247,40 @@ final readonly class InstallFileParser
                 array_keys($organizationRoles),
                 array_filter($organizationRoles, static fn(array $roles): bool => $roles !== []),
                 $this->values->attributes($path, $account, 'attributes', $where),
+                $this->defaultOrganization($path, $account['defaults'] ?? [], array_keys($organizationRoles), "{$where}.defaults"),
             );
         }
 
         return $result;
+    }
+
+    /**
+     * Klucz domyślnej organizacji konta z `defaults` (obiekt; dziś tylko `organization` — klucz jednej z organizacji
+     * konta) albo null; inne pola, nieznany albo obcy klucz to błąd.
+     *
+     * @param list<string> $organizations Klucze organizacji konta z `organizations`.
+     *
+     * @throws InvalidInstallFile
+     */
+    private function defaultOrganization(string $path, mixed $defaults, array $organizations, string $where): ?string
+    {
+        if (! is_array($defaults) || ($defaults !== [] && array_is_list($defaults))) {
+            throw InvalidInstallFile::in($path, "{$where} must be an object.");
+        }
+
+        $unknown = array_diff(array_map(strval(...), array_keys($defaults)), [DefaultOrganization::SETTING]);
+
+        if ($unknown !== []) {
+            throw InvalidInstallFile::in($path, "{$where} has unknown fields: " . implode(', ', $unknown) . '.');
+        }
+
+        $organization = $defaults[DefaultOrganization::SETTING] ?? null;
+
+        if ($organization !== null && (! is_string($organization) || ! in_array($organization, $organizations, true))) {
+            throw InvalidInstallFile::in($path, "{$where}." . DefaultOrganization::SETTING . ' must be the key of one of the account organizations.');
+        }
+
+        return $organization;
     }
 
     /**

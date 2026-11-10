@@ -16,12 +16,14 @@ namespace Simplysmart\Polygon\Organizations;
 use Simplysmart\Polygon\Models\Organization;
 
 /**
- * Pozycja przełącznika organizacji konta (Contracts\CurrentOrganization::contexts()): organizacja i czy jest bieżąca.
+ * Pozycja przełącznika organizacji konta (Contracts\CurrentOrganization::contexts()): organizacja, czy jest bieżąca
+ * i czy jest domyślną organizacją konta po zalogowaniu (DefaultOrganization).
  */
 final readonly class OrganizationContext
 {
     public function __construct(
         public Organization $organization,
         public bool $current,
+        public bool $default = false,
     ) {}
 }

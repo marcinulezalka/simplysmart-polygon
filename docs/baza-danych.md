@@ -176,7 +176,7 @@ liczy go `DataModel` przy zapisie.
 | Kolumna | Przeznaczenie |
 | --- | --- |
 | `json_attributes` | dodatkowe atrybuty bez własnej kolumny |
-| `json_default_settings` | wartości domyślne dla procesów aplikacji (`defaultSetting()`), nie stałe w kodzie |
+| `json_default_settings` | wartości domyślne dla procesów aplikacji (`defaultSetting()`), nie stałe w kodzie; w kontach stref — ustawienia osoby (np. `organization`, domyślny kontekst: docs/strefy.md) |
 | `json_tags` | lista tagów rekordu (wyszukiwanie `JSON_CONTAINS`) |
 | `json_i18n` | tłumaczenia krótkich słowników (§7) |
 | `json_migrations` | metadane integracji |

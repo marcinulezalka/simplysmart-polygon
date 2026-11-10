@@ -18,8 +18,9 @@ use Simplysmart\Polygon\Organizations\OrganizationContext;
 
 /**
  * Organizacja, w której kontekście pracuje konto zalogowane w strefie żądania (docs/strefy.md, „Kontekst organizacji”).
- * Wybór trzyma sesja strefy; bez wyboru (albo gdy wybrana organizacja przestała być dostępna) — domyślna: organizacja
- * hero dla hero, inaczej najstarsze członkostwo. Organizacja hero jest kontekstem, ale frontend stref jej nie pokazuje.
+ * Wybór trzyma sesja strefy; bez wyboru (albo gdy wybrana organizacja przestała być dostępna) — domyślna: zapisana
+ * domyślna organizacja konta (Organizations\DefaultOrganization), o ile nadal jest kontekstem, inaczej organizacja hero
+ * dla hero, a dla reszty najstarsze członkostwo. Organizacja hero jest kontekstem, ale frontend stref jej nie pokazuje.
  */
 interface CurrentOrganization
 {

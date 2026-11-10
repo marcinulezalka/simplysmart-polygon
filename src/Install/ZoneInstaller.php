@@ -21,6 +21,7 @@ use Simplysmart\Polygon\Models\Organization;
 use Simplysmart\Polygon\Models\Permissions\Permission;
 use Simplysmart\Polygon\Models\Permissions\Role;
 use Simplysmart\Polygon\Models\ZoneAccount;
+use Simplysmart\Polygon\Organizations\DefaultOrganization;
 use Simplysmart\Polygon\Organizations\OrganizationMembership;
 use Simplysmart\Polygon\Permissions\OrganizationRoles;
 use Simplysmart\Polygon\Permissions\PermissionTables;
@@ -47,6 +48,7 @@ final readonly class ZoneInstaller
         private OrganizationMembership $membership,
         private OrganizationRoles $roles,
         private InstallAttributes $attributes,
+        private DefaultOrganization $default,
     ) {}
 
     /**
@@ -91,7 +93,8 @@ final readonly class ZoneInstaller
 
     /**
      * Konto staje się członkiem (personelem) organizacji z pliku i dostaje w każdej z nich swoje role; członkostw i ról
-     * spoza plików instalacja nie odbiera.
+     * spoza plików instalacja nie odbiera. Domyślna organizacja z pliku (`defaults.organization`) trafia do konta tylko,
+     * gdy nie ma jeszcze własnej — wybór zapisany przez osobę zostaje przy kolejnych instalacjach.
      *
      * @param array<string, Organization> $installed
      */
@@ -101,6 +104,10 @@ final readonly class ZoneInstaller
             $organization = $installed[$key];
             $this->membership->add($account, $organization);
             $this->roles->assignIn($account, $definition->rolesIn($key), $organization);
+        }
+
+        if ($definition->defaultOrganization !== null && $this->default->id($account) === null) {
+            $this->default->save($account, $installed[$definition->defaultOrganization]);
         }
     }
 

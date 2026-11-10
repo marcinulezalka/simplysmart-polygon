@@ -23,9 +23,10 @@ use Simplysmart\Polygon\Queries\Organizations\ActiveMemberships;
 
 /**
  * Bieżąca organizacja zapamiętana w sesji strefy żądania (każda strefa ma osobną sesję, więc i osobny kontekst):
- * wybór konta, o ile nadal jest jego kontekstem (ActiveMemberships), inaczej domyślny — pierwszy kontekst konta
- * (hero: organizacja hero; pozostali: najstarsze członkostwo) — zapisany w sesji, więc nowe członkostwo nadane
- * w trakcie sesji nie zmienia go samo.
+ * wybór konta, o ile nadal jest jego kontekstem (ActiveMemberships), inaczej domyślny — organizacja zapisana jako
+ * domyślna konta (DefaultOrganization, `json_default_settings.organization`), gdy nadal jest jego kontekstem, albo
+ * pierwszy kontekst konta (hero: organizacja hero; pozostali: najstarsze członkostwo) — zapisany w sesji, więc nowe
+ * członkostwo nadane w trakcie sesji nie zmienia go samo.
  */
 final readonly class SessionCurrentOrganization implements CurrentOrganization
 {
@@ -35,6 +36,7 @@ final readonly class SessionCurrentOrganization implements CurrentOrganization
         private CurrentAccount $account,
         private ActiveMemberships $memberships,
         private Request $request,
+        private DefaultOrganization $default,
     ) {}
 
     public function get(): ?Organization
@@ -60,7 +62,8 @@ final readonly class SessionCurrentOrganization implements CurrentOrganization
             return $chosen;
         }
 
-        $default = $ids[0] ?? null;
+        $saved = $this->default->id($account);
+        $default = $saved !== null && in_array($saved, $ids, true) ? $saved : $ids[0] ?? null;
         $default === null ? $session->forget(self::SESSION_KEY) : $session->put(self::SESSION_KEY, $default);
 
         return $default;
@@ -89,11 +92,12 @@ final readonly class SessionCurrentOrganization implements CurrentOrganization
         }
 
         $current = $this->id();
+        $default = $this->default->id($account);
         $contexts = [];
 
         foreach ($this->memberships->organizations($account) as $organization) {
             if (! $organization->isHero()) {
-                $contexts[] = new OrganizationContext($organization, $organization->id === $current);
+                $contexts[] = new OrganizationContext($organization, $organization->id === $current, $organization->id === $default);
             }
         }
 

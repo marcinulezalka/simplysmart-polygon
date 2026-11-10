@@ -4,6 +4,10 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Domyślna organizacja konta po zalogowaniu: zapisana per osoba w `json_default_settings.organization` konta strefy (`Organizations\DefaultOrganization`). Osoba ustawia ją sama (trasa `<strefa>.account.organization.default`, `OrganizationContext::$default` dla przełącznika) albo plik instalacji (`accounts[].defaults.organization`, tylko gdy konto nie ma jeszcze własnego wyboru). Organizacja, która przestała być kontekstem konta, jest pomijana — wtedy jak dotąd najstarsze członkostwo.
+
 ## [0.12.0] - 2026-11-10
 
 ### Added

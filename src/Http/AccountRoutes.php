@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Http;
 
 use Illuminate\Routing\Router;
+use Simplysmart\Polygon\Http\Controllers\Account\OrganizationDefaultController;
 use Simplysmart\Polygon\Http\Controllers\Account\OrganizationSwitchController;
 use Simplysmart\Polygon\Http\Controllers\Account\PinChangeController;
 use Simplysmart\Polygon\Http\Controllers\Account\RecoveryEmailController;
@@ -65,6 +66,9 @@ final readonly class AccountRoutes
     /** Przełączenie organizacji kontekstu konta (POST, Http\Controllers\Account\OrganizationSwitchController). */
     public const string ORGANIZATION_SWITCH = 'account.organization.switch';
 
+    /** Zapis domyślnej organizacji kontekstu konta po zalogowaniu (POST, Http\Controllers\Account\OrganizationDefaultController). */
+    public const string ORGANIZATION_DEFAULT = 'account.organization.default';
+
     /** Kotwice sekcji strony bezpieczeństwa (`#pin`, `#devices`, `#recovery`, `#lock`). */
     public const string SECTION_PIN = 'pin';
 
@@ -90,6 +94,7 @@ final readonly class AccountRoutes
             $this->router->post('unlock', [ScreenLockController::class, 'unlock'])->middleware($throttle)->name(self::UNLOCK_STORE);
 
             $this->router->post('organization', OrganizationSwitchController::class)->name(self::ORGANIZATION_SWITCH);
+            $this->router->post('organization/default', OrganizationDefaultController::class)->name(self::ORGANIZATION_DEFAULT);
             $this->router->get('security', [SecurityController::class, 'show'])->name(self::SECURITY);
             $this->router->delete('security/sessions', [SecurityController::class, 'signOutEverywhere'])->middleware($throttle)->name(self::SIGN_OUT_EVERYWHERE);
             $this->router->get('pin', [SecurityController::class, 'section'])->defaults('section', self::SECTION_PIN)->name(self::PIN);

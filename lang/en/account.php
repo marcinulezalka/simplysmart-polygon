@@ -65,6 +65,9 @@ return [
         'switched' => 'You are now working in :name.',
         'unavailable' => 'This organization is not available to your account.',
         'none' => 'Your account does not belong to any organization yet.',
+        'default' => 'Default after sign-in',
+        'make_default' => 'Set as default',
+        'default_saved' => 'After signing in you will work in :name.',
     ],
 
 ];
