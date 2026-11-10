@@ -173,8 +173,7 @@ final readonly class FreeSlots
             $from = $day->setTimeFromTimeString($other->starts_at);
 
             if ($other->appliesOn($day) && self::within([[$from, $day->setTimeFromTimeString($other->ends_at)]], $start, $end)) {
-                $performer = $other->performer;
-                $taken[] = new RoomTaken($from->max($start), RoomTakenBy::Schedule, $performer instanceof ZoneAccount ? $performer : null, $other->organization);
+                $taken[] = new RoomTaken($from->max($start), RoomTakenBy::Schedule, $other->performerAccount(), $other->organization);
             }
         }
 
@@ -209,8 +208,7 @@ final readonly class FreeSlots
 
         foreach ($bookings->get() as $booking) {
             if ($booking->performer_type !== $schedule->performer_type || $booking->performer_id !== $schedule->performer_id) {
-                $performer = $booking->performer;
-                $taken[] = new RoomTaken($booking->starts_at->max($start), RoomTakenBy::Booking, $performer instanceof ZoneAccount ? $performer : null, $booking->organization);
+                $taken[] = new RoomTaken($booking->starts_at->max($start), RoomTakenBy::Booking, $booking->performerAccount(), $booking->organization);
             }
         }
 

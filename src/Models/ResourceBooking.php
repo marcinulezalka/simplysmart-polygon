@@ -16,6 +16,7 @@ namespace Simplysmart\Polygon\Models;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Simplysmart\Polygon\Calendar\Performer;
 use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Enums\BookingStatus;
 use Simplysmart\Polygon\Models\Relations\BelongsToOrganization;
@@ -110,6 +111,22 @@ final class ResourceBooking extends DataModel
     public function performer(): MorphTo
     {
         return $this->morphTo(ResourceSchedule::PERFORMER);
+    }
+
+    /**
+     * Konto strefy przyjmującego albo null (Calendar\Performer::account()).
+     */
+    public function performerAccount(): ?ZoneAccount
+    {
+        return Performer::account($this->performer);
+    }
+
+    /**
+     * Nazwa przyjmującego do wyświetlenia; bez wykonawcy — pusty tekst (Calendar\Performer::name()).
+     */
+    public function performerName(): string
+    {
+        return Performer::name($this->performer);
     }
 
     /**

@@ -16,6 +16,7 @@ namespace Simplysmart\Polygon\Models;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Simplysmart\Polygon\Calendar\Performer;
 use Simplysmart\Polygon\Calendar\ValidityPeriod;
 use Simplysmart\Polygon\Calendar\WeekCycle;
 use Simplysmart\Polygon\Models\Relations\BelongsToOrganization;
@@ -97,6 +98,22 @@ final class ResourceSchedule extends DataModel
     public function performer(): MorphTo
     {
         return $this->morphTo(self::PERFORMER);
+    }
+
+    /**
+     * Konto strefy przyjmującego albo null (Calendar\Performer::account()).
+     */
+    public function performerAccount(): ?ZoneAccount
+    {
+        return Performer::account($this->performer);
+    }
+
+    /**
+     * Nazwa przyjmującego do wyświetlenia; bez wykonawcy — pusty tekst (Calendar\Performer::name()).
+     */
+    public function performerName(): string
+    {
+        return Performer::name($this->performer);
     }
 
     /**

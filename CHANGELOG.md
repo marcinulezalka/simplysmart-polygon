@@ -6,6 +6,7 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Added
 
+- Przyjmujący bloku grafiku i rezerwacji: `ResourceSchedule::performerAccount()` / `performerName()` i `ResourceBooking::performerAccount()` / `performerName()` (wspólna logika w `Calendar\Performer`) — konto strefy wykonawcy albo null i jego nazwa do wyświetlenia albo pusty tekst, bez sprawdzania typu relacji polimorficznej `performer` w kodzie stref; korzystają z nich `Calendar\FreeSlots` i `Leases\Wallboard`.
 - Data zawarcia umowy najmu: kolumna `resource_leases.signed_on` (`ResourceLease::SIGNED_ON`, migracja z synchronizacją triggerów historii, `LeaseInput::$signedOn`, pole `signed` umowy w plikach instalacji) — tylko informacja o podpisaniu; okres i cykl tygodni okien liczą się nadal od `valid_from` (rozpoczęcie cyklu).
 - Rezerwacja nadliczbowa w kalendarzu (`Calendar\BookSlot::bookOverflow()`, `FreeSlots::scheduleEndingAt()`): ponad wolne sloty, na końcu bloku grafiku, o zerowej długości (nie zajmuje slotów), oznaczona `json_attributes.overflow` (`ResourceBooking::OVERFLOW`, `isOverflow()`); czy wykonawca przyjmuje nadliczbowo, decyduje paczka strefy. `FreeSlots::roomTakenAfter()` sprawdza dostępność zasobu przez slot po końcu bloku (`Calendar\RoomTaken`, `Enums\RoomTakenBy`: inny grafik, najem na wyłączność innej jednostki, rezerwacja innego wykonawcy).
 - Stan rezerwacji „wykonana” (`BookingStatus::Completed`): zajmuje termin, osiągalny z zapisanej i potwierdzonej, końcowy (`Calendar\BookingStatusChange`).

@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Leases;
 
 use Carbon\CarbonImmutable;
-use Simplysmart\Polygon\Contracts\SignInAccount;
 use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Enums\BookingStatus;
 use Simplysmart\Polygon\Models\Organization;
@@ -59,12 +58,12 @@ final readonly class Wallboard
 
             $start = $day->setTimeFromTimeString($schedule->starts_at);
             $end = $day->setTimeFromTimeString($schedule->ends_at);
-            $performer = $schedule->performer;
+            $performer = $schedule->performerName();
 
             if ($schedule->fills_gaps) {
                 foreach ($bookings as $booking) {
                     if ($booking->performer_type === $schedule->performer_type && $booking->performer_id === $schedule->performer_id && $booking->starts_at->greaterThanOrEqualTo($start) && $booking->starts_at->lessThan($end)) {
-                        $entries[] = new WallboardEntry($booking->starts_at, $booking->ends_at, $performer instanceof SignInAccount ? $performer->displayName() : '', $schedule->resource?->label() ?? '', 1);
+                        $entries[] = new WallboardEntry($booking->starts_at, $booking->ends_at, $performer, $schedule->resource?->label() ?? '', 1);
                     }
                 }
 
@@ -74,7 +73,7 @@ final readonly class Wallboard
             $entries[] = new WallboardEntry(
                 $start,
                 $end,
-                $performer instanceof SignInAccount ? $performer->displayName() : '',
+                $performer,
                 $schedule->resource?->label() ?? '',
                 count(array_filter($bookings, static fn(ResourceBooking $booking): bool => $booking->performer_type === $schedule->performer_type
                     && $booking->performer_id === $schedule->performer_id
