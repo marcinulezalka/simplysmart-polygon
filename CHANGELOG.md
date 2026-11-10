@@ -4,6 +4,8 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-10
+
 ### Added
 
 - Przyjmujący bloku grafiku i rezerwacji: `ResourceSchedule::performerAccount()` / `performerName()` i `ResourceBooking::performerAccount()` / `performerName()` (wspólna logika w `Calendar\Performer`) — konto strefy wykonawcy albo null i jego nazwa do wyświetlenia albo pusty tekst, bez sprawdzania typu relacji polimorficznej `performer` w kodzie stref; korzystają z nich `Calendar\FreeSlots` i `Leases\Wallboard`.
