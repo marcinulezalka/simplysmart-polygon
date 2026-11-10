@@ -68,10 +68,13 @@ final readonly class BookSlot
     }
 
     /**
-     * Rezerwacja nadliczbowa: ponad wolne sloty, na końcu bloku grafiku wykonawcy kończącego się o $endsAt
-     * (FreeSlots::scheduleEndingAt()). Ma zerową długość (`starts_at` = `ends_at` = koniec bloku), więc nie zajmuje
-     * żadnego slotu ani nie koliduje z następnym blokiem; `json_attributes.overflow` (ResourceBooking::OVERFLOW) ją
-     * odróżnia. Blokady jak przy book(). Czy wykonawca przyjmuje nadliczbowo — decyduje paczka strefy przed wywołaniem.
+     * Rezerwacja nadliczbowa: ponad wolne sloty, w kolejce po końcu bloku grafiku wykonawcy kończącego się o $endsAt
+     * (FreeSlots::scheduleEndingAt()) — na jeden slot (`slot_minutes`) od pierwszego wolnego miejsca tej kolejki
+     * (FreeSlots::nextOverflow(): koniec bloku, potem co slot), więc każda ma własną godzinę. `json_attributes`
+     * odróżnia ją (ResourceBooking::OVERFLOW) i wiąże z blokiem (ResourceBooking::OVERFLOW_AFTER); slotów nie zajmuje
+     * (FreeSlots), więc nie blokuje następnego bloku. Blokady jak przy book() — miejsce w kolejce liczone dopiero pod nimi,
+     * więc równoległe zapisy nie dostaną tej samej godziny. Czy wykonawca przyjmuje nadliczbowo — decyduje paczka strefy
+     * przed wywołaniem.
      *
      * @throws SlotUnavailable Gdy żaden blok grafiku nie kończy się o $endsAt albo to blok dnia minionego (dzisiejszy —
      *                         także po końcu bloku, jak wolne sloty FreeSlots).
@@ -87,21 +90,17 @@ final readonly class BookSlot
 
             OrganizationResource::query()->whereKey($schedule->resource_id)->lockForUpdate()->first();
             $performer->newQuery()->whereKey($performer->id)->lockForUpdate()->first();
-
             $booking = new ResourceBooking();
+            $booking->placeOverflow($schedule, $this->slots->nextOverflow($schedule, $endsAt));
             $booking->forceFill([
-                ColumnNames::NAME => $endsAt->format('Y-m-d H:i'),
                 ColumnNames::STATUS => BookingStatus::Booked,
                 Organization::FOREIGN_KEY => $unit->id,
                 OrganizationResource::FOREIGN_KEY => $schedule->resource_id,
                 ResourceSchedule::PERFORMER_TYPE => $performer->getMorphClass(),
                 ResourceSchedule::PERFORMER_ID => $performer->id,
                 ResourceBooking::KIND => $kind,
-                ResourceBooking::STARTS_AT => $endsAt,
-                ResourceBooking::ENDS_AT => $endsAt,
                 'booked_by_type' => $bookedBy?->getMorphClass(),
                 'booked_by_id' => $bookedBy?->id,
-                ColumnNames::JSON_ATTRIBUTES => [ResourceBooking::OVERFLOW => true],
             ])->save();
 
             return $booking;

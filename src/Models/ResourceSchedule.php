@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Simplysmart\Polygon\Calendar\Performer;
 use Simplysmart\Polygon\Calendar\ValidityPeriod;
 use Simplysmart\Polygon\Calendar\WeekCycle;
+use Simplysmart\Polygon\Enums\BookingStatus;
 use Simplysmart\Polygon\Models\Relations\BelongsToOrganization;
 
 /**
@@ -151,6 +152,62 @@ final class ResourceSchedule extends DataModel
             && $day->greaterThanOrEqualTo($this->valid_from->startOfDay())
             && ($this->valid_to === null || $day->lessThanOrEqualTo($this->valid_to->startOfDay()))
             && $this->cycle()->occursOn($day);
+    }
+
+    /**
+     * Czy godzina rezerwacji należy do bloku grafiku: zwykła — początek w godzinach bloku; nadliczbowa — stoi w kolejce
+     * po końcu tego bloku (ResourceBooking::overflowAfter()). Jednostki, zasobu, wykonawcy i dnia nie sprawdza.
+     */
+    public function holds(ResourceBooking $booking): bool
+    {
+        $after = $booking->overflowAfter();
+
+        if ($after !== null) {
+            return $after === $this->to();
+        }
+
+        $time = $booking->starts_at->format('H:i');
+
+        return $time >= $this->from() && $time < $this->to();
+    }
+
+    /**
+     * Godzina kolejnej rezerwacji nadliczbowej bloku w dniu $day: co `slot_minutes` od końca bloku, pierwsze miejsce
+     * niezajęte przez rezerwacje nadliczbowe tego bloku spośród $bookings (zajmujące termin, ta sama jednostka, zasób,
+     * wykonawca i dzień) — miejsce odwołanej wraca do kolejki jak wolny slot.
+     *
+     * @param iterable<ResourceBooking> $bookings
+     */
+    public function nextOverflowAt(CarbonImmutable $day, iterable $bookings): CarbonImmutable
+    {
+        $at = $day->startOfDay()->setTimeFromTimeString($this->ends_at);
+        $taken = [];
+
+        foreach ($bookings as $booking) {
+            if ($this->queuesOverflow($booking) && $booking->starts_at->isSameDay($at)) {
+                $taken[$booking->starts_at->format('H:i')] = true;
+            }
+        }
+
+        while (isset($taken[$at->format('H:i')])) {
+            $at = $at->addMinutes(max(1, (int) $this->slot_minutes));
+        }
+
+        return $at;
+    }
+
+    /**
+     * Czy rezerwacja zajmuje miejsce w kolejce nadliczbowych tego bloku (ta sama jednostka, zasób i wykonawca).
+     */
+    private function queuesOverflow(ResourceBooking $booking): bool
+    {
+        return $booking->isOverflow()
+            && in_array($booking->status, BookingStatus::occupying(), true)
+            && $booking->organization_id === $this->organization_id
+            && $booking->resource_id === $this->resource_id
+            && $booking->performer_type === $this->performer_type
+            && $booking->performer_id === $this->performer_id
+            && $this->holds($booking);
     }
 
     /**

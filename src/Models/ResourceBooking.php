@@ -27,7 +27,8 @@ use Simplysmart\Polygon\Models\Relations\BelongsToOrganization;
  * np. `<strefa>.visit`), stanem (`status`, Enums\BookingStatus — stan dziedzinowy zamiast RecordStatus), wykonawcą
  * (`performer`) oraz kontem, które zapisało (`booked_by`) i potwierdziło (`confirmed_by`). Dane osoby i inne dane
  * dziedzinowe trzyma paczka strefy w swojej tabeli. `name` to termin, bez danych osobowych. Rezerwacja nadliczbowa
- * (isOverflow()) ma zerową długość na końcu bloku grafiku. Zapisywana tylko przez Calendar\BookSlot
+ * (isOverflow()) ma własną godzinę w kolejce po końcu bloku grafiku (ResourceSchedule::nextOverflowAt()) i nie zajmuje
+ * slotów. Zapisywana tylko przez Calendar\BookSlot
  * i Calendar\BookingStatusChange.
  *
  * @property int $organization_id
@@ -70,10 +71,17 @@ final class ResourceBooking extends DataModel
     public const string CONFIRMED_AT = 'confirmed_at';
 
     /**
-     * Klucz `json_attributes` rezerwacji nadliczbowej (Calendar\BookSlot::bookOverflow()): dopisanej na koniec bloku
-     * grafiku ponad sloty — `starts_at` i `ends_at` równe końcowi bloku, więc nie zajmuje żadnego slotu.
+     * Klucz `json_attributes` rezerwacji nadliczbowej (Calendar\BookSlot::bookOverflow()): dopisanej ponad sloty do kolejki
+     * po końcu bloku grafiku — co `slot_minutes` od końca bloku, w pierwszym wolnym miejscu tej kolejki. Nie zajmuje
+     * slotów (Calendar\FreeSlots ją pomija), więc nie blokuje następnego bloku.
      */
     public const string OVERFLOW = 'overflow';
+
+    /**
+     * Klucz `json_attributes` rezerwacji nadliczbowej: koniec bloku grafiku „HH:MM”, po którym stoi w kolejce — wiąże ją
+     * z blokiem (ResourceSchedule::holds()), choć jej godzina jest już po nim.
+     */
+    public const string OVERFLOW_AFTER = 'overflow_after';
 
     protected $table = self::TABLE;
 
@@ -92,9 +100,57 @@ final class ResourceBooking extends DataModel
      */
     public function isOverflow(): bool
     {
+        return $this->jsonAttribute(self::OVERFLOW) === true;
+    }
+
+    /**
+     * Koniec bloku grafiku „HH:MM”, po którym stoi rezerwacja nadliczbowa (OVERFLOW_AFTER); rezerwacja zapisana przed
+     * kolejką (bez miejsca — hasOverflowPlace()) stała na samym końcu bloku — jej godzina. Zwykła rezerwacja — null.
+     */
+    public function overflowAfter(): ?string
+    {
+        if (! $this->isOverflow()) {
+            return null;
+        }
+
+        $after = $this->jsonAttribute(self::OVERFLOW_AFTER);
+
+        return is_string($after) ? $after : $this->starts_at->format('H:i');
+    }
+
+    /**
+     * Czy rezerwacja nadliczbowa ma zapisane miejsce w kolejce bloku (OVERFLOW_AFTER) — bez niego to zapis sprzed kolejki
+     * (Calendar\OverflowQueueRepair).
+     */
+    public function hasOverflowPlace(): bool
+    {
+        return $this->isOverflow() && is_string($this->jsonAttribute(self::OVERFLOW_AFTER));
+    }
+
+    /**
+     * Ustawia rezerwację nadliczbową na miejscu kolejki bloku $schedule o $startsAt (ResourceSchedule::nextOverflowAt()):
+     * termin na jeden slot, OVERFLOW i OVERFLOW_AFTER; pozostałe `json_attributes` zostają. Bez zapisu.
+     */
+    public function placeOverflow(ResourceSchedule $schedule, CarbonImmutable $startsAt): static
+    {
         $attributes = $this->getAttribute(ColumnNames::JSON_ATTRIBUTES);
 
-        return is_array($attributes) && ($attributes[self::OVERFLOW] ?? false) === true;
+        return $this->forceFill([
+            ColumnNames::NAME => $startsAt->format('Y-m-d H:i'),
+            self::STARTS_AT => $startsAt,
+            self::ENDS_AT => $startsAt->addMinutes((int) $schedule->slot_minutes),
+            ColumnNames::JSON_ATTRIBUTES => [...(is_array($attributes) ? $attributes : []), self::OVERFLOW => true, self::OVERFLOW_AFTER => $schedule->to()],
+        ]);
+    }
+
+    /**
+     * Wartość klucza $key `json_attributes` albo null.
+     */
+    private function jsonAttribute(string $key): mixed
+    {
+        $attributes = $this->getAttribute(ColumnNames::JSON_ATTRIBUTES);
+
+        return is_array($attributes) ? ($attributes[$key] ?? null) : null;
     }
 
     /**

@@ -92,7 +92,8 @@ final readonly class SaveSchedule
     }
 
     /**
-     * Przyszłe rezerwacje (zapisane albo potwierdzone) tego zasobu, wykonawcy i jednostki w dniu tygodnia i godzinach grafiku.
+     * Przyszłe rezerwacje (zapisane albo potwierdzone) tego zasobu, wykonawcy i jednostki w dniu tygodnia i godzinach grafiku
+     * — także nadliczbowe w kolejce po jego końcu (ResourceSchedule::holds()).
      */
     private function futureBookings(ResourceSchedule $schedule): int
     {
@@ -104,8 +105,6 @@ final readonly class SaveSchedule
         $query->where(ResourceBooking::STARTS_AT, '>=', CarbonImmutable::now());
         $query->whereIn(ColumnNames::STATUS, [BookingStatus::Booked->value, BookingStatus::Confirmed->value]);
 
-        return $query->get()->filter(static fn(ResourceBooking $booking): bool => $schedule->appliesOn($booking->starts_at)
-            && $booking->starts_at->format('H:i:s') >= $schedule->starts_at
-            && $booking->starts_at->format('H:i:s') < $schedule->ends_at)->count();
+        return $query->get()->filter(static fn(ResourceBooking $booking): bool => $schedule->appliesOn($booking->starts_at) && $schedule->holds($booking))->count();
     }
 }

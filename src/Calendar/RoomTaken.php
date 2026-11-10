@@ -19,8 +19,9 @@ use Simplysmart\Polygon\Models\Organization;
 use Simplysmart\Polygon\Models\ZoneAccount;
 
 /**
- * Zasób bloku grafiku niedostępny tuż po jego końcu (FreeSlots::roomTakenAfter()): od kiedy ($from), z jakiego powodu
- * ($by), u kogo — wykonawca innego grafiku albo rezerwacji ($performer) i jednostka (inny grafik, najem; $organization).
+ * Zasób bloku grafiku niedostępny w slocie kolejnej rezerwacji nadliczbowej po jego końcu (FreeSlots::roomTakenAfter()):
+ * od kiedy ($from), z jakiego powodu ($by), u kogo — wykonawca innego grafiku albo rezerwacji ($performer) i jednostka
+ * (inny grafik, najem; $organization).
  */
 final readonly class RoomTaken
 {

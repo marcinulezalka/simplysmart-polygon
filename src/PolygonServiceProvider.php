@@ -18,6 +18,7 @@ use Simplysmart\Polygon\Console\CreateAccountCommand;
 use Simplysmart\Polygon\Console\ExportTranslationsCommand;
 use Simplysmart\Polygon\Console\ImportTranslationsCommand;
 use Simplysmart\Polygon\Console\InstallCommand;
+use Simplysmart\Polygon\Console\RepairOverflowQueue;
 use Simplysmart\Polygon\Console\SeedLocalization;
 use Simplysmart\Polygon\Console\SeedOrganizations;
 use Simplysmart\Polygon\Providers\AccountsServiceProvider;
@@ -65,6 +66,7 @@ final class PolygonServiceProvider extends ServiceProvider
         InstallCommand::class,
         ExportTranslationsCommand::class,
         ImportTranslationsCommand::class,
+        RepairOverflowQueue::class,
     ];
 
     public function register(): void

@@ -6,16 +6,19 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Added
 
+- Komenda `php artisan polygon:calendar:overflow-repair` (`Calendar\OverflowQueueRepair`): jednorazowo po wdrożeniu nadaje kolejne godziny rezerwacjom nadliczbowym od dziś zapisanym jeszcze na samym końcu bloku; rezerwacji już w kolejce nie rusza, uruchomiona ponownie niczego nie zmienia.
 - `composer check` w paczce: lint, PHPStan i testy w jednym przebiegu; projekt uruchamia go przy `composer deploy` (`check:packages`). Przed commitem wystarczą testy obejmujące zmianę (`docs/deploy.md`).
 - Reset PIN-u przez właściciela konta (`Auth\ResetOwnPin`, trasa `<strefa>.account.pin.reset`): po obecnym PIN-ie (liczonym do blokady, wspólny limit ze zmianą PIN-u) PIN zostaje usunięty, wszystkie sesje i zaufane urządzenia unieważnione (`AccessRevocationReason::PinResetByOwner`), a konto wylogowane z komunikatem i potwierdzeniem e-mailem (`Mail\PinResetMail`, szablon strefy `pin-reset`, teksty `emails.pin_reset.*`); nowy PIN ustawia przy następnym logowaniu kodem. Teksty opisu procesu `account.pin_reset_*`.
 - Domyślna organizacja konta po zalogowaniu: zapisana per osoba w `json_default_settings.organization` konta strefy (`Organizations\DefaultOrganization`). Osoba ustawia ją sama (trasa `<strefa>.account.organization.default`, `OrganizationContext::$default` dla przełącznika) albo plik instalacji (`accounts[].defaults.organization`, tylko gdy konto nie ma jeszcze własnego wyboru). Organizacja, która przestała być kontekstem konta, jest pomijana — wtedy jak dotąd najstarsze członkostwo.
 
 ### Changed
 
+- Rezerwacja nadliczbowa (`BookSlot::bookOverflow()`) ma własną godzinę zapisaną w bazie: pierwsze wolne miejsce co `slot_minutes` od końca bloku (`FreeSlots::nextOverflow()`, `ResourceSchedule::nextOverflowAt()`; miejsce odwołanej wraca do kolejki), na jeden slot, zamiast zerowej długości na końcu bloku. Z blokiem wiąże ją `json_attributes.overflow_after` (`ResourceBooking::OVERFLOW_AFTER`, `ResourceSchedule::holds()`); slotów dalej nie zajmuje. `FreeSlots::roomTakenAfter()` sprawdza gabinet w slocie kolejnej rezerwacji nadliczbowej.
 - Wolne terminy dnia dzisiejszego (`Calendar\FreeSlots`): cały grafik dnia, także sloty, których godzina już minęła — nie znikają w trakcie dnia i można na nie zapisać (`BookSlot::book()`); zapis nadliczbowy (`bookOverflow()`) dziś także po końcu bloku. Terminów nie ma tylko w dniach wcześniejszych niż dziś.
 
 ### Fixed
 
+- Grafiku z przyszłymi rezerwacjami nadliczbowymi nie można już usunąć (`SaveSchedule::delete()`) — wcześniej nie były liczone, bo stały na samym końcu bloku.
 - Strefa czasowa aplikacji z `APP_TIMEZONE` (`Localization\ApplicationTimezone`, `PolygonConfig::TIMEZONE`): stockowy `config/app.php` Laravela ma na sztywno UTC, więc `now()` i `today()` liczyły czas UTC, a godziny grafików są lokalne. Pusta albo nieznana wartość zostawia strefę frameworka. Znaczniki czasu zapisane wcześniej w UTC (`created_at` itp.) są teraz czytane w strefie aplikacji.
 
 ## [0.12.0] - 2026-11-10

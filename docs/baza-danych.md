@@ -358,10 +358,17 @@ przed zapisem grafiku.
   paczki strefy staje się jej częścią (rezerwacja i dane dziedzinowe razem albo wcale).
 - **Rezerwacja nadliczbowa** (`BookSlot::bookOverflow()`): ponad wolne sloty, na końcu bloku grafiku ze slotami
   kończącego się o podanej godzinie (`FreeSlots::scheduleEndingAt()` — dzień, ważność, cykl i najem jak przy wolnych
-  terminach; blok nie może być z dnia minionego). Ma zerową długość (`starts_at` = `ends_at` = koniec bloku), więc nie zajmuje
-  slotu ani pierwszego slotu następnego bloku; `json_attributes.overflow` (`ResourceBooking::OVERFLOW`,
-  `isOverflow()`) ją odróżnia. Czy wykonawca przyjmuje nadliczbowo — decyduje paczka strefy. Blokady jak przy `book()`.
-  **Dostępność zasobu po bloku** (`FreeSlots::roomTakenAfter()`): pierwsza kolizja w oknie jednego slotu po końcu bloku
+  terminach; blok nie może być z dnia minionego). Każda dostaje własną godzinę w kolejce bloku: pierwsze wolne miejsce
+  co `slot_minutes` od końca bloku (`FreeSlots::nextOverflow()` / `ResourceSchedule::nextOverflowAt()` — miejsce odwołanej
+  wraca do kolejki), na jeden slot (`ResourceBooking::placeOverflow()`); miejsce liczone pod blokadami, więc równoległe
+  zapisy nie dostaną tej samej godziny. `json_attributes.overflow` (`ResourceBooking::OVERFLOW`, `isOverflow()`) ją
+  odróżnia, a `json_attributes.overflow_after` (`OVERFLOW_AFTER` — koniec bloku „HH:MM”) wiąże z blokiem
+  (`ResourceSchedule::holds()`, także przy usuwaniu grafiku z przyszłymi rezerwacjami). Slotów nie zajmuje (`FreeSlots` ją
+  pomija), więc nie blokuje następnego bloku. Rezerwacje sprzed kolejki (bez `overflow_after`, wszystkie o końcu bloku)
+  dostają kolejne godziny jednorazowo: `php artisan polygon:calendar:overflow-repair` (`Calendar\OverflowQueueRepair`, od
+  dziś; ponownie niczego nie zmienia). Czy wykonawca przyjmuje nadliczbowo — decyduje paczka strefy. Blokady jak przy `book()`.
+  **Dostępność zasobu po bloku** (`FreeSlots::roomTakenAfter()`): pierwsza kolizja w oknie slotu kolejnej rezerwacji
+  nadliczbowej (`nextOverflow()`)
   (`Calendar\RoomTaken` — od kiedy, powód `Enums\RoomTakenBy`, wykonawca i jednostka): inny grafik zasobu (bez
   wypełniających), okno najmu na wyłączność innej jednostki, rezerwacja zajmująca termin innego wykonawcy (koniec
   własnego najmu kooperacji po bloku kolizją nie jest); null — zasób dostępny. Czy kolizja wyłącza zapis nadliczbowy — decyduje paczka strefy.

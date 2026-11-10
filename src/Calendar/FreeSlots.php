@@ -36,7 +36,7 @@ use Simplysmart\Polygon\Queries\Organizations\OrganizationResources;
  * wynajętym jednostce (kooperacja najemcy) daje terminy tylko w dniu, w którym umowa najmu obowiązuje i obejmuje jego
  * godziny — po końcu albo wypowiedzeniu umowy terminów nie ma, więc BookSlot ich też nie zapisze. Grafik wypełniający
  * wolny czas (`fills_gaps`, najem na żądanie) daje terminy tylko poza innym grafikiem zasobu i oknami najmów na
- * wyłączność innych jednostek.
+ * wyłączność innych jednostek. Rezerwacje nadliczbowe (ResourceBooking::isOverflow()) slotów nie zajmują.
  */
 final readonly class FreeSlots
 {
@@ -136,7 +136,7 @@ final readonly class FreeSlots
 
     /**
      * Blok grafiku ze slotami wykonawcy w jednostce, który kończy się o $at (dzień tygodnia, okres ważności, cykl tygodni
-     * i najem jak przy wolnych slotach) — koniec bloku to miejsce rezerwacji nadliczbowej (BookSlot::bookOverflow()).
+     * i najem jak przy wolnych slotach) — po jego końcu stoi kolejka rezerwacji nadliczbowych (BookSlot::bookOverflow()).
      * Grafik na żądanie (`fills_gaps`) i bez slotów — pomijany.
      */
     public function scheduleEndingAt(Organization $unit, ZoneAccount $performer, CarbonImmutable $at): ?ResourceSchedule
@@ -151,15 +151,35 @@ final readonly class FreeSlots
     }
 
     /**
-     * Czy zasób bloku grafiku jest dostępny przez jeden slot po jego końcu — tam trafia rezerwacja nadliczbowa
-     * (BookSlot::bookOverflow()). Null — dostępny; RoomTaken — pierwsza kolizja w oknie [koniec, koniec + slot): inny
-     * grafik zasobu (bez wypełniających), okno najmu na wyłączność innej jednostki albo rezerwacja zajmująca termin
-     * innego wykonawcy na zasobie. Koniec własnego najmu jednostki (kooperacji) po bloku kolizją nie jest.
+     * Godzina kolejnej rezerwacji nadliczbowej bloku grafiku w dniu $day (ResourceSchedule::nextOverflowAt() z rezerwacji
+     * jego jednostki, zasobu i wykonawcy w tym dniu).
+     */
+    public function nextOverflow(ResourceSchedule $schedule, CarbonImmutable $day): CarbonImmutable
+    {
+        $day = $day->startOfDay();
+        $query = ResourceBooking::query();
+        $query->where(Organization::FOREIGN_KEY, $schedule->organization_id);
+        $query->where(OrganizationResource::FOREIGN_KEY, $schedule->resource_id);
+        $query->where(ResourceSchedule::PERFORMER_TYPE, $schedule->performer_type);
+        $query->where(ResourceSchedule::PERFORMER_ID, $schedule->performer_id);
+        $query->whereIn(ColumnNames::STATUS, BookingStatus::occupyingValues());
+        $query->where(ResourceBooking::STARTS_AT, '>=', $day);
+        $query->where(ResourceBooking::STARTS_AT, '<', $day->addDay());
+
+        return $schedule->nextOverflowAt($day, $query->get());
+    }
+
+    /**
+     * Czy zasób bloku grafiku jest dostępny przez slot kolejnej rezerwacji nadliczbowej (nextOverflow() — co
+     * `slot_minutes` po końcu bloku, BookSlot::bookOverflow()). Null — dostępny; RoomTaken — pierwsza kolizja w oknie
+     * [kolejna nadliczbowa, + slot): inny grafik zasobu (bez wypełniających), okno najmu na wyłączność innej jednostki
+     * albo rezerwacja zajmująca termin innego wykonawcy na zasobie. Koniec własnego najmu jednostki (kooperacji) po bloku
+     * kolizją nie jest.
      */
     public function roomTakenAfter(Organization $unit, ResourceSchedule $schedule, CarbonImmutable $day): ?RoomTaken
     {
         $day = $day->startOfDay();
-        $start = $day->setTimeFromTimeString($schedule->ends_at);
+        $start = $this->nextOverflow($schedule, $day);
         $end = $start->addMinutes(max(1, (int) $schedule->slot_minutes));
         $taken = [];
         $query = ResourceSchedule::query();
@@ -356,11 +376,14 @@ final readonly class FreeSlots
     }
 
     /**
+     * Czy slot [$start, $end) zajmuje rezerwacja wykonawcy albo zasobu — poza nadliczbowymi, które slotów nie zajmują.
+     *
      * @param Collection<int, ResourceBooking> $taken
      */
     private function overlaps(Collection $taken, ZoneAccount $performer, int $resourceId, CarbonImmutable $start, CarbonImmutable $end): bool
     {
-        return $taken->contains(static fn(ResourceBooking $booking): bool => (($booking->performer_type === $performer->getMorphClass() && $booking->performer_id === $performer->id) || $booking->resource_id === $resourceId)
+        return $taken->contains(static fn(ResourceBooking $booking): bool => ! $booking->isOverflow()
+            && (($booking->performer_type === $performer->getMorphClass() && $booking->performer_id === $performer->id) || $booking->resource_id === $resourceId)
             && $booking->starts_at->lessThan($end)
             && $booking->ends_at->greaterThan($start));
     }
