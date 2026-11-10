@@ -63,7 +63,12 @@
         "lint": "pint --test",
         "format": "pint",
         "analyse": "phpstan analyse --memory-limit=512M",
-        "test": "phpunit"
+        "test": "phpunit",
+        "check": [
+            "@lint",
+            "@analyse",
+            "@test"
+        ]
     },
     "extra": {
         "laravel": {

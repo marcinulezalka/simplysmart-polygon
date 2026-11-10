@@ -170,6 +170,9 @@ composer install
 composer test      # PHPUnit
 composer analyse   # PHPStan, poziom max
 composer lint      # Pint
+composer check     # wszystkie trzy; projekt uruchamia go przy `composer deploy` (`check:packages`)
 ```
+
+Przed commitem w paczce wystarczą testy obejmujące zmianę (`composer test -- <pliki>`), pełny `check` uruchamia deploy projektu.
 
 Testy nie używają sieci ani prawdziwego gita. Procesy zastępuje atrapa (`tests/Deploy/Support/FakeProcessRunner`), a pliki leżą w katalogach tymczasowych. Wyjątkiem jest `SystemProcessRunnerTest`, który uruchamia `sh`.
