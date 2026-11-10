@@ -349,8 +349,8 @@ przed zapisem grafiku.
   wykonawcy w tym dniu tygodnia i pokrywającym się okresie ważności — z cyklem tygodni (`Calendar\WeekCycle`) tylko
   wtedy, gdy cykle mają wspólne tygodnie (dwa grafiki co 2 tygodnie na zmianę nie kolidują). Grafiku z przyszłymi
   rezerwacjami nie można usunąć.
-- **Wolne terminy** (`Calendar\FreeSlots`, `Slot`): sloty grafiku wykonawcy w jednostce w danym dniu, bez minionych,
-  zajętych przez rezerwacje wykonawcy albo zasobu (w dowolnej jednostce), dni wolnych kraju aplikacji (`HolidaysIn`)
+- **Wolne terminy** (`Calendar\FreeSlots`, `Slot`): sloty grafiku wykonawcy w jednostce w danym dniu (dziś — cały grafik, także
+  sloty, których godzina już minęła; dni wcześniejsze — brak), bez zajętych przez rezerwacje wykonawcy albo zasobu (w dowolnej jednostce), dni wolnych kraju aplikacji (`HolidaysIn`)
   i — na zasobie wynajętym — dni, w których umowa najmu nie obowiązuje (§20);
   `days()` — najbliższe dni z wolnymi terminami.
 - **Rezerwacja** (`Calendar\BookSlot`): blokuje (`FOR UPDATE`) wiersz zasobu, potem wykonawcy i dopiero wtedy sprawdza
@@ -358,7 +358,7 @@ przed zapisem grafiku.
   paczki strefy staje się jej częścią (rezerwacja i dane dziedzinowe razem albo wcale).
 - **Rezerwacja nadliczbowa** (`BookSlot::bookOverflow()`): ponad wolne sloty, na końcu bloku grafiku ze slotami
   kończącego się o podanej godzinie (`FreeSlots::scheduleEndingAt()` — dzień, ważność, cykl i najem jak przy wolnych
-  terminach; blok nie może być miniony). Ma zerową długość (`starts_at` = `ends_at` = koniec bloku), więc nie zajmuje
+  terminach; blok nie może być z dnia minionego). Ma zerową długość (`starts_at` = `ends_at` = koniec bloku), więc nie zajmuje
   slotu ani pierwszego slotu następnego bloku; `json_attributes.overflow` (`ResourceBooking::OVERFLOW`,
   `isOverflow()`) ją odróżnia. Czy wykonawca przyjmuje nadliczbowo — decyduje paczka strefy. Blokady jak przy `book()`.
   **Dostępność zasobu po bloku** (`FreeSlots::roomTakenAfter()`): pierwsza kolizja w oknie jednego slotu po końcu bloku

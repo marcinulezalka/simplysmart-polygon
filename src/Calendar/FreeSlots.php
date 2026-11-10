@@ -31,7 +31,8 @@ use Simplysmart\Polygon\Queries\Organizations\OrganizationResources;
 /**
  * Wolne terminy wykonawcy w jednostce: sloty po `slot_minutes` w jego grafiku obowiązującym w danym dniu (grafik bez
  * slotów nie daje terminów), bez terminów zajętych przez rezerwacje tego wykonawcy albo tego zasobu (w dowolnej
- * jednostce), bez minionych i bez dni wolnych kraju aplikacji (Queries\Dictionaries\HolidaysIn). Grafik na zasobie
+ * jednostce), bez dni minionych (dzisiejszy grafik cały — także sloty, których godzina już minęła, bo kolejka bloku
+ * trwa i recepcja zapisuje na nie pacjentów) i bez dni wolnych kraju aplikacji (Queries\Dictionaries\HolidaysIn). Grafik na zasobie
  * wynajętym jednostce (kooperacja najemcy) daje terminy tylko w dniu, w którym umowa najmu obowiązuje i obejmuje jego
  * godziny — po końcu albo wypowiedzeniu umowy terminów nie ma, więc BookSlot ich też nie zapisze. Grafik wypełniający
  * wolny czas (`fills_gaps`, najem na żądanie) daje terminy tylko poza innym grafikiem zasobu i oknami najmów na
@@ -54,7 +55,7 @@ final readonly class FreeSlots
     {
         $day = $day->startOfDay();
 
-        if ($this->holidays->applicationDaysOff($day, $day) !== []) {
+        if ($day->lessThan(CarbonImmutable::today()) || $this->holidays->applicationDaysOff($day, $day) !== []) {
             return [];
         }
 
@@ -69,14 +70,13 @@ final readonly class FreeSlots
         }
 
         $taken = $this->taken($performer, array_values(array_map(static fn(ResourceSchedule $schedule): int => $schedule->resource_id, $schedules->all())), $day);
-        $now = CarbonImmutable::now();
         $slots = [];
 
         foreach ($schedules as $schedule) {
             $blocked = $schedule->fills_gaps ? $this->blocked($unit, $schedule, $day) : [];
 
             foreach ($this->grid($schedule, $day) as [$start, $end]) {
-                if ($start->lessThanOrEqualTo($now) || $this->overlaps($taken, $performer, $schedule->resource_id, $start, $end) || self::within($blocked, $start, $end)) {
+                if ($this->overlaps($taken, $performer, $schedule->resource_id, $start, $end) || self::within($blocked, $start, $end)) {
                     continue;
                 }
 

@@ -13,12 +13,14 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Providers;
 
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Translation\Loader;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\ServiceProvider;
 use Simplysmart\Polygon\Contracts\InterfaceLocales;
 use Simplysmart\Polygon\Contracts\LocalFormatter;
 use Simplysmart\Polygon\Contracts\TextTranslator;
+use Simplysmart\Polygon\Localization\ApplicationTimezone;
 use Simplysmart\Polygon\Localization\DictionaryInterfaceLocales;
 use Simplysmart\Polygon\Localization\IntlLocalFormatter;
 use Simplysmart\Polygon\Localization\PackageText;
@@ -29,7 +31,8 @@ use Simplysmart\Polygon\Translation\CoreTranslationPath;
 /**
  * Tłumaczenia i lokalizacja (docs/tlumaczenia.md): teksty `polygon::`, polskie teksty frameworka z `lang/` paczki
  * między frameworkiem a `lang/` projektu (CoreTranslationPath), kaskada TextTranslator dla helperów `text_*`,
- * formatowanie `local_*` i języki interfejsu ze słownika.
+ * formatowanie `local_*`, języki interfejsu ze słownika i strefa czasowa aplikacji z `APP_TIMEZONE`
+ * (Localization\ApplicationTimezone).
  */
 final class TranslationServiceProvider extends ServiceProvider
 {
@@ -37,6 +40,7 @@ final class TranslationServiceProvider extends ServiceProvider
 
     public function register(): void
     {
+        (new ApplicationTimezone($this->app->make(Repository::class)))->apply();
         $this->app->extend('translation.loader', fn(Loader $loader): Loader => (new CoreTranslationPath(
             $this->app->make(Filesystem::class),
             self::LANG,

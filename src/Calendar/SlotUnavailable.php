@@ -17,7 +17,7 @@ use RuntimeException;
 use Simplysmart\Polygon\Localization\PackageText;
 
 /**
- * Termin nie jest wolnym slotem wykonawcy w jednostce (zajęty — także przez równoległą rezerwację —, miniony, poza
+ * Termin nie jest wolnym slotem wykonawcy w jednostce (zajęty — także przez równoległą rezerwację —, z dnia minionego, poza
  * grafikiem albo w dzień wolny); rezerwacja nie powstała.
  */
 final class SlotUnavailable extends RuntimeException

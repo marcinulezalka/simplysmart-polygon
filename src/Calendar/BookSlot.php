@@ -73,14 +73,15 @@ final readonly class BookSlot
      * żadnego slotu ani nie koliduje z następnym blokiem; `json_attributes.overflow` (ResourceBooking::OVERFLOW) ją
      * odróżnia. Blokady jak przy book(). Czy wykonawca przyjmuje nadliczbowo — decyduje paczka strefy przed wywołaniem.
      *
-     * @throws SlotUnavailable Gdy żaden blok grafiku nie kończy się o $endsAt albo ten koniec już minął.
+     * @throws SlotUnavailable Gdy żaden blok grafiku nie kończy się o $endsAt albo to blok dnia minionego (dzisiejszy —
+     *                         także po końcu bloku, jak wolne sloty FreeSlots).
      */
     public function bookOverflow(Organization $unit, ZoneAccount $performer, CarbonImmutable $endsAt, string $kind, ?ZoneAccount $bookedBy = null): ResourceBooking
     {
         return $this->db->transaction(function () use ($unit, $performer, $endsAt, $kind, $bookedBy): ResourceBooking {
             $schedule = $this->slots->scheduleEndingAt($unit, $performer, $endsAt);
 
-            if ($schedule === null || $endsAt->lessThanOrEqualTo(CarbonImmutable::now())) {
+            if ($schedule === null || $endsAt->lessThan(CarbonImmutable::today())) {
                 throw new SlotUnavailable();
             }
 

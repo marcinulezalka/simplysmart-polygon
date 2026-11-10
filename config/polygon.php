@@ -47,6 +47,13 @@ return [
          */
         'vat_percent' => $envString('APP_DEFAULT_VAT', '23'),
 
+        /*
+         * Strefa czasowa aplikacji (identyfikator IANA, np. Europe/Warsaw): ustawiana jako `app.timezone` i domyślna
+         * strefa PHP (Localization\ApplicationTimezone), bo stockowy config/app.php ma na sztywno UTC. Pusta albo
+         * nieznana — zostaje strefa frameworka.
+         */
+        'timezone' => $envString('APP_TIMEZONE', ''),
+
     ],
 
     'zones' => [

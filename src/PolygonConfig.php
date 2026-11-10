@@ -33,6 +33,9 @@ final class PolygonConfig
     /** Stawka VAT bez słownika (`APP_DEFAULT_VAT`). */
     public const string VAT_PERCENT = self::KEY . '.localization.vat_percent';
 
+    /** Strefa czasowa aplikacji (IANA, `APP_TIMEZONE`; pusta — strefa frameworka). */
+    public const string TIMEZONE = self::KEY . '.localization.timezone';
+
     /** Ustawienia logowania stref (domyślne; strefa nadpisuje kluczem `auth`). */
     public const string AUTH = self::KEY . '.auth';
 
