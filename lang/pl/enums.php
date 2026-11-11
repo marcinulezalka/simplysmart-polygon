@@ -90,4 +90,27 @@ return [
         'nager' => 'kalendarz świąt',
         'manual' => 'ręczny',
     ],
+    'invoicing_provider' => [
+        'fakturownia' => 'Fakturownia',
+    ],
+    'invoice_kind' => [
+        'vat' => 'faktura VAT',
+        'proforma' => 'pro forma',
+    ],
+    'invoice_status' => [
+        'draft' => 'robocza',
+        'queued' => 'w kolejce do wysyłki',
+        'sent' => 'wysłana',
+        'failed' => 'błąd wysyłki',
+    ],
+    'invoice_tax' => [
+        'rate' => 'stawka VAT',
+        'exempt' => 'zwolniona (zw)',
+        'not_applicable' => 'nie podlega (np)',
+    ],
+    'payment_method' => [
+        'transfer' => 'przelew',
+        'cash' => 'gotówka',
+        'card' => 'karta',
+    ],
 ];

@@ -90,4 +90,27 @@ return [
         'nager' => 'holiday calendar',
         'manual' => 'manual',
     ],
+    'invoicing_provider' => [
+        'fakturownia' => 'Fakturownia',
+    ],
+    'invoice_kind' => [
+        'vat' => 'VAT invoice',
+        'proforma' => 'pro forma',
+    ],
+    'invoice_status' => [
+        'draft' => 'draft',
+        'queued' => 'queued for sending',
+        'sent' => 'sent',
+        'failed' => 'sending failed',
+    ],
+    'invoice_tax' => [
+        'rate' => 'VAT rate',
+        'exempt' => 'exempt',
+        'not_applicable' => 'not applicable',
+    ],
+    'payment_method' => [
+        'transfer' => 'bank transfer',
+        'cash' => 'cash',
+        'card' => 'card',
+    ],
 ];

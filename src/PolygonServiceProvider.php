@@ -26,6 +26,7 @@ use Simplysmart\Polygon\Console\SeedOrganizations;
 use Simplysmart\Polygon\Providers\AccountsServiceProvider;
 use Simplysmart\Polygon\Providers\AssetsServiceProvider;
 use Simplysmart\Polygon\Providers\DatabaseServiceProvider;
+use Simplysmart\Polygon\Providers\InvoicingServiceProvider;
 use Simplysmart\Polygon\Providers\OrganizationsServiceProvider;
 use Simplysmart\Polygon\Providers\PermissionsServiceProvider;
 use Simplysmart\Polygon\Providers\PolygonZoneServiceProvider;
@@ -56,6 +57,7 @@ final class PolygonServiceProvider extends ServiceProvider
         PolygonZoneServiceProvider::class,
         OrganizationsServiceProvider::class,
         AssetsServiceProvider::class,
+        InvoicingServiceProvider::class,
     ];
 
     /**
