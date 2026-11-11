@@ -5,8 +5,8 @@ Ikony stref to ikony [Iconify](https://iconify.design) o nazwie `zestaw:ikona` (
 (npm, zależność projektu). Strefa ma dwa źródła danych ikon:
 
 - **Ikony interfejsu** (przyciski, nawigacja, listy) — lokalne kolekcje w repozytorium paczki strefy: wycinki zestawów
-  w formacie Iconify JSON tylko z używanymi ikonami. JS strefy przekazuje je komponentowi przed jego definicją
-  (`window.IconifyPreload`), więc ekrany są gotowe od pierwszego renderu i nie pytają API Iconify.
+  w formacie Iconify JSON tylko z używanymi ikonami. JS strefy dodaje je komponentowi przez `addCollection()`
+  zaraz po imporcie `iconify-icon`, więc ekrany są gotowe od pierwszego renderu i nie pytają API Iconify.
 - **Ikony wybrane przez użytkownika** (np. ikona poradni) — dowolna ikona z dozwolonych zestawów; przeglądarka
   pobiera ją z API Iconify, a serwer przy zapisie sprawdza, czy istnieje.
 
@@ -44,7 +44,9 @@ Config `polygon.icons`:
 1. Enum ikon interfejsu z wartościami `zestaw:ikona`; `html()` → `IconifyIcon::html()` z klasą wyglądu strefy.
 2. Kolekcje `resources/icons/<zestaw>.json` z komendy `polygon:icons:subset` (własny zestaw spoza API — plik JSON
    pisany ręcznie) i licencje zestawów `resources/icons/<zestaw>/LICENSE`.
-3. Moduł JS ładowany na każdej stronie: najpierw `window.IconifyPreload = [kolekcje]`, potem `import 'iconify-icon'`;
+3. Moduł JS ładowany na każdej stronie: `import { addCollection, appendCustomStyle } from 'iconify-icon'` i od razu
+   `addCollection()` każdej kolekcji — nie `window.IconifyPreload`: Vite wykonuje wspólny fragment `iconify-icon` przed
+   treścią modułu, więc komponent nie widzi globalu, pobiera ikony z API, a własnego zestawu (spoza API) nie pokazuje;
    `appendCustomStyle()` z `iconify-icon` ustawia styl wnętrza komponentu (Shadow DOM, do którego arkusz strony nie
    sięga), np. `svg{width:100%;height:100%}`, żeby rozmiar dawała klasa ikony.
 4. CSS: klasa ikony z `display: inline-block` i wymiarami — miejsce jest zarezerwowane, zanim JS zdefiniuje komponent.
