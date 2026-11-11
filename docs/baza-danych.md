@@ -27,7 +27,9 @@ Silniki: MySQL 8 / MariaDB i SQLite (testy, lokalnie). Zasady obowiązują każd
   config/auth przez mechanizm stref, [docs/strefy.md](strefy.md), e-mail szyfrowany z `email_hash` = HMAC z `APP_KEY` adresu w postaci kanonicznej (`Auth\EmailIndex`,
   `Contracts\BlindIndex`; konto po adresie: `Queries\Accounts\ZoneAccounts::findByEmail()`), bez hasła — PIN
   przy pierwszym logowaniu, role spatie w guardzie strefy); `users` — konta frontendu (`Models\User`, guard `web`).
-  Konto strefy zakłada `php artisan <strefa>:account:create {email} {name} [--role=*] [--skip-existing]`
+  Konto strefy zakłada `php artisan <strefa>:account:create {email} {name} [--role=*] [--organization=<klucz>=<rola>,…]*
+  [--default-organization=<klucz>] [--skip-existing]` — organizacje i role w nich jak `accounts[].organizations` w pliku instalacji, np.
+  `<strefa>:account:create anna@example.com "Anna Nowak" --organization=<klucz-poradni>=registration`
   (np. `polygon:account:create`; baza `Console\CreateZoneAccountCommand`, akcja `Auth\CreateZoneAccount`, jedna transakcja z rolami; adres zajęty także przez konto usunięte).
 - Nazwa pliku migracji zaczyna się od daty (kolejność) i mówi, czyja jest tabela.
 - **Migracje i seedery są rozdzielone:** migracja tworzy i zmienia tylko schemat (tabele, historia, pula id), nigdy nie

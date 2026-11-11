@@ -148,7 +148,7 @@ własny kontekst):
 
 ## Konta i komendy
 
-- `<strefa>:account:create {email} {name} [--role=*] [--skip-existing]` — podklasa `Console\CreateZoneAccountCommand`
+- `<strefa>:account:create {email} {name} [--role=*] [--organization=<klucz>=<rola>,…]* [--default-organization=<klucz>] [--skip-existing]` — podklasa `Console\CreateZoneAccountCommand`
   (ustawia `$name`, `$description`, `zoneName()`); akcja `Auth\CreateZoneAccount`.
 - `polygon:auth:prune` (co godzinę) — usuwa wygasłe kody logowania i nieaktywne zaufane urządzenia stref.
 - Role i uprawnienia strefy z plików instalacji ([instalacja.md](instalacja.md)).
