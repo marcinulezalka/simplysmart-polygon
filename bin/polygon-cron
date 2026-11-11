@@ -1,0 +1,105 @@
+#!/usr/bin/env sh
+#
+# This file is part of simplysmart/polygon.
+#
+# Copyright (c) 2026 Marcin Ulezalka <marcin.ulezalka@simplysmart.pl>
+#
+# Licensed under the Simplysmart Restricted Source License 1.0.
+# See the LICENSE file distributed with this source code.
+#
+# Jedno wejście crona projektu (docs/deploy.md, „Cron”): uruchamiany co minutę, wykonuje zadania serwera równolegle
+# i czeka na ich koniec. Nowe zadanie = nowa funkcja `task_*` i jej wywołanie w sekcji „Zadania” — wiersz w crontabie
+# zostaje ten sam.
+#
+#   * * * * * cd /ścieżka/do/projektu && PHP_BIN=/usr/local/bin/php84 vendor/bin/polygon-cron >> /dev/null 2>&1
+#
+# Zadania:
+#   schedule  `artisan schedule:run` — harmonogram Laravela (synchronizacja z Fakturownią, sprzątanie logowań…).
+#   queue     `artisan queue:work --stop-when-empty --max-time=55` — worker kolejki, tylko gdy QUEUE_CONNECTION w .env
+#             nie jest `sync`; jeden naraz (flock — zajęta blokada to nie błąd), więc kolejne wywołanie crona nie
+#             dubluje workera.
+#
+# Opcje: --dry-run (wypisuje, co by uruchomił, nic nie wykonuje). Zmienne: PHP_BIN (pełna ścieżka PHP — cron ma ubogi
+# PATH; domyślnie `php` z PATH). Błędy zadań trafiają do storage/logs/cron.log. Uruchamiaj z katalogu projektu
+# (z plikiem artisan).
+
+set -u
+
+DRY_RUN=0
+for argument in "$@"; do
+    case "$argument" in
+        --dry-run) DRY_RUN=1 ;;
+        *) echo "polygon-cron: nieznana opcja $argument" >&2; exit 2 ;;
+    esac
+done
+
+PROJECT_DIR=$(pwd)
+PHP_BIN=${PHP_BIN:-php}
+LOG_FILE="$PROJECT_DIR/storage/logs/cron.log"
+LOCK_DIR="$PROJECT_DIR/storage/framework"
+
+if [ ! -f "$PROJECT_DIR/artisan" ]; then
+    echo "polygon-cron: brak pliku artisan w $PROJECT_DIR — uruchom z katalogu projektu (cd w crontabie)." >&2
+    exit 1
+fi
+
+if ! command -v "$PHP_BIN" >/dev/null 2>&1; then
+    echo "polygon-cron: nie znaleziono PHP ($PHP_BIN) — podaj PHP_BIN z pełną ścieżką." >&2
+    exit 1
+fi
+
+# Zapis do logu cron.log z datą (tylko błędy — log nie rośnie co minutę).
+log() {
+    printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1" >> "$LOG_FILE"
+}
+
+# Uruchamia polecenie zadania $1; przy --dry-run tylko je wypisuje. Wyjście polecenia trafia do logu, gdy się nie uda.
+run() {
+    name=$1
+    shift
+
+    if [ "$DRY_RUN" -eq 1 ]; then
+        echo "[$name] $*"
+        return 0
+    fi
+
+    output=$("$@" 2>&1)
+    status=$?
+
+    if [ "$status" -ne 0 ]; then
+        log "$name: kod $status"
+        printf '%s\n' "$output" >> "$LOG_FILE"
+    fi
+
+    return "$status"
+}
+
+# Połączenie kolejki z .env (tylko nazwa sterownika, bez sekretów); brak klucza — `database`, domyślne w Laravelu.
+queue_connection() {
+    value=$(sed -n 's/^QUEUE_CONNECTION=//p' "$PROJECT_DIR/.env" 2>/dev/null | tail -n 1 | tr -d "\"' \r")
+    printf '%s' "${value:-database}"
+}
+
+task_schedule() {
+    run schedule "$PHP_BIN" "$PROJECT_DIR/artisan" schedule:run --no-interaction
+}
+
+task_queue() {
+    connection=$(queue_connection)
+
+    if [ "$connection" = "sync" ]; then
+        [ "$DRY_RUN" -eq 1 ] && echo "[queue] pominięte — QUEUE_CONNECTION=sync"
+        return 0
+    fi
+
+    if command -v flock >/dev/null 2>&1; then
+        run queue flock -n -E 0 "$LOCK_DIR/polygon-cron-queue.lock" "$PHP_BIN" "$PROJECT_DIR/artisan" queue:work --stop-when-empty --max-time=55 --no-interaction
+    else
+        run queue "$PHP_BIN" "$PROJECT_DIR/artisan" queue:work --stop-when-empty --max-time=55 --no-interaction
+    fi
+}
+
+# Zadania — każde w tle, cron czeka na wszystkie.
+task_schedule &
+task_queue &
+wait

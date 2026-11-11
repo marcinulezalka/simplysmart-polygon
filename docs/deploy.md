@@ -129,13 +129,71 @@ deploy zostawia bez zmian.
 Maile logowania i bezpieczeństwa stref (kod logowania `Auth\SignIn\IssueSignInCode`, kod odzyskania PIN-u, zmiana
 PIN-u, blokada konta, nowe zaufane urządzenie) idą przez kolejkę. Z `QUEUE_CONNECTION=database` (produkcja) zadania
 czekają w tabeli `jobs`, dopóki nie wykona ich worker — **deploy workera nie uruchamia**. Bez niego maile nie wychodzą,
-a `jobs` rośnie. Na serwerze bez supervisora worker uruchamia cron, co minutę, ścieżkami bezwzględnymi:
+a `jobs` rośnie. Na serwerze bez supervisora worker uruchamia cron — przez skrypt crona projektu (niżej).
+
+### Cron
+
+Serwer ma jeden wpis crona na projekt: `vendor/bin/polygon-cron` (`bin/polygon-cron` tej paczki), co minutę, ścieżkami
+bezwzględnymi:
 
 ```cron
-* * * * * cd /home/<konto>/<katalog-aplikacji> && /usr/local/bin/php84 artisan queue:work --stop-when-empty --max-time=55 >> storage/logs/queue.log 2>&1
+* * * * * cd /home/<konto>/<katalog-aplikacji> && PHP_BIN=/usr/local/bin/php84 vendor/bin/polygon-cron >> /dev/null 2>&1
 ```
 
-- Cron ma ubogi `PATH`: podaj pełną ścieżkę PHP (`command -v php84` na serwerze) i katalogu aplikacji (bez `~`).
+Skrypt uruchamia równolegle i czeka na koniec:
+- `artisan schedule:run` — harmonogram (nocna synchronizacja z Fakturownią `polygon:invoicing:sync`, sprzątanie
+  logowań i inne zadania paczek);
+- `artisan queue:work --stop-when-empty --max-time=55` — worker kolejki, tylko gdy `QUEUE_CONNECTION` w `.env` nie
+  jest `sync`; jeden naraz (`flock` z blokadą w `storage/framework`).
+
+Błędy zadań (z kodem wyjścia i wyjściem polecenia) trafiają do `storage/logs/cron.log`; poprawne przebiegi nic nie
+logują. Sprawdzenie bez uruchamiania: `vendor/bin/polygon-cron --dry-run` w katalogu aplikacji. Nowe zadanie serwera
+dopisuje się w skrypcie (funkcja `task_*` i jej wywołanie) — wpis crona zostaje ten sam, a serwer dostaje zmianę
+z wdrożeniem paczki.
+
+- Cron ma ubogi `PATH`: podaj pełną ścieżkę PHP w `PHP_BIN` (`command -v php84` na serwerze) i katalogu aplikacji
+  (bez `~`). Wpis dodaje się przez `crontab -e` użytkownika aplikacji albo w panelu hostingu.
+
+#### Uruchomienie na serwerze (raz, po wdrożeniu wersji ze skryptem)
+
+Po `ssh` na serwer, jako użytkownik aplikacji, w katalogu aplikacji (`DEPLOY_PATH`):
+
+1. Ścieżki do wpisu crona:
+
+   ```bash
+   pwd                                   # katalog aplikacji
+   command -v php84 || command -v php    # pełna ścieżka PHP
+   ```
+
+2. Próba bez wykonywania zadań — powinna wypisać `[schedule]` i (przy `QUEUE_CONNECTION=database`) `[queue]`:
+
+   ```bash
+   PHP_BIN=/usr/local/bin/php84 vendor/bin/polygon-cron --dry-run
+   ```
+
+3. Wpis crona — `crontab -e`, ścieżki z punktu 1. Wcześniejsze wpisy `schedule:run` i `queue:work` tego projektu
+   **usuń** — skrypt je zastępuje, a zostawione uruchomiłyby drugi worker:
+
+   ```cron
+   * * * * * cd /home/<konto>/<katalog-aplikacji> && PHP_BIN=/usr/local/bin/php84 vendor/bin/polygon-cron >> /dev/null 2>&1
+   ```
+
+4. Sprawdzenie po 2–3 minutach:
+
+   ```bash
+   crontab -l                                  # jeden wpis polygon-cron dla projektu
+   php84 artisan schedule:list                 # m.in. polygon:invoicing:sync o 30 2 * * *
+   cat storage/logs/cron.log 2>/dev/null       # brak pliku albo pusty = zadania bez błędów
+   php84 artisan tinker --execute 'echo DB::table("jobs")->count(), " / ", DB::table("failed_jobs")->count();'
+   ```
+
+   Liczba czekających zadań (`jobs`) spada do 0 w ciągu minuty — worker działa.
+
+5. Konto Fakturowni (gdy projekt ma strefę z fakturami): w Ustawieniach → Organizacja → „Fakturownia” zaznacz
+   synchronizację automatyczną, zapisz i kliknij „Synchronizuj teraz”; przy kolejce `database` wynik pojawia się
+   w raporcie karty po wykonaniu zadania przez worker (do minuty).
+
+Kolejne wdrożenia nie wymagają zmian w cronie — nowe zadania przychodzą w nowej wersji skryptu.
 - Kod logowania dochodzi wtedy z opóźnieniem do minuty. Z `QUEUE_CONNECTION=sync` (przed-produkcja) mail wychodzi
   w żądaniu, bez workera, ale odpowiedź logowania trwa dłużej dla istniejącego konta niż dla nieznanego adresu.
 - Diagnoza: `php artisan tinker --execute 'echo DB::table("jobs")->count(), " / ", DB::table("failed_jobs")->count();'`

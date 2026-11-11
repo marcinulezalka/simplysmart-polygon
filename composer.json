@@ -57,6 +57,7 @@
     "bin": [
         "bin/composer-private",
         "bin/deploy",
+        "bin/polygon-cron",
         "bin/version-release"
     ],
     "scripts": {
