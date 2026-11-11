@@ -32,4 +32,10 @@ return [
     'item_price_invalid' => 'Podaj cenę netto jako liczbę.',
     'item_tax_invalid' => 'Podaj stawkę VAT od 0 do 100.',
     'send_failed' => 'Nie udało się wysłać faktury do Fakturowni.',
+    'invoice_without_id' => 'Faktura bez identyfikatora w Fakturowni.',
+    'invoice_kind_unsupported' => 'Rodzaj faktury „:kind” nie jest pobierany (tylko faktury VAT i pro forma).',
+    'invoice_without_date' => 'Faktura bez daty wystawienia.',
+    'invoice_tax_unknown' => 'Pozycja „:item” ma nieobsługiwaną stawkę VAT „:tax”.',
+    'invoice_client_missing' => 'Klient faktury nie istnieje już w Fakturowni.',
+    'invoice_buyer_missing' => 'Nie udało się ustalić nabywcy faktury.',
 ];

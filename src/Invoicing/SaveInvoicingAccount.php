@@ -36,9 +36,11 @@ final readonly class SaveInvoicingAccount
     ) {}
 
     /**
+     * @param bool $autoSync Czy konto bierze udział w nocnej synchronizacji automatycznej.
+     *
      * @throws InvoicingRejected Gdy subdomena jest błędna, brakuje tokenu albo Fakturownia odrzuca dane dostępowe.
      */
-    public function save(Organization $organization, string $subdomain, ?string $token, ?string $departmentId = null, bool $active = true): InvoicingAccount
+    public function save(Organization $organization, string $subdomain, ?string $token, ?string $departmentId = null, bool $active = true, bool $autoSync = true): InvoicingAccount
     {
         $root = $this->accounts->root($organization);
         $account = $this->accounts->configured($root) ?? new InvoicingAccount();
@@ -70,6 +72,7 @@ final readonly class SaveInvoicingAccount
             Organization::FOREIGN_KEY => $root->id,
             ColumnNames::NAME => InvoicingProvider::Fakturownia->label() . ' — ' . $subdomain,
             ColumnNames::IS_ACTIVE => $active,
+            InvoicingAccount::AUTO_SYNC => $autoSync,
             InvoicingAccount::PROVIDER => InvoicingProvider::Fakturownia,
             InvoicingAccount::SUBDOMAIN => $subdomain,
             InvoicingAccount::API_TOKEN => $token,

@@ -21,6 +21,12 @@ final class PolygonConfig
 {
     public const string KEY = 'polygon';
 
+    /** Godzina nocnej synchronizacji z systemem fakturowym (`HH:MM`, `INVOICING_SYNC_AT`). */
+    public const string INVOICING_SYNC_AT = self::KEY . '.invoicing.sync_at';
+
+    /** Domyślna godzina nocnej synchronizacji z systemem fakturowym. */
+    public const string INVOICING_SYNC_AT_DEFAULT = '02:30';
+
     /** Waluta aplikacji (ISO 4217, `APP_CURRENCY`). */
     public const string CURRENCY = self::KEY . '.locale.currency';
 

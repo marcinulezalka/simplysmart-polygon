@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Integrations\Fakturownia;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory as Http;
 use Illuminate\Http\Client\PendingRequest;
@@ -23,7 +24,8 @@ use Throwable;
 /**
  * Klient API Fakturowni jednego konta (`https://<subdomena>.fakturownia.pl`, token w parametrze `api_token`):
  * konto (account() — sprawdzenie danych dostępowych), klienci (clients() stronami po PER_PAGE, clientByExternalId(),
- * clientByTaxNo(), createClient(), updateClient()), faktury (createInvoice(), invoiceByOid() — wyszukanie po naszym
+ * clientById(), clientByTaxNo(), createClient(), updateClient()), faktury (invoices() — strony faktur VAT i pro forma
+ * z okresu dat wystawienia, od ostatnio zmienionych; createInvoice(), invoiceByOid() — wyszukanie po naszym
  * identyfikatorze, invoicePdf()). Ponawiane (RETRY_DELAYS): odczyty przy limicie żądań (429), błędzie serwera i braku
  * połączenia, zapisy tylko przy limicie żądań — po błędzie serwera albo zerwanym połączeniu nie wiadomo, czy zapis
  * doszedł, więc decyduje wywołujący (faktury chroni `oid`). Każda inna odmowa to FakturowniaFailed. Tworzony przez FakturowniaClients — token nie trafia do logów ani wyjątków.
@@ -32,6 +34,9 @@ final readonly class FakturowniaClient
 {
     /** Największa strona listy w API. */
     public const int PER_PAGE = 100;
+
+    /** Rodzaje faktur pobierane z Fakturowni (pozostałe — korekty, paragony, rachunki — nie są pobierane). */
+    public const array INVOICE_KINDS = ['vat', 'proforma'];
 
     /** Limit czasu żądania w sekundach. */
     private const int TIMEOUT = 20;
@@ -63,6 +68,16 @@ final readonly class FakturowniaClient
     public function clients(int $page): array
     {
         return $this->list($this->get('clients.json', ['page' => $page, 'per_page' => self::PER_PAGE]));
+    }
+
+    /**
+     * Klient o id z Fakturowni.
+     *
+     * @return array<array-key, mixed>
+     */
+    public function clientById(string $id): array
+    {
+        return $this->object($this->get('clients/' . rawurlencode($id) . '.json'));
     }
 
     /**
@@ -102,6 +117,26 @@ final readonly class FakturowniaClient
     }
 
     /**
+     * Strona (od 1) faktur VAT i pro forma wystawionych w okresie $from–$to, z pozycjami, od ostatnio zmienionych
+     * (`updated_at` malejąco — pobranie przyrostowe kończy się na pierwszej fakturze bez zmian); pusta lista — koniec.
+     *
+     * @return list<array<array-key, mixed>>
+     */
+    public function invoices(int $page, CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        return $this->list($this->get('invoices.json', [
+            'period' => 'more',
+            'date_from' => $from->toDateString(),
+            'date_to' => $to->toDateString(),
+            'kinds' => self::INVOICE_KINDS,
+            'include_positions' => 'true',
+            'order' => 'updated_at.desc',
+            'page' => $page,
+            'per_page' => self::PER_PAGE,
+        ]));
+    }
+
+    /**
      * @param array<string, mixed> $invoice
      *
      * @return array<array-key, mixed>
@@ -136,11 +171,15 @@ final readonly class FakturowniaClient
     }
 
     /**
-     * @param array<string, scalar> $query
+     * Listy w zapytaniu idą w zapisie `klucz[]=wartość` (np. `kinds[]=vat&kinds[]=proforma`), którego oczekuje API.
+     *
+     * @param array<string, scalar|list<scalar>> $query
      */
     private function get(string $path, array $query = []): Response
     {
-        return $this->respond(fn(): Response => $this->request(true)->get($path, ['api_token' => $this->token, ...$query]));
+        $queryString = (string) preg_replace('/%5B\d+%5D=/', '%5B%5D=', http_build_query(['api_token' => $this->token, ...$query], '', '&', PHP_QUERY_RFC3986));
+
+        return $this->respond(fn(): Response => $this->request(true)->get($path, $queryString));
     }
 
     /**

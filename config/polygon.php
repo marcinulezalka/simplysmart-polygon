@@ -65,6 +65,16 @@ return [
 
     ],
 
+    'invoicing' => [
+
+        /*
+         * Godzina (HH:MM) nocnej synchronizacji automatycznej z systemem fakturowym — kontrahenci, faktury i pro formy
+         * (docs/baza-danych.md §21; wymaga crona `schedule:run`).
+         */
+        'sync_at' => $envString('INVOICING_SYNC_AT', '02:30'),
+
+    ],
+
     /*
      * Strefa `polygon` (konta w `polygon_accounts`, Providers\PolygonZoneServiceProvider): guard i provider kont,
      * bez ekranów logowania (polygon nie ma widoków; ekrany dostarcza paczka strefy w `views`).

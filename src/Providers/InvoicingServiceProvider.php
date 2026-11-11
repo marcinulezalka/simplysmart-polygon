@@ -15,18 +15,21 @@ namespace Simplysmart\Polygon\Providers;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Contracts\Config\Repository as Config;
 use Simplysmart\Polygon\Console\SendQueuedInvoices;
+use Simplysmart\Polygon\Console\SyncInvoicing;
 use Simplysmart\Polygon\Console\SyncInvoicingContractors;
 use Simplysmart\Polygon\Invoicing\ContractorPushGate;
 use Simplysmart\Polygon\Invoicing\InvoicingAccounts;
 use Simplysmart\Polygon\Jobs\PushContractorJob;
 use Simplysmart\Polygon\Models\Contractor;
+use Simplysmart\Polygon\PolygonConfig;
 
 /**
  * Faktury i integracja z systemem fakturowym (docs/baza-danych.md §21): bramka wysyłki kontrahentów jako singleton,
  * zlecenie wysyłki kontrahenta po jego zapisie (Jobs\PushContractorJob — tylko gdy organizacja ma aktywne konto
- * i bramka jest otwarta, czyli zapis nie pochodzi z synchronizacji), komendy konsoli i cogodzinna synchronizacja
- * kontrahentów w harmonogramie.
+ * i bramka jest otwarta, czyli zapis nie pochodzi z synchronizacji), komendy konsoli i nocna synchronizacja
+ * automatyczna (kontrahenci, faktury i pro formy) w harmonogramie o godzinie `polygon.invoicing.sync_at`.
  */
 final class InvoicingServiceProvider extends ServiceProvider
 {
@@ -44,9 +47,10 @@ final class InvoicingServiceProvider extends ServiceProvider
         });
 
         if ($this->app->runningInConsole()) {
-            $this->commands([SyncInvoicingContractors::class, SendQueuedInvoices::class]);
-            $this->callAfterResolving(Schedule::class, static function (Schedule $schedule): void {
-                $schedule->command(SyncInvoicingContractors::class)->hourly()->withoutOverlapping();
+            $this->commands([SyncInvoicing::class, SyncInvoicingContractors::class, SendQueuedInvoices::class]);
+            $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
+                $time = $this->app->make(Config::class)->get(PolygonConfig::INVOICING_SYNC_AT);
+                $schedule->command(SyncInvoicing::class)->dailyAt(is_string($time) && $time !== '' ? $time : PolygonConfig::INVOICING_SYNC_AT_DEFAULT)->withoutOverlapping();
             });
         }
     }

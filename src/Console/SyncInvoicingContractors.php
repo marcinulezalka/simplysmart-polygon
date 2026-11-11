@@ -22,8 +22,8 @@ use Simplysmart\Polygon\Models\Organization;
 
 /**
  * Synchronizuje kontrahentów z systemem fakturowym (Invoicing\SyncContractors::sync()): wszystkich aktywnych kont albo
- * konta organizacji o podanym tokenie. Uruchamiana co godzinę z harmonogramu (Providers\InvoicingServiceProvider)
- * i ręcznie. Błąd jednego konta nie przerywa pozostałych; komenda kończy się błędem, gdy któreś konto zawiodło.
+ * konta organizacji o podanym tokenie. Uruchamiana ręcznie — harmonogram uruchamia pełną synchronizację
+ * (Console\SyncInvoicing: kontrahenci, faktury i pro formy). Błąd jednego konta nie przerywa pozostałych; komenda kończy się błędem, gdy któreś konto zawiodło.
  */
 final class SyncInvoicingContractors extends Command
 {

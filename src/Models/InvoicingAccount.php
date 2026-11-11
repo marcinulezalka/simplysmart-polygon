@@ -22,8 +22,10 @@ use Simplysmart\Polygon\Models\Relations\BelongsToOrganization;
  * Konto systemu fakturowego organizacji (`invoicing_accounts`, docs/baza-danych.md §21): jedno na organizację główną
  * klienta — `provider` (Enums\InvoicingProvider), `subdomain` (konto w Fakturowni: `<subdomain>.fakturownia.pl`),
  * `api_token` szyfrowany (cast `encrypted`; nigdy nie trafia do widoków ani logów), opcjonalny `department_id` (dział
- * wystawcy w Fakturowni), `contractors_synced_at` (ostatnie udane pobranie kontrahentów) i `last_error` (ostatni błąd
- * połączenia). `name` — etykieta konta. Zapisywane przez Invoicing\SaveInvoicingAccount.
+ * wystawcy w Fakturowni), `contractors_synced_at` (ostatnie udane pobranie kontrahentów), `invoices_synced_at`
+ * (ostatnie udane pobranie faktur — od niego liczone są zmiany), `auto_sync` (czy konto bierze udział w nocnej
+ * synchronizacji z harmonogramu), `last_sync_report` (raport ostatniej synchronizacji — Invoicing\InvoicingSyncReport::toArray())
+ * i `last_error` (ostatni błąd połączenia). `name` — etykieta konta. Zapisywane przez Invoicing\SaveInvoicingAccount.
  *
  * @property int $organization_id
  * @property InvoicingProvider $provider
@@ -31,6 +33,9 @@ use Simplysmart\Polygon\Models\Relations\BelongsToOrganization;
  * @property string $api_token
  * @property string|null $department_id
  * @property CarbonImmutable|null $contractors_synced_at
+ * @property CarbonImmutable|null $invoices_synced_at
+ * @property bool $auto_sync
+ * @property array<string, mixed>|null $last_sync_report
  * @property string|null $last_error
  * @property-read Organization|null $organization
  */
@@ -53,6 +58,12 @@ final class InvoicingAccount extends DataModel
 
     public const string CONTRACTORS_SYNCED_AT = 'contractors_synced_at';
 
+    public const string INVOICES_SYNCED_AT = 'invoices_synced_at';
+
+    public const string AUTO_SYNC = 'auto_sync';
+
+    public const string LAST_SYNC_REPORT = 'last_sync_report';
+
     public const string LAST_ERROR = 'last_error';
 
     protected $table = self::TABLE;
@@ -60,7 +71,7 @@ final class InvoicingAccount extends DataModel
     /**
      * @var array<string, mixed>
      */
-    protected $attributes = ['is_active' => true, self::PROVIDER => InvoicingProvider::Fakturownia->value];
+    protected $attributes = ['is_active' => true, self::PROVIDER => InvoicingProvider::Fakturownia->value, self::AUTO_SYNC => true];
 
     /**
      * @var list<string>
@@ -87,6 +98,9 @@ final class InvoicingAccount extends DataModel
             self::API_TOKEN => 'encrypted',
             self::DEPARTMENT_ID => 'string',
             self::CONTRACTORS_SYNCED_AT => 'immutable_datetime',
+            self::INVOICES_SYNCED_AT => 'immutable_datetime',
+            self::AUTO_SYNC => 'boolean',
+            self::LAST_SYNC_REPORT => 'array',
             self::LAST_ERROR => 'string',
         ];
     }

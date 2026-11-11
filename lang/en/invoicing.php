@@ -32,4 +32,10 @@ return [
     'item_price_invalid' => 'Enter the net price as a number.',
     'item_tax_invalid' => 'Enter a VAT rate from 0 to 100.',
     'send_failed' => 'The invoice could not be sent to Fakturownia.',
+    'invoice_without_id' => 'The invoice has no identifier in Fakturownia.',
+    'invoice_kind_unsupported' => 'Invoices of kind “:kind” are not downloaded (only VAT and pro forma invoices).',
+    'invoice_without_date' => 'The invoice has no issue date.',
+    'invoice_tax_unknown' => 'Item “:item” has an unsupported VAT rate “:tax”.',
+    'invoice_client_missing' => 'The invoice client no longer exists in Fakturownia.',
+    'invoice_buyer_missing' => 'The invoice buyer could not be determined.',
 ];

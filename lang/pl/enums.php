@@ -103,6 +103,14 @@ return [
         'sent' => 'wysłana',
         'failed' => 'błąd wysyłki',
     ],
+    'invoice_source' => [
+        'local' => 'wystawiona w aplikacji',
+        'fakturownia' => 'z Fakturowni',
+    ],
+    'invoicing_sync_trigger' => [
+        'automatic' => 'automatyczna',
+        'manual' => 'na żądanie',
+    ],
     'invoice_tax' => [
         'rate' => 'stawka VAT',
         'exempt' => 'zwolniona (zw)',

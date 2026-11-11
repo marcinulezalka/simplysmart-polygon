@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Enums\InvoiceKind;
+use Simplysmart\Polygon\Enums\InvoiceSource;
 use Simplysmart\Polygon\Enums\InvoiceStatus;
 use Simplysmart\Polygon\Enums\PaymentMethod;
 use Simplysmart\Polygon\Models\Relations\BelongsToOrganization;
@@ -31,11 +32,15 @@ use Simplysmart\Polygon\Models\Relations\BelongsToOrganization;
  * z kontrahenta) z dnia wystawienia. Identyfikatory zewnętrzne: `external_id` (numeryczne id w Fakturowni — adresy
  * API i PDF), `external_token` (token faktury w Fakturowni — publiczny link), `external_number`, `external_url`;
  * własny `token` faktury jest wysyłany jako `oid` — klucz, po którym wysyłka wykrywa duplikat. `sent_at` — chwila
- * wysłania, `error` — komunikat ostatniego błędu wysyłki, `notes` — uwagi na fakturze.
+ * wysłania, `error` — komunikat ostatniego błędu wysyłki, `notes` — uwagi na fakturze. Faktury pobrane z Fakturowni
+ * (Invoicing\ImportInvoices) mają `source` Fakturownia, stan „wysłana” i są tylko do odczytu; `external_status` (stan
+ * w Fakturowni: issued, sent, paid, partial, rejected), `external_updated_at` i `paid_at` odświeża każde pobranie —
+ * także dla faktur wystawionych w aplikacji.
  *
  * @property int $organization_id
  * @property int $contractor_id
  * @property InvoiceKind $kind
+ * @property InvoiceSource $source
  * @property InvoiceStatus $status
  * @property CarbonImmutable $issue_date
  * @property CarbonImmutable $sell_date
@@ -61,6 +66,9 @@ use Simplysmart\Polygon\Models\Relations\BelongsToOrganization;
  * @property string|null $external_token
  * @property string|null $external_number
  * @property string|null $external_url
+ * @property string|null $external_status
+ * @property CarbonImmutable|null $external_updated_at
+ * @property CarbonImmutable|null $paid_at
  * @property CarbonImmutable|null $sent_at
  * @property string|null $error
  * @property string|null $notes
@@ -78,6 +86,8 @@ final class Invoice extends DataModel
     public const string FOREIGN_KEY = 'invoice_id';
 
     public const string KIND = 'kind';
+
+    public const string SOURCE = 'source';
 
     public const string ISSUE_DATE = 'issue_date';
 
@@ -127,11 +137,20 @@ final class Invoice extends DataModel
 
     public const string EXTERNAL_URL = 'external_url';
 
+    public const string EXTERNAL_STATUS = 'external_status';
+
+    public const string EXTERNAL_UPDATED_AT = 'external_updated_at';
+
+    public const string PAID_AT = 'paid_at';
+
     public const string SENT_AT = 'sent_at';
 
     public const string ERROR = 'error';
 
     public const string NOTES = 'notes';
+
+    /** Stan zapłaconej faktury w `external_status`. */
+    public const string PAID_STATUS = 'paid';
 
     /** Kolumny migawki strony faktury bez prefiksu (`seller_<kolumna>`, `buyer_<kolumna>`). */
     public const array PARTY_COLUMNS = ['name', 'nip', 'street', 'postal_code', 'city', 'country_code'];
@@ -145,6 +164,7 @@ final class Invoice extends DataModel
         'is_active' => true,
         ColumnNames::STATUS => InvoiceStatus::Draft->value,
         self::KIND => InvoiceKind::Vat->value,
+        self::SOURCE => InvoiceSource::Local->value,
         self::PAYMENT_METHOD => PaymentMethod::Transfer->value,
         self::TOTAL_NET => '0.00',
         self::TOTAL_VAT => '0.00',
@@ -187,6 +207,22 @@ final class Invoice extends DataModel
     }
 
     /**
+     * Czy faktura pochodzi z systemu fakturowego (pobrana, tylko do odczytu).
+     */
+    public function isImported(): bool
+    {
+        return $this->source !== InvoiceSource::Local;
+    }
+
+    /**
+     * Czy system fakturowy oznaczył fakturę jako zapłaconą.
+     */
+    public function isPaid(): bool
+    {
+        return $this->external_status === self::PAID_STATUS;
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
@@ -195,6 +231,7 @@ final class Invoice extends DataModel
             Organization::FOREIGN_KEY => 'integer',
             Contractor::FOREIGN_KEY => 'integer',
             self::KIND => InvoiceKind::class,
+            self::SOURCE => InvoiceSource::class,
             ColumnNames::STATUS => InvoiceStatus::class,
             self::ISSUE_DATE => 'immutable_date',
             self::SELL_DATE => 'immutable_date',
@@ -220,6 +257,9 @@ final class Invoice extends DataModel
             self::EXTERNAL_TOKEN => 'string',
             self::EXTERNAL_NUMBER => 'string',
             self::EXTERNAL_URL => 'string',
+            self::EXTERNAL_STATUS => 'string',
+            self::EXTERNAL_UPDATED_AT => 'immutable_datetime',
+            self::PAID_AT => 'immutable_date',
             self::SENT_AT => 'immutable_datetime',
             self::ERROR => 'string',
             self::NOTES => 'string',

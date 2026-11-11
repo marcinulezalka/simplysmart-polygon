@@ -101,6 +101,21 @@ final readonly class SyncContractors
     }
 
     /**
+     * Jeden klient Fakturowni (np. nabywca pobranej faktury) jako kontrahent — dopasowany, zaktualizowany albo założony
+     * jak w pull(); null, gdy klienta trzeba było pominąć (powód w raporcie).
+     *
+     * @param array<array-key, mixed> $remote
+     *
+     * @throws FakturowniaFailed
+     */
+    public function pullOne(InvoicingAccount $account, array $remote, ContractorSyncReport $report): ?Contractor
+    {
+        $root = $account->organization;
+
+        return $root === null ? null : $this->pullClient($account, $this->clients->for($account), $root, $this->accounts->organizationIds($account), $remote, $report);
+    }
+
+    /**
      * Wysyła kontrahentów organizacji objętych kontem, którzy nie mają powiązania albo zmienili się od synchronizacji.
      *
      * @throws FakturowniaFailed
@@ -174,24 +189,26 @@ final readonly class SyncContractors
     }
 
     /**
+     * Kontrahent po synchronizacji klienta albo null, gdy klient został pominięty.
+     *
      * @param list<int> $organizationIds
      * @param array<array-key, mixed> $remote
      *
      * @throws FakturowniaFailed
      */
-    private function pullClient(InvoicingAccount $account, FakturowniaClient $client, Organization $root, array $organizationIds, array $remote, ContractorSyncReport $report): void
+    private function pullClient(InvoicingAccount $account, FakturowniaClient $client, Organization $root, array $organizationIds, array $remote, ContractorSyncReport $report): ?Contractor
     {
         $externalId = ClientMapper::id($remote);
         $name = is_string($remote['name'] ?? null) ? trim($remote['name']) : '';
 
         if ($externalId === null) {
-            return;
+            return null;
         }
 
         if ($name === '') {
             $report->skip('#' . $externalId, PackageText::get('invoicing.client_without_name'));
 
-            return;
+            return null;
         }
 
         $linked = InvoicingContractorLink::query();
@@ -208,7 +225,7 @@ final readonly class SyncContractors
             if ($link !== null && $link->external_id !== $externalId) {
                 $report->skip($name, PackageText::get('invoicing.client_duplicate', ['contractor' => $contractor->displayName()]));
 
-                return;
+                return null;
             }
 
             $localChanged = $link === null || $link->synced_checksum !== ContractorFingerprint::of($contractor);
@@ -217,7 +234,7 @@ final readonly class SyncContractors
             if (! $remoteChanged && ! $localChanged) {
                 $report->unchanged++;
 
-                return;
+                return $contractor;
             }
 
             if ($localChanged && (! $remoteChanged || ($remoteAt !== null && $contractor->updated_at !== null && $contractor->updated_at->greaterThan($remoteAt)))) {
@@ -225,7 +242,7 @@ final readonly class SyncContractors
                 $this->saveLink($account, $contractor, $link, $externalId, ClientMapper::updatedAt($pushed) ?? $remoteAt);
                 $report->pushed++;
 
-                return;
+                return $contractor;
             }
         }
 
@@ -234,11 +251,13 @@ final readonly class SyncContractors
         } catch (ContractorRejected $rejected) {
             $report->skip($name, $rejected->getMessage());
 
-            return;
+            return null;
         }
 
         $this->saveLink($account, $saved, $link, $externalId, $remoteAt);
         $contractor === null ? $report->created++ : $report->updated++;
+
+        return $saved;
     }
 
     /**

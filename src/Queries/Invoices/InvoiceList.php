@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Database\LikePattern;
+use Simplysmart\Polygon\Enums\InvoiceKind;
 use Simplysmart\Polygon\Enums\InvoiceStatus;
 use Simplysmart\Polygon\Invoicing\InvoicingAccounts;
 use Simplysmart\Polygon\Models\Contractor;
@@ -25,7 +26,7 @@ use Simplysmart\Polygon\Models\Organization;
 
 /**
  * Faktury wystawione przez organizację główną klienta (InvoicingAccounts::root()) — od najnowszej daty wystawienia,
- * najwyżej LIMIT: opcjonalnie tylko kontrahenta, w stanie, albo z frazą w numerze (nadanym albo roboczym) lub nazwie
+ * najwyżej LIMIT: opcjonalnie tylko kontrahenta, w stanie, danego rodzaju (VAT, pro forma), albo z frazą w numerze (nadanym albo roboczym) lub nazwie
  * nabywcy. findByToken() — faktura tej organizacji głównej.
  */
 final readonly class InvoiceList
@@ -39,7 +40,7 @@ final readonly class InvoiceList
     /**
      * @return Collection<int, Invoice>
      */
-    public function of(Organization $organization, ?Contractor $contractor = null, ?InvoiceStatus $status = null, ?string $term = null): Collection
+    public function of(Organization $organization, ?Contractor $contractor = null, ?InvoiceStatus $status = null, ?string $term = null, ?InvoiceKind $kind = null): Collection
     {
         $query = $this->query($organization);
 
@@ -49,6 +50,10 @@ final readonly class InvoiceList
 
         if ($status !== null) {
             $query->where(ColumnNames::STATUS, $status->value);
+        }
+
+        if ($kind !== null) {
+            $query->where(Invoice::KIND, $kind->value);
         }
 
         $pattern = LikePattern::contains((string) $term);

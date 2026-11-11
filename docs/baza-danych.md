@@ -439,14 +439,15 @@ udostępnienia umowy.
 ## 21. Faktury i integracja z Fakturownią
 
 Organizacja główna klienta (najwyższa nad daną organizacją, bez hero — `Invoicing\InvoicingAccounts::root()`) wystawia
-faktury swoim kontrahentom i ma jedno konto Fakturowni; jednostki podrzędne korzystają z niego. Faktura powstaje
-w aplikacji, a wysyła ją kolejka — numer nadaje Fakturownia.
+faktury swoim kontrahentom i ma jedno konto Fakturowni; jednostki podrzędne korzystają z niego. Faktura (VAT albo
+pro forma) powstaje w aplikacji, a wysyła ją kolejka — numer nadaje Fakturownia; faktury VAT i pro formy wystawione
+w Fakturowni są pobierane do kart kontrahentów (tylko do odczytu).
 
 | Tabela | Model | Kolumny domenowe |
 | --- | --- | --- |
-| `invoicing_accounts` | `Models\InvoicingAccount` | `organization_id` (unikalne — organizacja główna), `provider` (`Enums\InvoicingProvider`), `subdomain`, `api_token` (cast `encrypted`, `$hidden`), `department_id`, `contractors_synced_at`, `last_error` |
+| `invoicing_accounts` | `Models\InvoicingAccount` | `organization_id` (unikalne — organizacja główna), `provider` (`Enums\InvoicingProvider`), `subdomain`, `api_token` (cast `encrypted`, `$hidden`), `department_id`, `contractors_synced_at`, `invoices_synced_at`, `auto_sync` (nocna synchronizacja), `last_sync_report` (json — `Invoicing\InvoicingSyncReport`), `last_error` |
 | `invoicing_contractor_links` | `Models\InvoicingContractorLink` | `invoicing_account_id`, `contractor_id`, `external_id` (id klienta w Fakturowni), `external_updated_at`, `synced_at`, `synced_checksum`; unikalne (konto, `external_id`) i (konto, `contractor_id`) |
-| `invoices` | `Models\Invoice` | `organization_id` (wystawca), `contractor_id`, `name` (numer: roboczy, po wysyłce nadany), `status` (`Enums\InvoiceStatus` — stan dziedzinowy), `kind` (`Enums\InvoiceKind`), `issue_date`, `sell_date`, `payment_due`, `payment_method` (`Enums\PaymentMethod`), `currency_code`, `total_net`/`total_vat`/`total_gross`, migawka `seller_*` i `buyer_*`, `external_id`, `external_token`, `external_number`, `external_url`, `sent_at`, `error`, `notes`; unikalne (`organization_id`, `external_id`) |
+| `invoices` | `Models\Invoice` | `organization_id` (wystawca), `contractor_id`, `name` (numer: roboczy, po wysyłce nadany), `status` (`Enums\InvoiceStatus` — stan dziedzinowy), `kind` (`Enums\InvoiceKind`), `source` (`Enums\InvoiceSource`: wystawiona w aplikacji albo pobrana z Fakturowni), `issue_date`, `sell_date`, `payment_due`, `payment_method` (`Enums\PaymentMethod`), `currency_code`, `total_net`/`total_vat`/`total_gross`, migawka `seller_*` i `buyer_*`, `external_id`, `external_token`, `external_number`, `external_url`, `external_status` (stan w Fakturowni: issued, sent, paid…), `external_updated_at`, `paid_at`, `sent_at`, `error`, `notes`; unikalne (`organization_id`, `external_id`) |
 | `invoice_items` | `Models\InvoiceItem` | `invoice_id`, `name`, `quantity`, `unit`, `unit_price_net`, `tax` (`Enums\InvoiceTax`: stawka, „zw”, „np”), `tax_percent` (migawka), `tax_rate_id` (stawka słownika), `net`, `vat`, `gross` |
 
 - **Klient API** (`Integrations\Fakturownia\FakturowniaClient`, fabryka `FakturowniaClients` — subdomena tylko
@@ -463,11 +464,28 @@ w aplikacji, a wysyła ją kolejka — numer nadaje Fakturownia.
   `Contractors\SaveContractor`) + `pushPending()`. Konflikt — wygrywa nowsza zmiana (`updated_at` obu stron); odcisk
   `ContractorFingerprint` w powiązaniu blokuje ponowną wysyłkę, a `ContractorPushGate` — wysyłkę zapisów z pobrania.
   Zapis kontrahenta organizacji z aktywnym kontem zleca `Jobs\PushContractorJob`; komenda
-  `polygon:invoicing:contractors-sync {organization?}` co godzinę (`Providers\InvoicingServiceProvider`).
+  `polygon:invoicing:contractors-sync {organization?}` — tylko kontrahenci, ręcznie.
 - **Faktury** (`Invoicing\IssueInvoice`, `InvoiceData`, `InvoiceItemData`): kwoty na bcmath (`InvoiceAmounts`,
   grosze połówkami w górę), migawka stron, stan „w kolejce” i `Jobs\SendInvoiceJob` po zatwierdzeniu transakcji;
   odmowa — `InvoicingRejected` z polem (`items.<i>.<pole>`). Błąd przejściowy zostawia fakturę w kolejce, trwały daje
   „błąd wysyłki”; `SendInvoice::resend()`, komenda `polygon:invoicing:invoices-send [--failed]`. PDF przez serwer —
-  `Invoicing\InvoicePdf`. Odczyt: `Queries\Invoices\InvoiceList`.
-- **Wdrożenie**: kolejka z działającym workerem (bez niego faktury zostają „w kolejce”), harmonogram (`schedule:run`)
-  dla synchronizacji. Teksty: `invoicing.*`, `enums.invoice_*`, `enums.payment_method`, `enums.invoicing_provider`.
+  `Invoicing\InvoicePdf`. Odczyt: `Queries\Invoices\InvoiceList` (filtry kontrahenta, stanu, rodzaju i frazy).
+- **Pobieranie faktur** (`Invoicing\ImportInvoices`): faktury VAT i pro forma (`kinds[]`) wystawione od 1 stycznia
+  poprzedniego roku, z pozycjami, od ostatnio zmienionych (`order=updated_at.desc` — API nie filtruje po dacie zmiany);
+  pobranie przyrostowe kończy się na pierwszej fakturze niezmienionej od `invoices_synced_at` (zapas 10 minut).
+  `Integrations\Fakturownia\RemoteInvoiceMapper` czyta fakturę (kwoty z Fakturowni, stawki przez
+  `TaxRateCode::parse()` — `zw`, `np`, `disabled`, procent; inne rodzaje i nieznana stawka → `RemoteInvoiceRejected`,
+  wpis w raporcie). Faktura z naszym `oid` albo `external_id` wystawiona w aplikacji dostaje tylko stan z Fakturowni
+  i brakujące identyfikatory; pobrana wcześniej — aktualizację z pozycjami, gdy zmieniła się w Fakturowni; nowa —
+  `source` Fakturownia, stan „wysłana”, organizacja główna. Nabywca: powiązanie klienta → NIP w organizacjach konta →
+  nowy kontrahent z klienta (`clientById()` + `SyncContractors::pullOne()`) albo z danych nabywcy na fakturze bez
+  klienta (przy zamkniętej bramce — bez wysyłki zwrotnej). Pobranej faktury aplikacja nie wysyła ani nie ponawia.
+- **Synchronizacja w dwóch trybach** (`Invoicing\SyncInvoicing::run(konto, Enums\InvoicingSyncTrigger)`):
+  kontrahenci (`SyncContractors::sync()`), faktury (`ImportInvoices`), zlecenie wysyłki faktur „w kolejce”; raport
+  (`InvoicingSyncReport::toArray()`, także z błędem) w `last_sync_report`. Automatycznie: komenda
+  `polygon:invoicing:sync {organization?} {--force}` raz na dobę o `polygon.invoicing.sync_at` (`INVOICING_SYNC_AT`,
+  domyślnie 02:30) dla kont z `auto_sync` (`--force` — także pozostałych). Na żądanie: `Jobs\SyncInvoicingJob`
+  (jedna synchronizacja konta naraz, bez ponowień).
+- **Wdrożenie**: kolejka z działającym workerem (bez niego faktury i synchronizacja na żądanie czekają w kolejce),
+  cron `schedule:run` co minutę (bez niego nie ruszy synchronizacja nocna). Teksty: `invoicing.*`, `enums.invoice_*`,
+  `enums.payment_method`, `enums.invoicing_provider`, `enums.invoicing_sync_trigger`.

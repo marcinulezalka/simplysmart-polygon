@@ -30,6 +30,9 @@ final class TaxRateCode
 
     public const string NOT_APPLICABLE = 'np';
 
+    /** Pole `tax` pozycji sprzedawcy niebędącego podatnikiem VAT. */
+    public const string DISABLED = 'disabled';
+
     /**
      * @throws InvalidArgumentException Gdy stawka z procentem nie ma poprawnego procentu (0–100).
      */
@@ -50,6 +53,24 @@ final class TaxRateCode
         $number = (float) $percent;
 
         return floor($number) === $number ? (int) $number : $number;
+    }
+
+    /**
+     * Opodatkowanie pozycji z pola `tax` Fakturowni (odwrotność of()): liczba procentów → stawka, `zw` → zwolnienie,
+     * `np` i `disabled` (sprzedawca bez VAT) → „nie podlega”; inna wartość (np. odwrotne obciążenie) — null.
+     *
+     * @return array{0: InvoiceTax, 1: string|null}|null
+     */
+    public static function parse(mixed $code): ?array
+    {
+        $code = is_string($code) || is_int($code) || is_float($code) ? strtolower(trim(str_replace(',', '.', (string) $code))) : '';
+
+        return match (true) {
+            $code === self::EXEMPT => [InvoiceTax::Exempt, null],
+            $code === self::NOT_APPLICABLE, $code === self::DISABLED => [InvoiceTax::NotApplicable, null],
+            preg_match('/^\d{1,3}(\.\d{1,2})?$/', $code) === 1 && (float) $code <= 100 => [InvoiceTax::Rate, number_format((float) $code, 2, '.', '')],
+            default => null,
+        };
     }
 
     /**
