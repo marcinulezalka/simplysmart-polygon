@@ -59,7 +59,7 @@ final class PushContractorJob implements ShouldQueue
         $contractor = Contractor::query()->find($this->contractorId);
         $account = $contractor === null ? null : $accounts->forContractor($contractor);
 
-        if ($contractor === null || $account === null) {
+        if ($contractor === null || $account === null || $contractor->isInvoicingLocalOnly()) {
             return;
         }
 

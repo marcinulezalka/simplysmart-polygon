@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Models;
 
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Identifiers\Nip;
 use Simplysmart\Polygon\Models\Relations\BelongsToOrganization;
 
@@ -42,6 +43,12 @@ final class Contractor extends DataModel
     use BelongsToOrganization;
 
     public const string TABLE = 'contractors';
+
+    /** Klucz ustawień systemu fakturowego w `json_attributes`. */
+    public const string INVOICING_ATTRIBUTE = 'invoicing';
+
+    /** Znacznik kontrahenta tylko lokalnego w INVOICING_ATTRIBUTE. */
+    public const string LOCAL_ONLY = 'local_only';
 
     /** Klucz obcy kontrahenta w tabelach kontaktów, umów i paczek stref (np. stanowiska, zatrudnienia). */
     public const string FOREIGN_KEY = 'contractor_id';
@@ -89,6 +96,28 @@ final class Contractor extends DataModel
     public function contracts(): HasMany
     {
         return $this->hasMany(ContractorContract::class, self::FOREIGN_KEY);
+    }
+
+    /**
+     * Czy kontrahent jest tylko lokalny — nie trafia do systemu fakturowego (`json_attributes.invoicing.local_only`,
+     * np. pracodawca z importu historii bez klienta w Fakturowni; Invoicing\SyncContractors go nie wysyła).
+     */
+    public function isInvoicingLocalOnly(): bool
+    {
+        $attributes = $this->json_attributes;
+
+        return is_array($attributes) && is_array($attributes[self::INVOICING_ATTRIBUTE] ?? null) && ($attributes[self::INVOICING_ATTRIBUTE][self::LOCAL_ONLY] ?? false) === true;
+    }
+
+    /**
+     * Oznacza kontrahenta jako tylko lokalnego (bez zapisu — zapisuje wywołujący).
+     */
+    public function markInvoicingLocalOnly(): void
+    {
+        $attributes = is_array($this->json_attributes) ? $this->json_attributes : [];
+        $invoicing = is_array($attributes[self::INVOICING_ATTRIBUTE] ?? null) ? $attributes[self::INVOICING_ATTRIBUTE] : [];
+        $attributes[self::INVOICING_ATTRIBUTE] = [...$invoicing, self::LOCAL_ONLY => true];
+        $this->setAttribute(ColumnNames::JSON_ATTRIBUTES, $attributes);
     }
 
     /**

@@ -38,6 +38,7 @@ use Simplysmart\Polygon\Models\Organization;
  * synchronizacji powiązanie dostaje odcisk danych (ContractorFingerprint) — kontrahent z tym odciskiem nie jest wysyłany.
  * Własne zapisy idą przy zamkniętej bramce (ContractorPushGate), więc nie zlecają wysyłki zwrotnej. Drugi klient
  * Fakturowni pasujący do kontrahenta, który ma już powiązanie (duplikat w Fakturowni), jest pomijany z wpisem w raporcie.
+ * Kontrahent tylko lokalny (Contractor::isInvoicingLocalOnly(), np. pracodawca z importu historii) nie jest wysyłany.
  */
 final readonly class SyncContractors
 {
@@ -136,7 +137,7 @@ final readonly class SyncContractors
         foreach ($query->get() as $contractor) {
             $link = $links[$contractor->id] ?? null;
 
-            if ($link !== null && $link->synced_checksum === ContractorFingerprint::of($contractor)) {
+            if ($contractor->isInvoicingLocalOnly() || ($link !== null && $link->synced_checksum === ContractorFingerprint::of($contractor))) {
                 continue;
             }
 

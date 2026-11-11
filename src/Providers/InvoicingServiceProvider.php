@@ -41,7 +41,7 @@ final class InvoicingServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Contractor::saved(function (Contractor $contractor): void {
-            if ($this->app->make(ContractorPushGate::class)->isOpen() && $this->app->make(InvoicingAccounts::class)->forContractor($contractor) !== null) {
+            if ($this->app->make(ContractorPushGate::class)->isOpen() && ! $contractor->isInvoicingLocalOnly() && $this->app->make(InvoicingAccounts::class)->forContractor($contractor) !== null) {
                 PushContractorJob::dispatch($contractor->id);
             }
         });

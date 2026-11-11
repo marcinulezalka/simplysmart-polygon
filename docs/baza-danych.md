@@ -465,6 +465,8 @@ w Fakturowni są pobierane do kart kontrahentów (tylko do odczytu).
   w `external_id` → poprawny NIP w organizacjach konta; bez dopasowania nowy kontrahent organizacji głównej przez
   `Contractors\SaveContractor`) + `pushPending()`. Konflikt — wygrywa nowsza zmiana (`updated_at` obu stron); odcisk
   `ContractorFingerprint` w powiązaniu blokuje ponowną wysyłkę, a `ContractorPushGate` — wysyłkę zapisów z pobrania.
+  Kontrahent tylko lokalny (`Contractor::isInvoicingLocalOnly()`, `json_attributes.invoicing.local_only`) nie jest
+  wysyłany (`pushPending()`, `PushContractorJob`, obserwator zapisu); wystawienie mu faktury zakłada klienta.
   Zapis kontrahenta organizacji z aktywnym kontem zleca `Jobs\PushContractorJob`; komenda
   `polygon:invoicing:contractors-sync {organization?}` — tylko kontrahenci, ręcznie.
 - **Faktury** (`Invoicing\IssueInvoice`, `InvoiceData`, `InvoiceItemData`): kwoty na bcmath (`InvoiceAmounts`,
