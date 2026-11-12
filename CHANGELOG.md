@@ -4,6 +4,8 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-12
+
 ### Added
 
 - Kontrahent tylko lokalny (`Contractor::isInvoicingLocalOnly()`, `markInvoicingLocalOnly()` — `json_attributes.invoicing.local_only`): synchronizacja z Fakturownią go nie wysyła (np. pracodawcy z importu historii bez klienta w Fakturowni); wystawienie faktury takiemu kontrahentowi nadal zakłada klienta.
