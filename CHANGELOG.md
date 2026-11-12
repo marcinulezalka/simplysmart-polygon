@@ -4,6 +4,10 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Powiadomienia strefy jako toast w dolnym prawym rogu i dzwonek z historią w pasku nawigacji (`Notifications\NotificationKind`, `Notification`, `FlashNotifications` — komunikat statusu po akcji i błędy walidacji jako jedna lista, zamiast pasków nad treścią ekranu): układ, animacje i zachowanie (`resources/js/notifications.js`, `resources/scss/notifications.scss`, `Notifications\NotificationAssets`) budowane własnym Vite paczki i rejestrowane w `Assets\PackageAssets` pod nazwą `polygon` — strefa dostaje je wejściem `@packageAssets('polygon', NotificationAssets::ENTRIES)` i importuje `initNotifications()` we własnym wejściu JS, podając tylko ikony i nazwę strefy (osobna historia w `localStorage` na strefę).
+
 ## [0.13.0] - 2026-11-12
 
 ### Added

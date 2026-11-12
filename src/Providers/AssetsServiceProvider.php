@@ -18,12 +18,13 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 use Simplysmart\Polygon\Assets\PackageAssets;
 use Simplysmart\Polygon\Console\PublishAssetsCommand;
+use Simplysmart\Polygon\Notifications\NotificationAssets;
 use Simplysmart\Polygon\View\ColorThemePreference;
 
 /**
- * Assety paczek i tryb kolorystyczny: rejestr Assets\PackageAssets (singleton, paczki dopisują się w providerach),
- * dyrektywa `@packageAssets('<paczka>', [wejścia])`, komenda `polygon:assets` i ciasteczko trybu bez szyfrowania
- * (View\ColorThemePreference).
+ * Assety paczek i tryb kolorystyczny: rejestr Assets\PackageAssets (singleton, paczki dopisują się w providerach —
+ * polygon dopisuje też siebie, Notifications\NotificationAssets), dyrektywa `@packageAssets('<paczka>', [wejścia])`,
+ * komenda `polygon:assets` i ciasteczko trybu bez szyfrowania (View\ColorThemePreference).
  */
 final class AssetsServiceProvider extends ServiceProvider
 {
@@ -36,6 +37,7 @@ final class AssetsServiceProvider extends ServiceProvider
     {
         EncryptCookies::except(ColorThemePreference::COOKIE);
         Blade::directive('packageAssets', static fn(string $expression): string => '<?php echo app(' . PackageAssets::class . '::class)->tags(' . $expression . '); ?>');
+        $this->callAfterResolving(PackageAssets::class, static fn(PackageAssets $assets) => $assets->add('polygon', NotificationAssets::PUBLIC_PATH));
 
         if ($this->app->runningInConsole()) {
             $this->commands([PublishAssetsCommand::class]);

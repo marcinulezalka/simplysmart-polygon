@@ -1,0 +1,29 @@
+// Toast (dolny prawy róg) i lista w dzwonku paska nawigacji — jeden mechanizm dla wszystkich stref
+// (Notifications\FlashNotifications, resources/js/notifications.js, initNotifications() wołane z wejścia JS
+// strefy). Ten arkusz daje tylko układ i zachowanie — bez żadnej palety: kolor, obramowanie, zaokrąglenie i cień
+// tych samych klas `.pg-*` maluje `app.scss` strefy, która je ładuje na swoich stronach (selektory elementów
+// jak w jej własnym arkuszu, komponenty nie znają tokenów innej paczki).
+.pg-toasts { position: fixed; z-index: 30; right: 1rem; bottom: 1rem; display: flex; flex-direction: column; gap: 0.625rem; width: 22rem; max-width: calc(100vw - 2rem); }
+.pg-toast { display: flex; gap: 0.625rem; align-items: flex-start; padding: 0.75rem 0.875rem; font-size: 0.875rem; animation: pg-toast-in 0.2s ease; }
+.pg-toast.is-leaving { animation: pg-toast-out 0.15s ease forwards; }
+.pg-toast__body { flex: 1; min-width: 0; overflow-wrap: anywhere; white-space: pre-line; }
+.pg-toast__close { flex: none; display: inline-flex; width: 1.5rem; height: 1.5rem; align-items: center; justify-content: center; padding: 0; border: 0; background: none; cursor: pointer; }
+@keyframes pg-toast-in { from { opacity: 0; transform: translateY(0.5rem); } }
+@keyframes pg-toast-out { to { opacity: 0; transform: translateX(0.5rem); } }
+
+// Ikona web componentu iconify-icon (Enums\Icon strefy ma własną klasę do tego — ta jest tylko dla znaczników,
+// które tworzy ten moduł JS, więc nie ma dostępu do klasy strefy).
+.pg-icon { display: inline-block; width: 1.25em; height: 1.25em; flex: none; vertical-align: -0.25em; }
+.pg-toast__close .pg-icon { width: 1rem; height: 1rem; }
+
+// Dzwonek (data-pg-bell): position relative zakotwicza licznik w rogu przycisku strefy; rozmiar, tło i obrys
+// przycisku dobiera strefa (to jej przycisk nawigacji, nie ten mechanizm).
+.pg-bell { position: relative; }
+.pg-bell__badge { position: absolute; top: 0.3125rem; right: 0.3125rem; min-width: 0.875rem; height: 0.875rem; padding: 0 0.1875rem; border-radius: 999px; font-size: 0.625rem; font-weight: 700; line-height: 0.875rem; text-align: center; }
+.pg-bell__badge[hidden] { display: none; }
+.pg-notifications { width: 20rem; }
+.pg-notifications__list { display: grid; gap: 0.25rem; margin: 0 0 0.25rem; padding: 0; list-style: none; max-height: 20rem; overflow-y: auto; }
+.pg-notifications__item { display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: 0.25rem 0.75rem; padding: 0.5rem 0.625rem; font-size: 0.8125rem; }
+.pg-notifications__text { min-width: 0; overflow-wrap: anywhere; white-space: pre-line; }
+.pg-notifications__time { white-space: nowrap; font-size: 0.75rem; }
+.pg-notifications__empty { margin: 0; padding: 0.5rem 0.625rem; }

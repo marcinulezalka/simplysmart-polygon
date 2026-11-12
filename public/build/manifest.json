@@ -1,0 +1,11 @@
+{
+  "resources/scss/notifications.scss": {
+    "file": "assets/notifications-muQNfJBN.css",
+    "name": "notifications",
+    "names": [
+      "notifications.css"
+    ],
+    "src": "resources/scss/notifications.scss",
+    "isEntry": true
+  }
+}
