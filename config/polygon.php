@@ -63,6 +63,12 @@ return [
          */
         'session_lifetime' => $envInt('ZONE_SESSION_LIFETIME', 30),
 
+        /*
+         * Hash sesji w adresie po zalogowaniu (`/<slug>/<hash>/…`, Zones\ZoneUrlKey), gdy strefa nie poda własnego
+         * `url_key` (docs/strefy.md) — strefa go nadpisuje swoim configiem, np. tylko w jej `.env` prywatnej paczki.
+         */
+        'url_key' => (bool) env('ZONE_URL_KEY', false),
+
     ],
 
     'invoicing' => [

@@ -6,6 +6,7 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Added
 
+- Domyślny hash sesji w adresie stref z logowaniem (`polygon.zones.url_key`, `ZONE_URL_KEY`, domyślnie `false`) — strefa bez własnego `url_key` dziedziczy go teraz zamiast sztywnego `false` (`Zones\ZoneDefinitionFactory`), tak jak dotychczasowy `polygon.zones.session_lifetime`; strefa nadpisuje go jawną wartością bool w swoim configu.
 - Powiadomienia strefy jako toast w dolnym prawym rogu i dzwonek z historią w pasku nawigacji (`Notifications\NotificationKind`, `Notification`, `FlashNotifications` — komunikat statusu po akcji i błędy walidacji jako jedna lista, zamiast pasków nad treścią ekranu): układ, animacje i zachowanie (`resources/js/notifications.js`, `resources/scss/notifications.scss`, `Notifications\NotificationAssets`) budowane własnym Vite paczki i rejestrowane w `Assets\PackageAssets` pod nazwą `polygon` — strefa dostaje je wejściem `@packageAssets('polygon', NotificationAssets::ENTRIES)` i importuje `initNotifications()` we własnym wejściu JS, podając tylko ikony i nazwę strefy (osobna historia w `localStorage` na strefę).
 
 ## [0.13.0] - 2026-11-12

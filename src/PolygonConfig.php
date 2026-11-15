@@ -48,6 +48,9 @@ final class PolygonConfig
     /** Czas życia sesji strefy z logowaniem w minutach (`ZONE_SESSION_LIFETIME`). */
     public const string SESSION_LIFETIME = self::KEY . '.zones.session_lifetime';
 
+    /** Domyślny hash sesji w adresie stref z logowaniem, gdy strefa nie poda własnego `url_key` (`ZONE_URL_KEY`). */
+    public const string ZONE_URL_KEY = self::KEY . '.zones.url_key';
+
     /** Config strefy `polygon` (Providers\PolygonZoneServiceProvider). */
     public const string ZONE = self::KEY . '.zone';
 
