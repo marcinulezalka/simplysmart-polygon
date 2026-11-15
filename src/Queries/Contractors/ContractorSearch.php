@@ -23,7 +23,8 @@ use Simplysmart\Polygon\Queries\Organizations\OrganizationUnits;
 
 /**
  * Kontrahenci dostępni w organizacji: jej i jej przodków (kontrahent siedziby jest kontrahentem poradni), po nazwie.
- * Wyszukiwanie: same cyfry (co najmniej 3) — początek NIP-u, inaczej fragment nazwy albo nazwy skróconej.
+ * Wyszukiwanie: same cyfry (co najmniej 3) — początek NIP-u, inaczej fragment nazwy albo nazwy skróconej. Wynik
+ * domyślnie bez ucinania (pickery); $limit i $offset dociągają strony przy przewijaniu ekranu listy.
  */
 final readonly class ContractorSearch
 {
@@ -37,7 +38,7 @@ final readonly class ContractorSearch
     /**
      * @return Collection<int, Contractor>
      */
-    public function in(Organization $organization, ?string $term = null, bool $withInactive = false): Collection
+    public function in(Organization $organization, ?string $term = null, bool $withInactive = false, bool $descending = false, ?int $limit = null, int $offset = 0): Collection
     {
         $query = $this->query($organization);
 
@@ -56,8 +57,12 @@ final readonly class ContractorSearch
             });
         }
 
-        $query->orderBy(ColumnNames::NAME);
-        $query->orderBy(ColumnNames::ID);
+        $query->orderBy(ColumnNames::NAME, $descending ? 'desc' : 'asc');
+        $query->orderBy(ColumnNames::ID, $descending ? 'desc' : 'asc');
+
+        if ($limit !== null) {
+            $query->skip($offset)->limit($limit);
+        }
 
         return $query->get();
     }
