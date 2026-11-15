@@ -13,18 +13,10 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Invoicing;
 
-use RuntimeException;
+use Simplysmart\Polygon\Validation\FieldRejected;
 
 /**
  * Konto systemu fakturowego albo faktura nie zostały zapisane: błędne pole ($field) z komunikatem do pokazania przy
  * formularzu (wzór: Contractors\ContractorRejected).
  */
-final class InvoicingRejected extends RuntimeException
-{
-    public function __construct(
-        public readonly string $field,
-        string $message,
-    ) {
-        parent::__construct($message);
-    }
-}
+final class InvoicingRejected extends FieldRejected {}

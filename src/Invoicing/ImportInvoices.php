@@ -32,6 +32,7 @@ use Simplysmart\Polygon\Models\InvoiceItem;
 use Simplysmart\Polygon\Models\InvoicingAccount;
 use Simplysmart\Polygon\Models\InvoicingContractorLink;
 use Simplysmart\Polygon\Models\Organization;
+use Simplysmart\Polygon\Queries\Contractors\ContractorSearch;
 
 /**
  * Pobranie faktur VAT i pro forma z Fakturowni do kartotek kontrahentów (docs/baza-danych.md §21).
@@ -51,9 +52,6 @@ use Simplysmart\Polygon\Models\Organization;
  */
 final readonly class ImportInvoices
 {
-    /** Najwięcej stron faktur w jednym pobraniu (PER_PAGE faktur na stronę). */
-    private const int MAX_PAGES = 500;
-
     /** Zapas przy porównaniu chwili zmiany z poprzednim pobraniem (różnica zegarów aplikacji i Fakturowni). */
     private const int SINCE_MARGIN_MINUTES = 10;
 
@@ -64,6 +62,8 @@ final readonly class ImportInvoices
         private SaveContractor $save,
         private ContractorPushGate $gate,
         private ConnectionInterface $db,
+        private ContractorSearch $search,
+        private PagedAccountSync $pages,
     ) {}
 
     /**
@@ -91,31 +91,21 @@ final readonly class ImportInvoices
         $client = $this->clients->for($account);
         $organizationIds = $this->accounts->organizationIds($account);
 
-        try {
-            for ($page = 1; $page <= self::MAX_PAGES; $page++) {
-                $remoteInvoices = $client->invoices($page, self::firstIssueDate($startedAt), $startedAt->addYear());
+        $this->pages->run($account, InvoicingAccount::INVOICES_SYNCED_AT, function (int $page) use ($account, $client, $root, $organizationIds, $report, $startedAt, $since): bool {
+            $remoteInvoices = $client->invoices($page, self::firstIssueDate($startedAt), $startedAt->addYear());
 
-                foreach ($remoteInvoices as $remote) {
-                    $updatedAt = RemoteInvoiceMapper::status($remote)[Invoice::EXTERNAL_UPDATED_AT];
+            foreach ($remoteInvoices as $remote) {
+                $updatedAt = RemoteInvoiceMapper::status($remote)[Invoice::EXTERNAL_UPDATED_AT];
 
-                    if ($since !== null && $updatedAt instanceof CarbonImmutable && ! $updatedAt->greaterThan($since)) {
-                        break 2;
-                    }
-
-                    $this->importOne($account, $client, $root, $organizationIds, $remote, $report);
+                if ($since !== null && $updatedAt instanceof CarbonImmutable && ! $updatedAt->greaterThan($since)) {
+                    return false;
                 }
 
-                if (count($remoteInvoices) < FakturowniaClient::PER_PAGE) {
-                    break;
-                }
+                $this->importOne($account, $client, $root, $organizationIds, $remote, $report);
             }
-        } catch (FakturowniaFailed $failed) {
-            $account->forceFill([InvoicingAccount::LAST_ERROR => $failed->getMessage()])->save();
 
-            throw $failed;
-        }
-
-        $account->forceFill([InvoicingAccount::INVOICES_SYNCED_AT => $startedAt, InvoicingAccount::LAST_ERROR => null])->save();
+            return count($remoteInvoices) >= FakturowniaClient::PER_PAGE;
+        }, $startedAt);
 
         return $report;
     }
@@ -236,16 +226,10 @@ final readonly class ImportInvoices
 
         $nip = ClientMapper::nip($invoice->buyer);
 
-        if ($nip !== null) {
-            $byNip = Contractor::query();
-            $byNip->whereIn(Organization::FOREIGN_KEY, $organizationIds);
-            $byNip->where(Contractor::NIP, $nip);
-            $byNip->orderBy(Organization::FOREIGN_KEY);
-            $contractor = $byNip->first();
+        $contractor = $nip === null ? null : $this->search->firstByNip($organizationIds, $nip);
 
-            if ($contractor !== null) {
-                return $contractor;
-            }
+        if ($contractor !== null) {
+            return $contractor;
         }
 
         return $invoice->clientId !== null ? $this->buyerFromClient($account, $client, $invoice->clientId, $label, $report) : $this->buyerFromInvoice($root, $invoice, $label, $report);

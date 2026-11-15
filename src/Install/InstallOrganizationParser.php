@@ -107,15 +107,7 @@ final readonly class InstallOrganizationParser
                 throw InvalidInstallFile::in($path, "{$where}: the key [" . Organization::HERO_KEY . '] is reserved for the hero organization (use it only as "parent").');
             }
 
-            if (! is_array($definition) || array_is_list($definition)) {
-                throw InvalidInstallFile::in($path, "{$where} must be an object.");
-            }
-
-            $unknown = array_diff(array_keys($definition), [...self::ORGANIZATION_FIELDS, ...array_keys(Organization::DETAIL_LENGTHS)]);
-
-            if ($unknown !== []) {
-                throw InvalidInstallFile::in($path, "{$where} has unknown fields: " . implode(', ', $unknown) . '.');
-            }
+            $definition = $this->values->object($path, $definition, $where, [...self::ORGANIZATION_FIELDS, ...array_keys(Organization::DETAIL_LENGTHS)]);
 
             $result[] = new InstallOrganization(
                 $key,
@@ -186,15 +178,7 @@ final readonly class InstallOrganizationParser
         foreach ($resources as $index => $definition) {
             $at = "{$where}[{$index}]";
 
-            if (! is_array($definition) || array_is_list($definition)) {
-                throw InvalidInstallFile::in($path, "{$at} must be an object.");
-            }
-
-            $unknown = array_diff(array_keys($definition), self::RESOURCE_FIELDS);
-
-            if ($unknown !== []) {
-                throw InvalidInstallFile::in($path, "{$at} has unknown fields: " . implode(', ', $unknown) . '.');
-            }
+            $definition = $this->values->object($path, $definition, $at, self::RESOURCE_FIELDS);
 
             $key = $this->values->reference($path, $definition, self::KEY, $at, self::KEY_PATTERN) ?? throw InvalidInstallFile::in($path, "{$at} needs a \"key\".");
             $kindValue = $definition[OrganizationResource::KIND] ?? ResourceKind::Room->value;
@@ -240,20 +224,12 @@ final readonly class InstallOrganizationParser
         foreach ($entries as $index => $entry) {
             $at = "{$where}[{$index}]";
 
-            if (! is_array($entry) || array_is_list($entry)) {
-                throw InvalidInstallFile::in($path, "{$at} must be an object.");
-            }
-
-            $unknown = array_diff(array_keys($entry), self::SCHEDULE_FIELDS);
+            $entry = $this->values->object($path, $entry, $at, self::SCHEDULE_FIELDS);
             $performer = $entry['performer'] ?? null;
             $weekday = $entry['weekday'] ?? null;
             $slot = $entry['slot'] ?? null;
             $from = $this->values->reference($path, $entry, 'from', $at, self::TIME_PATTERN);
             $to = $this->values->reference($path, $entry, 'to', $at, self::TIME_PATTERN);
-
-            if ($unknown !== []) {
-                throw InvalidInstallFile::in($path, "{$at} has unknown fields: " . implode(', ', $unknown) . '.');
-            }
 
             $email = is_array($performer) ? ($performer['email'] ?? null) : null;
 
@@ -305,15 +281,7 @@ final readonly class InstallOrganizationParser
         foreach ($entries as $index => $entry) {
             $at = "{$where}[{$index}]";
 
-            if (! is_array($entry) || array_is_list($entry)) {
-                throw InvalidInstallFile::in($path, "{$at} must be an object.");
-            }
-
-            $unknown = array_diff(array_keys($entry), self::LEASE_FIELDS);
-
-            if ($unknown !== []) {
-                throw InvalidInstallFile::in($path, "{$at} has unknown fields: " . implode(', ', $unknown) . '.');
-            }
+            $entry = $this->values->object($path, $entry, $at, self::LEASE_FIELDS);
 
             $from = $this->values->reference($path, $entry, 'from', $at, self::DATE_PATTERN);
             $to = $this->values->reference($path, $entry, 'to', $at, self::DATE_PATTERN);

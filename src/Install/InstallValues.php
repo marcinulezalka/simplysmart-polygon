@@ -123,6 +123,30 @@ final readonly class InstallValues
     }
 
     /**
+     * Obiekt (nie lista), bez pól poza $allowed.
+     *
+     * @param list<string> $allowed
+     *
+     * @return array<array-key, mixed>
+     *
+     * @throws InvalidInstallFile
+     */
+    public function object(string $path, mixed $value, string $where, array $allowed): array
+    {
+        if (! is_array($value) || ($value !== [] && array_is_list($value))) {
+            throw InvalidInstallFile::in($path, "{$where} must be an object.");
+        }
+
+        $unknown = array_diff(array_map(strval(...), array_keys($value)), $allowed);
+
+        if ($unknown !== []) {
+            throw InvalidInstallFile::in($path, "{$where} has unknown fields: " . implode(', ', $unknown) . '.');
+        }
+
+        return $value;
+    }
+
+    /**
      * Opcjonalne atrybuty rekordu (obiekt klucz => wartość do `json_attributes`): klucze `snake_case`, wartości — tekst,
      * liczba, flaga, null albo zagnieżdżony obiekt lub lista (do ATTRIBUTE_DEPTH poziomów). Klucze zarezerwowane
      * instalatora (RESERVED_ATTRIBUTES) to błąd.

@@ -264,15 +264,7 @@ final readonly class InstallFileParser
      */
     private function defaultOrganization(string $path, mixed $defaults, array $organizations, string $where): ?string
     {
-        if (! is_array($defaults) || ($defaults !== [] && array_is_list($defaults))) {
-            throw InvalidInstallFile::in($path, "{$where} must be an object.");
-        }
-
-        $unknown = array_diff(array_map(strval(...), array_keys($defaults)), [DefaultOrganization::SETTING]);
-
-        if ($unknown !== []) {
-            throw InvalidInstallFile::in($path, "{$where} has unknown fields: " . implode(', ', $unknown) . '.');
-        }
+        $defaults = $this->values->object($path, $defaults, $where, [DefaultOrganization::SETTING]);
 
         $organization = $defaults[DefaultOrganization::SETTING] ?? null;
 

@@ -22,6 +22,7 @@ use Simplysmart\Polygon\Enums\RoomTakenBy;
 use Simplysmart\Polygon\Models\Organization;
 use Simplysmart\Polygon\Models\OrganizationResource;
 use Simplysmart\Polygon\Models\ResourceBooking;
+use Simplysmart\Polygon\Models\ResourceLease;
 use Simplysmart\Polygon\Models\ResourceSchedule;
 use Simplysmart\Polygon\Models\ZoneAccount;
 use Simplysmart\Polygon\Queries\Dictionaries\HolidaysIn;
@@ -197,26 +198,9 @@ final readonly class FreeSlots
             }
         }
 
-        $lineage = $this->resources->lineage($unit);
-
-        foreach ($this->leases->overlapping($schedule->resource_id, $day, $day) as $lease) {
-            if (! $lease->isExclusive() || in_array($lease->cooperation_organization_id, $lineage, true) || ! $lease->occursOn($day)) {
-                continue;
-            }
-
-            $windows = $lease->leaseWindows();
-            $intervals = $windows->isWhole() ? [[$day, $day->addDay()]] : [];
-
-            foreach ($windows->windows as [$weekday, $from, $to]) {
-                if ($weekday === $day->dayOfWeekIso) {
-                    $intervals[] = [$day->setTimeFromTimeString($from), $day->setTimeFromTimeString($to)];
-                }
-            }
-
-            foreach ($intervals as [$from, $to]) {
-                if (self::within([[$from, $to]], $start, $end)) {
-                    $taken[] = new RoomTaken($from->max($start), RoomTakenBy::Lease, null, $lease->cooperation);
-                }
+        foreach ($this->exclusiveLeaseIntervals($unit, $schedule, $day) as [$lease, $from, $to]) {
+            if (self::within([[$from, $to]], $start, $end)) {
+                $taken[] = new RoomTaken($from->max($start), RoomTakenBy::Lease, null, $lease->cooperation);
             }
         }
 
@@ -298,7 +282,23 @@ final readonly class FreeSlots
             }
         }
 
+        foreach ($this->exclusiveLeaseIntervals($unit, $schedule, $day) as [, $from, $to]) {
+            $blocked[] = [$from, $to];
+        }
+
+        return $blocked;
+    }
+
+    /**
+     * Okna najmów na wyłączność zasobu grafiku obowiązujące w dniu, z najmem: najmy innych jednostek niż $unit (i jej
+     * przodkowie); najem bez okien zajmuje cały dzień.
+     *
+     * @return list<array{0: ResourceLease, 1: CarbonImmutable, 2: CarbonImmutable}>
+     */
+    private function exclusiveLeaseIntervals(Organization $unit, ResourceSchedule $schedule, CarbonImmutable $day): array
+    {
         $lineage = $this->resources->lineage($unit);
+        $intervals = [];
 
         foreach ($this->leases->overlapping($schedule->resource_id, $day, $day) as $lease) {
             if (! $lease->isExclusive() || in_array($lease->cooperation_organization_id, $lineage, true) || ! $lease->occursOn($day)) {
@@ -308,17 +308,17 @@ final readonly class FreeSlots
             $windows = $lease->leaseWindows();
 
             if ($windows->isWhole()) {
-                $blocked[] = [$day, $day->addDay()];
+                $intervals[] = [$lease, $day, $day->addDay()];
             }
 
             foreach ($windows->windows as [$weekday, $from, $to]) {
                 if ($weekday === $day->dayOfWeekIso) {
-                    $blocked[] = [$day->setTimeFromTimeString($from), $day->setTimeFromTimeString($to)];
+                    $intervals[] = [$lease, $day->setTimeFromTimeString($from), $day->setTimeFromTimeString($to)];
                 }
             }
         }
 
-        return $blocked;
+        return $intervals;
     }
 
     /**

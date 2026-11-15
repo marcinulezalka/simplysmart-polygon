@@ -78,6 +78,21 @@ final readonly class ContractorSearch
     }
 
     /**
+     * Pierwszy kontrahent o $nip wśród $organizationIds (najpierw organizacji wyżej w drzewie — niższe id organizacji).
+     *
+     * @param list<int> $organizationIds
+     */
+    public function firstByNip(array $organizationIds, string $nip): ?Contractor
+    {
+        $query = Contractor::query();
+        $query->whereIn(Organization::FOREIGN_KEY, $organizationIds);
+        $query->where(Contractor::NIP, $nip);
+        $query->orderBy(Organization::FOREIGN_KEY);
+
+        return $query->first();
+    }
+
+    /**
      * @return Builder<Contractor>
      */
     private function query(Organization $organization): Builder

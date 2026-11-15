@@ -26,6 +26,7 @@ use Simplysmart\Polygon\Models\Contractor;
 use Simplysmart\Polygon\Models\InvoicingAccount;
 use Simplysmart\Polygon\Models\InvoicingContractorLink;
 use Simplysmart\Polygon\Models\Organization;
+use Simplysmart\Polygon\Queries\Contractors\ContractorSearch;
 
 /**
  * Dwukierunkowa synchronizacja kontrahentów organizacji z klientami Fakturowni (docs/baza-danych.md §21).
@@ -42,14 +43,13 @@ use Simplysmart\Polygon\Models\Organization;
  */
 final readonly class SyncContractors
 {
-    /** Najwięcej stron klientów w jednym pobraniu (PER_PAGE klientów na stronę). */
-    private const int MAX_PAGES = 500;
-
     public function __construct(
         private InvoicingAccounts $accounts,
         private FakturowniaClients $clients,
         private SaveContractor $save,
         private ContractorPushGate $gate,
+        private ContractorSearch $search,
+        private PagedAccountSync $pages,
     ) {}
 
     /**
@@ -78,25 +78,15 @@ final readonly class SyncContractors
 
         $organizationIds = $this->accounts->organizationIds($account);
 
-        try {
-            for ($page = 1; $page <= self::MAX_PAGES; $page++) {
-                $remoteClients = $client->clients($page);
+        $this->pages->run($account, InvoicingAccount::CONTRACTORS_SYNCED_AT, function (int $page) use ($account, $client, $root, $organizationIds, $report): bool {
+            $remoteClients = $client->clients($page);
 
-                foreach ($remoteClients as $remote) {
-                    $this->pullClient($account, $client, $root, $organizationIds, $remote, $report);
-                }
-
-                if (count($remoteClients) < FakturowniaClient::PER_PAGE) {
-                    break;
-                }
+            foreach ($remoteClients as $remote) {
+                $this->pullClient($account, $client, $root, $organizationIds, $remote, $report);
             }
-        } catch (FakturowniaFailed $failed) {
-            $account->forceFill([InvoicingAccount::LAST_ERROR => $failed->getMessage()])->save();
 
-            throw $failed;
-        }
-
-        $account->forceFill([InvoicingAccount::CONTRACTORS_SYNCED_AT => CarbonImmutable::now(), InvoicingAccount::LAST_ERROR => null])->save();
+            return count($remoteClients) >= FakturowniaClient::PER_PAGE;
+        });
 
         return $report;
     }
@@ -285,16 +275,7 @@ final readonly class SyncContractors
 
         $nip = ClientMapper::nip($remote);
 
-        if ($nip === null) {
-            return null;
-        }
-
-        $byNip = Contractor::query();
-        $byNip->whereIn(Organization::FOREIGN_KEY, $organizationIds);
-        $byNip->where(Contractor::NIP, $nip);
-        $byNip->orderBy(Organization::FOREIGN_KEY);
-
-        return $byNip->first();
+        return $nip === null ? null : $this->search->firstByNip($organizationIds, $nip);
     }
 
     /**

@@ -393,7 +393,8 @@ organizacji i jest dostępny także w jej jednostkach podrzędnych. Paczki stref
 | `contractor_contracts` | `Models\ContractorContract` | `contractor_id`, `name` (numer), `signed_on`, `valid_from`, `valid_to`, `notes`; `status()` — `Enums\ContractStatus` (przyszła, obowiązuje, wygasła) |
 
 - **Zapis** (`Contractors\SaveContractor`, `ContractorData`): NIP i REGON normalizowane do cyfr i sprawdzane, NIP
-  unikalny w organizacji (także wśród usuniętych); odmowa — `Contractors\ContractorRejected` z polem formularza.
+  unikalny w organizacji (także wśród usuniętych); odmowa — `Contractors\ContractorRejected` z polem formularza
+  (`Validation\FieldRejected`: `toValidationException()` daje błąd przy tym polu).
   `SaveContact` — jeden kontakt główny na kontrahenta; `SaveContract` — umowa nie kończy się przed początkiem.
 - **Odczyt** (`Queries\Contractors\ContractorSearch`): kontrahenci organizacji i jej przodków po nazwie, wyszukiwanie po
   początku NIP-u (co najmniej 3 cyfry) albo fragmencie nazwy; `findByToken()`, `includes()` w tym samym zakresie.
