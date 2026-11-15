@@ -4,6 +4,8 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-15
+
 ### Added
 
 - Wspólna baza odmów zapisu z polem formularza `Validation\FieldRejected` (`$field`, `toValidationException()` — błąd walidacji przy tym polu): dziedziczą po niej `Contractors\ContractorRejected` i `Invoicing\InvoicingRejected`, a paczki stref mogą oprzeć na niej własne odmowy i zamieniać je na błąd formularza jednym wywołaniem.
