@@ -13,7 +13,9 @@ wdrożeń. Opis: `README.md`, tematy: `docs/README.md`.
   `Providers\PolygonServiceProvider` buduje ścieżki od `ROOT`.
 - **`Deploy\` bez Laravela:** narzędzia wydań i wdrożeń działają bez aplikacji (`bin/autoload.php`); testy w `tests/Deploy`.
 - **Schemat i dane:** migracje tylko schemat, dane referencyjne z seederów (`docs/baza-danych.md`, lista kontrolna §13).
-- **Testy:** narzędzia bez frameworka — `tests/` paczki (`composer test`); logika zależna od Laravela — dziś w testach
-  projektu (`tests/Feature/<Obszar>`), docelowo w `tests/Integration` paczki.
+- **Testy:** narzędzia bez frameworka (`Deploy`, `Listing`) — `tests/` paczki (`composer test`, bez `tests/Integration`);
+  logika zależna od Laravela — `tests/Integration/<Obszar>` paczki (klasa bazowa `Tests\TestCase` projektu, fixture'y
+  w `tests/Fixtures`, strefy testowe `alpha`, `beta`, `gamma`, `open`), uruchamiane z projektu zestawem `Packages`
+  (`php artisan test --compact vendor/simplysmart/polygon/tests/Integration/<plik>`) i analizowane PHPStanem projektu.
 - **Bramki:** `composer check` (Pint, PHPStan max, testy); kiedy — jak w „Quality Gates” projektu.
 - **Język:** docs, CHANGELOG, opisy PHPDoc i commity po polsku; identyfikatory po angielsku. PHP ^8.4 (bez składni 8.5).

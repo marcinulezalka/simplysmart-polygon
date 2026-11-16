@@ -10,3 +10,6 @@ parameters:
         - bin/composer-private
         - bin/deploy
         - bin/version-release
+    excludePaths:
+        - tests/Integration
+        - tests/Fixtures
