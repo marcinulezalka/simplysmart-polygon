@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Providers;
 
 use Illuminate\Auth\Middleware\Authenticate;
+use Simplysmart\Polygon\Localization\PhonePrefixes;
 use Illuminate\Auth\Middleware\RedirectIfAuthenticated;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Foundation\Application;
@@ -42,6 +43,7 @@ final class ZonesServiceProvider extends ServiceProvider
     {
         $this->app->singleton(ZoneRegistry::class, InMemoryZoneRegistry::class);
         $this->app->scoped(CurrentZone::class, RequestZone::class);
+        $this->app->scoped(PhonePrefixes::class);
         $this->app->bind(CurrentAccount::class, RequestAccount::class);
         $this->app->extend('session', fn(): ZoneSessionManager => new ZoneSessionManager($this->app));
         $this->app->singleton(ZoneSessionConfigurator::class, fn(Application $app): ZoneSessionConfigurator => new ZoneSessionConfigurator(

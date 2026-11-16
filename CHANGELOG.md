@@ -12,6 +12,7 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Added
 
+- `Http\RequestInput` (tekst wymagany `required()` i opcjonalny `text()`, dzień z `?date=`, data z pola formularza z komunikatem `polygon::forms.date_invalid`), `Localization\DateFormat` (daty lokalne DD-MM-RRRR i ISO) i `Localization\PhonePrefixes` (numery kierunkowe pól telefonu ze słownika krajów, usługa `scoped`) — wspólne dla stref.
 - `Validation\FieldRejected` renderuje się jak błąd walidacji (formularz wraca z błędem pod polem, JSON — 422) i nie jest logowany, więc kontrolery nie przechwytują odrzuceń tylko po to, żeby je przepakować.
 - `Calendar\FreeSlots::between()`: wolne terminy wykonawcy w okresie — grafiki, rezerwacje, dni wolne, grafiki blokujące i najmy wczytane raz na cały okres, siatka w pamięci; `on()` i `days()` z niej korzystają, więc szukanie wolnych dni nie pyta bazy o każdy dzień.
 - `Queries\Leases\ResourceLeases::bookingCountsFor()`: wizyty wielu najmów po stanie jednym zapytaniem (lista najmów bez zapytania na każdy najem); `bookingCounts()` z niego korzysta.
