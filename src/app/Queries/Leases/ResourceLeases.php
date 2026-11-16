@@ -129,15 +129,65 @@ final readonly class ResourceLeases
      */
     public function bookingCounts(ResourceLease $lease, CarbonImmutable $from, CarbonImmutable $to): array
     {
+        return $this->bookingCountsFor([$lease], $from, $to)[$lease->id] ?? [];
+    }
+
+    /**
+     * bookingCounts() wielu najmów jednym zapytaniem zgrupowanym po kooperacji, zasobie i stanie (lista najmów bez
+     * zapytania na każdy najem).
+     *
+     * @param iterable<ResourceLease> $leases
+     *
+     * @return array<int, array<string, int>> Id najmu => (wartość Enums\BookingStatus => liczba rezerwacji).
+     */
+    public function bookingCountsFor(iterable $leases, CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        $counts = [];
+        $byPair = [];
+
+        foreach ($leases as $lease) {
+            $counts[$lease->id] = [];
+            $byPair[$lease->cooperation_organization_id . ':' . $lease->resource_id][] = $lease->id;
+        }
+
+        if ($byPair === []) {
+            return [];
+        }
+
         $query = ResourceBooking::query();
-        $query->where(Organization::FOREIGN_KEY, $lease->cooperation_organization_id);
-        $query->where(OrganizationResource::FOREIGN_KEY, $lease->resource_id);
+        $query->where(static function (Builder $pairs) use ($byPair): void {
+            foreach (array_keys($byPair) as $pair) {
+                [$organizationId, $resourceId] = explode(':', $pair);
+                $pairs->orWhere(static function (Builder $one) use ($organizationId, $resourceId): void {
+                    $one->where(Organization::FOREIGN_KEY, (int) $organizationId)->where(OrganizationResource::FOREIGN_KEY, (int) $resourceId);
+                });
+            }
+        });
         $query->where(ResourceBooking::STARTS_AT, '>=', $from->startOfDay());
         $query->where(ResourceBooking::STARTS_AT, '<', $to->startOfDay()->addDay());
-        $counts = [];
+        $query->select([Organization::FOREIGN_KEY, OrganizationResource::FOREIGN_KEY, ColumnNames::STATUS]);
+        $query->selectRaw('count(*) as aggregate');
+        $query->groupBy([Organization::FOREIGN_KEY, OrganizationResource::FOREIGN_KEY, ColumnNames::STATUS]);
 
-        foreach ($query->get([ColumnNames::STATUS]) as $booking) {
-            $counts[$booking->status->value] = ($counts[$booking->status->value] ?? 0) + 1;
+        foreach ($query->toBase()->get() as $row) {
+            $values = (array) $row;
+            $status = $values[ColumnNames::STATUS] ?? null;
+            $organizationId = $values[Organization::FOREIGN_KEY] ?? null;
+            $resourceId = $values[OrganizationResource::FOREIGN_KEY] ?? null;
+
+            if (! is_string($status) || ! is_numeric($organizationId) || ! is_numeric($resourceId) || ! is_numeric($values['aggregate'] ?? null)) {
+                continue;
+            }
+
+            $pair = (int) $organizationId . ':' . (int) $resourceId;
+
+            if (! isset($byPair[$pair])) {
+                continue;
+            }
+
+            foreach ($byPair[$pair] as $leaseId) {
+                $counts[$leaseId][$status] = (int) $values['aggregate'];
+            }
         }
 
         return $counts;

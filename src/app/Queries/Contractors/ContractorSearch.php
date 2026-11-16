@@ -16,6 +16,7 @@ namespace Simplysmart\Polygon\Queries\Contractors;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Simplysmart\Polygon\Database\ColumnNames;
+use Simplysmart\Polygon\Database\LikePattern;
 use Simplysmart\Polygon\Identifiers\Nip;
 use Simplysmart\Polygon\Models\Contractor;
 use Simplysmart\Polygon\Models\Organization;
@@ -51,9 +52,9 @@ final readonly class ContractorSearch
 
         if ($term !== '' && $digits !== '' && strlen($digits) >= self::NIP_PREFIX_MIN && preg_match('/^[\d\s\-]+$/', preg_replace('/^\s*PL/i', '', $term) ?? '') === 1) {
             $query->where(Contractor::NIP, 'like', $digits . '%');
-        } elseif ($term !== '') {
-            $query->where(static function (Builder $name) use ($term): void {
-                $name->where(ColumnNames::NAME, 'like', '%' . $term . '%')->orWhere(Contractor::SHORT_NAME, 'like', '%' . $term . '%');
+        } elseif (($pattern = LikePattern::contains($term)) !== null) {
+            $query->where(static function (Builder $name) use ($pattern): void {
+                $name->where(ColumnNames::NAME, 'like', $pattern)->orWhere(Contractor::SHORT_NAME, 'like', $pattern);
             });
         }
 

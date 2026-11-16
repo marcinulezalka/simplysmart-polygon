@@ -11,7 +11,12 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Added
 
+- `Queries\Leases\ResourceLeases::bookingCountsFor()`: wizyty wielu najmów po stanie jednym zapytaniem (lista najmów bez zapytania na każdy najem); `bookingCounts()` z niego korzysta.
 - `Http\FileResponse::inline()` / `attachment()`: plik z pamięci jako odpowiedź z nagłówkiem `Content-Disposition` według RFC 6266 (nazwa UTF-8 i zastępcza ASCII, bez znaków sterujących, ukośników i cudzysłowów), `no-store` i `nosniff`.
+
+### Fixed
+
+- Wyszukiwanie kontrahentów po nazwie traktuje `%` i `_` we frazie jak zwykłe znaki (`Database\LikePattern`), a nie jak symbole wieloznaczne.
 
 ## [0.14.0] - 2026-11-15
 
