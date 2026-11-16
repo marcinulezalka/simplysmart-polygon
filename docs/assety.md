@@ -43,3 +43,21 @@ Skrypty projektu wołają orkiestrator `node vendor/simplysmart/polygon/bin/asse
 - **Wymagania WCAG** (kontrast tekstu 4.5:1 / 7:1, obramowania kontrolek 3:1, widoczny fokus) obowiązują w motywach
   `wcag` i `wcag-contrast`; `light` i `dark` nie muszą ich w pełni spełniać. W trybach WCAG stanów treści nie
   wyszarza się przezroczystością (obniża kontrast) — tylko elementy nieaktywne.
+
+## Bazowe zasady UI stref
+
+Wspólne dla każdej strefy z widokami (tokeny i nazwy — z prefiksem paczki; wzór wartości: `docs/ui.md` paczki strefy):
+
+1. **Zaokrąglenia zagnieżdżone:** kontener z zaokrąglonym elementem blisko krawędzi ma promień zewnętrzny = wewnętrzny
+   + padding; skala promieni (elementy w kontenerach, kontrolki, karty) z tokenów motywu.
+2. **Cień kart** tylko z tokenu motywu: dwie warstwy (szeroka miękka i bliska, kolory marki w 8%); małe karty w kartach
+   mają cień w tych samych kolorach w skali elementu, nie są płaskie; motywy WCAG — bez cienia.
+3. **Warstwy tła** (ciepłe neutralne): górny pasek i stopka jaśniejsze od treści, panele boczne płaskie w złamanej
+   bieli, treść delikatnie szara, karty białe.
+4. **Przyciski:** jeden rozmiar normalny (jak w Bootstrapie i Tablerze: 8 × 16 px, tekst 15 px, ok. 40 px wysokości),
+   zawsze z ikoną (przed etykietą; „dalej” po niej), delikatny cień w kolorze przycisku; najechanie i wciśnięcie
+   zmieniają tylko kolor, bez przesuwania; pełna szerokość tylko w formularzach logowania.
+5. **Czcionki** z licencją OFL hostowane w paczce (woff2, zestawy latin i latin-ext), bez ładowania z Google; kroje
+   płatne tylko z licencją.
+6. **WCAG** jak wyżej: wymagania kontrastu tylko w motywach `wcag` i `wcag-contrast`, jasny i ciemny zachowują swój
+   wygląd.
