@@ -12,6 +12,7 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Added
 
+- `Listing\SortableColumn` i trait `Listing\SortsByColumn`: sortowanie listy po kolumnie jako enum (`kolumna` / `-kolumna` w parametrze `sort`, kolumny, kierunek, przełączenie nagłówka) oraz wspólne teksty dymka `polygon::forms.sort_asc` / `sort_desc`.
 - `LocalFormatter::compare()` i helper `local_compare()`: porównanie tekstów w kolejności alfabetu języka (Ł po L, Ż po Z w pl) do sortowania nazw; `Queries\Organizations\OrganizationUnits::root()` — organizacja główna drzewa (najwyższy przodek poza hero), używana przez konta fakturowania.
 - `Http\RequestInput` (tekst wymagany `required()` i opcjonalny `text()`, dzień z `?date=`, data z pola formularza z komunikatem `polygon::forms.date_invalid`), `Localization\DateFormat` (daty lokalne DD-MM-RRRR i ISO) i `Localization\PhonePrefixes` (numery kierunkowe pól telefonu ze słownika krajów, usługa `scoped`) — wspólne dla stref.
 - `Validation\FieldRejected` renderuje się jak błąd walidacji (formularz wraca z błędem pod polem, JSON — 422) i nie jest logowany, więc kontrolery nie przechwytują odrzuceń tylko po to, żeby je przepakować.

@@ -13,4 +13,6 @@ declare(strict_types=1);
 
 return [
     'date_invalid' => 'Enter the date as DD-MM-YYYY.',
+    'sort_asc' => 'Sort: :column A–Z',
+    'sort_desc' => 'Sort: :column Z–A',
 ];
