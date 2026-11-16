@@ -54,40 +54,7 @@ final readonly class FreeSlots
      */
     public function on(Organization $unit, ZoneAccount $performer, CarbonImmutable $day, ?int $resourceId = null): array
     {
-        $day = $day->startOfDay();
-
-        if ($day->lessThan(CarbonImmutable::today()) || $this->holidays->applicationDaysOff($day, $day) !== []) {
-            return [];
-        }
-
-        $schedules = $this->schedules($unit, $performer, $day);
-
-        if ($resourceId !== null) {
-            $schedules = $schedules->filter(static fn(ResourceSchedule $schedule): bool => $schedule->resource_id === $resourceId)->values();
-        }
-
-        if ($schedules->isEmpty()) {
-            return [];
-        }
-
-        $taken = $this->taken($performer, array_values(array_map(static fn(ResourceSchedule $schedule): int => $schedule->resource_id, $schedules->all())), $day);
-        $slots = [];
-
-        foreach ($schedules as $schedule) {
-            $blocked = $schedule->fills_gaps ? $this->blocked($unit, $schedule, $day) : [];
-
-            foreach ($this->grid($schedule, $day) as [$start, $end]) {
-                if ($this->overlaps($taken, $performer, $schedule->resource_id, $start, $end) || self::within($blocked, $start, $end)) {
-                    continue;
-                }
-
-                $slots[] = new Slot($start, $end, $schedule->id, $schedule->resource_id);
-            }
-        }
-
-        usort($slots, static fn(Slot $a, Slot $b): int => $a->startsAt <=> $b->startsAt);
-
-        return $slots;
+        return $this->between($unit, $performer, $day, $day, $resourceId)[$day->toDateString()] ?? [];
     }
 
     /**
@@ -98,17 +65,93 @@ final readonly class FreeSlots
      */
     public function days(Organization $unit, ZoneAccount $performer, CarbonImmutable $from, int $days, ?int $resourceId = null): array
     {
-        $result = [];
+        if ($days < 1) {
+            return [];
+        }
 
-        for ($offset = 0; $offset < $days; $offset++) {
-            $day = $from->startOfDay()->addDays($offset);
+        $start = $from->startOfDay();
+        $free = $this->between($unit, $performer, $start, $start->addDays($days - 1), $resourceId);
 
-            if ($this->on($unit, $performer, $day, $resourceId) !== []) {
-                $result[] = $day;
+        return array_map(static fn(string $date): CarbonImmutable => CarbonImmutable::parse($date), array_keys($free));
+    }
+
+    /**
+     * Wolne terminy wykonawcy w jednostce w dniach od $from do $to (włącznie), opcjonalnie tylko na zasobie $resourceId:
+     * grafiki, rezerwacje, dni wolne, inne grafiki zasobów i najmy wczytane raz na cały okres, siatka liczona w pamięci
+     * dzień po dniu — reguły jak on(), bez zapytań na każdy dzień.
+     *
+     * @return array<string, list<Slot>> Data (`Y-m-d`) => wolne sloty od najwcześniejszego; dni bez slotów pominięte.
+     */
+    public function between(Organization $unit, ZoneAccount $performer, CarbonImmutable $from, CarbonImmutable $to, ?int $resourceId = null): array
+    {
+        $from = $from->startOfDay()->max(CarbonImmutable::today());
+        $to = $to->startOfDay();
+
+        if ($to->lessThan($from)) {
+            return [];
+        }
+
+        $query = ResourceSchedule::query();
+        $query->where(Organization::FOREIGN_KEY, $unit->id);
+        $query->where(ResourceSchedule::PERFORMER_TYPE, $performer->getMorphClass());
+        $query->where(ResourceSchedule::PERFORMER_ID, $performer->id);
+        $query->where(ColumnNames::IS_ACTIVE, true);
+
+        if ($resourceId !== null) {
+            $query->where(OrganizationResource::FOREIGN_KEY, $resourceId);
+        }
+
+        $schedules = $query->get();
+
+        if ($schedules->isEmpty()) {
+            return [];
+        }
+
+        $resourceIds = array_values(array_unique(array_map(static fn(ResourceSchedule $schedule): int => $schedule->resource_id, $schedules->all())));
+        $gapResourceIds = array_values(array_unique(array_map(static fn(ResourceSchedule $schedule): int => $schedule->resource_id, $schedules->filter(static fn(ResourceSchedule $schedule): bool => $schedule->fills_gaps)->all())));
+        $daysOff = $this->holidays->applicationDaysOff($from, $to);
+        $taken = $this->taken($performer, $resourceIds, $from, $to->addDay());
+        $blockers = $this->blockingSchedules($gapResourceIds);
+        $exclusive = [];
+        $allows = [];
+        $lineage = $gapResourceIds === [] ? [] : $this->resources->lineage($unit);
+        $free = [];
+
+        for ($day = $from; $day->lessThanOrEqualTo($to); $day = $day->addDay()) {
+            if (isset($daysOff[$day->toDateString()])) {
+                continue;
+            }
+
+            $slots = [];
+
+            foreach ($schedules as $schedule) {
+                if ($schedule->weekday !== $day->dayOfWeekIso || ! $schedule->appliesOn($day) || ! $this->leaseAllows($unit, $schedule, $day, $allows)) {
+                    continue;
+                }
+
+                $blocked = [];
+
+                if ($schedule->fills_gaps) {
+                    $exclusive[$schedule->resource_id] ??= $this->leases->overlapping($schedule->resource_id, $from, $to);
+                    $blocked = $this->blocked($blockers[$schedule->resource_id] ?? [], $exclusive[$schedule->resource_id], $lineage, $day);
+                }
+
+                foreach ($this->grid($schedule, $day) as [$start, $end]) {
+                    if ($this->overlaps($taken, $performer, $schedule->resource_id, $start, $end) || self::within($blocked, $start, $end)) {
+                        continue;
+                    }
+
+                    $slots[] = new Slot($start, $end, $schedule->id, $schedule->resource_id);
+                }
+            }
+
+            if ($slots !== []) {
+                usort($slots, static fn(Slot $a, Slot $b): int => $a->startsAt <=> $b->startsAt);
+                $free[$day->toDateString()] = $slots;
             }
         }
 
-        return $result;
+        return $free;
     }
 
     /**
@@ -258,35 +301,63 @@ final readonly class FreeSlots
         $query->where(ResourceSchedule::WEEKDAY, $day->dayOfWeekIso);
         $query->where(ColumnNames::IS_ACTIVE, true);
 
-        return $query->get()->filter(fn(ResourceSchedule $schedule): bool => $schedule->appliesOn($day) && $this->leaseAllows($unit, $schedule, $day))->values();
+        $allows = [];
+
+        return $query->get()->filter(fn(ResourceSchedule $schedule): bool => $schedule->appliesOn($day) && $this->leaseAllows($unit, $schedule, $day, $allows))->values();
     }
 
     /**
-     * Czas zasobu zajęty w dniu dla grafiku wypełniającego wolny czas: inny grafik zasobu (bez wypełniających) i okna
-     * najmów na wyłączność innych jednostek obowiązujące w tym dniu.
+     * Czas zasobu zajęty w dniu dla grafiku wypełniającego wolny czas: inny grafik zasobu (bez wypełniających,
+     * $blockers z blockingSchedules()) i okna najmów na wyłączność innych jednostek ($leases zasobu w okresie, jednostki
+     * spoza $lineage) obowiązujące w tym dniu.
+     *
+     * @param list<ResourceSchedule> $blockers
+     * @param Collection<int, ResourceLease> $leases
+     * @param list<int> $lineage
      *
      * @return list<array{0: CarbonImmutable, 1: CarbonImmutable}>
      */
-    private function blocked(Organization $unit, ResourceSchedule $schedule, CarbonImmutable $day): array
+    private function blocked(array $blockers, Collection $leases, array $lineage, CarbonImmutable $day): array
     {
         $blocked = [];
-        $query = ResourceSchedule::query();
-        $query->where(ColumnNames::IS_ACTIVE, true);
-        $query->where(OrganizationResource::FOREIGN_KEY, $schedule->resource_id);
-        $query->where(ResourceSchedule::WEEKDAY, $day->dayOfWeekIso);
-        $query->where(ResourceSchedule::FILLS_GAPS, false);
 
-        foreach ($query->get() as $other) {
-            if ($other->appliesOn($day)) {
+        foreach ($blockers as $other) {
+            if ($other->weekday === $day->dayOfWeekIso && $other->appliesOn($day)) {
                 $blocked[] = [$day->setTimeFromTimeString($other->starts_at), $day->setTimeFromTimeString($other->ends_at)];
             }
         }
 
-        foreach ($this->exclusiveLeaseIntervals($unit, $schedule, $day) as [, $from, $to]) {
+        foreach (self::exclusiveIntervals($leases, $lineage, $day) as [, $from, $to]) {
             $blocked[] = [$from, $to];
         }
 
         return $blocked;
+    }
+
+    /**
+     * Grafiki zasobów $resourceIds, które blokują grafik wypełniający wolny czas (aktywne, bez wypełniających), po zasobie.
+     *
+     * @param list<int> $resourceIds
+     *
+     * @return array<int, list<ResourceSchedule>>
+     */
+    private function blockingSchedules(array $resourceIds): array
+    {
+        if ($resourceIds === []) {
+            return [];
+        }
+
+        $query = ResourceSchedule::query();
+        $query->where(ColumnNames::IS_ACTIVE, true);
+        $query->whereIn(OrganizationResource::FOREIGN_KEY, $resourceIds);
+        $query->where(ResourceSchedule::FILLS_GAPS, false);
+        $byResource = [];
+
+        foreach ($query->get() as $schedule) {
+            $byResource[$schedule->resource_id][] = $schedule;
+        }
+
+        return $byResource;
     }
 
     /**
@@ -297,10 +368,23 @@ final readonly class FreeSlots
      */
     private function exclusiveLeaseIntervals(Organization $unit, ResourceSchedule $schedule, CarbonImmutable $day): array
     {
-        $lineage = $this->resources->lineage($unit);
+        return self::exclusiveIntervals($this->leases->overlapping($schedule->resource_id, $day, $day), $this->resources->lineage($unit), $day);
+    }
+
+    /**
+     * Okna najmów $leases na wyłączność obowiązujące w dniu — najmy jednostek spoza $lineage; najem bez okien zajmuje
+     * cały dzień.
+     *
+     * @param Collection<int, ResourceLease> $leases
+     * @param list<int> $lineage
+     *
+     * @return list<array{0: ResourceLease, 1: CarbonImmutable, 2: CarbonImmutable}>
+     */
+    private static function exclusiveIntervals(Collection $leases, array $lineage, CarbonImmutable $day): array
+    {
         $intervals = [];
 
-        foreach ($this->leases->overlapping($schedule->resource_id, $day, $day) as $lease) {
+        foreach ($leases as $lease) {
             if (! $lease->isExclusive() || in_array($lease->cooperation_organization_id, $lineage, true) || ! $lease->occursOn($day)) {
                 continue;
             }
@@ -337,14 +421,20 @@ final readonly class FreeSlots
 
     /**
      * Grafik na własnym zasobie zawsze; na wynajętym — gdy w dniu obowiązuje umowa jednostki obejmująca jego godziny.
+     * Przynależność zasobu i najmy kooperacji są liczone raz na zasób i pamiętane w $known między dniami okresu.
+     *
+     * @param array<int, Collection<int, ResourceLease>|true> $known Id zasobu => true (własny) albo najmy kooperacji.
      */
-    private function leaseAllows(Organization $unit, ResourceSchedule $schedule, CarbonImmutable $day): bool
+    private function leaseAllows(Organization $unit, ResourceSchedule $schedule, CarbonImmutable $day, array &$known): bool
     {
-        if ($this->resources->owns($unit, $schedule->resource_id)) {
+        $known[$schedule->resource_id] ??= $this->resources->owns($unit, $schedule->resource_id) ? true : $this->leases->ofCooperation($unit, $schedule->resource_id);
+        $leases = $known[$schedule->resource_id];
+
+        if ($leases === true) {
             return true;
         }
 
-        foreach ($this->leases->ofCooperation($unit, $schedule->resource_id) as $lease) {
+        foreach ($leases as $lease) {
             if ($lease->occursOn($day) && $lease->leaseWindows()->covers($schedule->weekday, $schedule->from(), $schedule->to())) {
                 return true;
             }
@@ -354,18 +444,18 @@ final readonly class FreeSlots
     }
 
     /**
-     * Rezerwacje zajmujące termin w dniu u wykonawcy albo na jego zasobach.
+     * Rezerwacje zajmujące termin w okresie [$from, $until) u wykonawcy albo na jego zasobach.
      *
      * @param list<int> $resourceIds
      *
      * @return Collection<int, ResourceBooking>
      */
-    private function taken(ZoneAccount $performer, array $resourceIds, CarbonImmutable $day): Collection
+    private function taken(ZoneAccount $performer, array $resourceIds, CarbonImmutable $from, CarbonImmutable $until): Collection
     {
         $query = ResourceBooking::query();
         $query->whereIn(ColumnNames::STATUS, BookingStatus::occupyingValues());
-        $query->where(ResourceBooking::STARTS_AT, '<', $day->addDay());
-        $query->where(ResourceBooking::ENDS_AT, '>', $day);
+        $query->where(ResourceBooking::STARTS_AT, '<', $until);
+        $query->where(ResourceBooking::ENDS_AT, '>', $from);
         $query->where(static function (Builder $owner) use ($performer, $resourceIds): void {
             $owner->where(static function (Builder $own) use ($performer): void {
                 $own->where(ResourceSchedule::PERFORMER_TYPE, $performer->getMorphClass())->where(ResourceSchedule::PERFORMER_ID, $performer->id);
