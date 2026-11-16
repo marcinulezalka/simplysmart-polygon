@@ -12,6 +12,7 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Added
 
+- `Validation\FieldRejected` renderuje się jak błąd walidacji (formularz wraca z błędem pod polem, JSON — 422) i nie jest logowany, więc kontrolery nie przechwytują odrzuceń tylko po to, żeby je przepakować.
 - `Calendar\FreeSlots::between()`: wolne terminy wykonawcy w okresie — grafiki, rezerwacje, dni wolne, grafiki blokujące i najmy wczytane raz na cały okres, siatka w pamięci; `on()` i `days()` z niej korzystają, więc szukanie wolnych dni nie pyta bazy o każdy dzień.
 - `Queries\Leases\ResourceLeases::bookingCountsFor()`: wizyty wielu najmów po stanie jednym zapytaniem (lista najmów bez zapytania na każdy najem); `bookingCounts()` z niego korzysta.
 - `Http\FileResponse::inline()` / `attachment()`: plik z pamięci jako odpowiedź z nagłówkiem `Content-Disposition` według RFC 6266 (nazwa UTF-8 i zastępcza ASCII, bez znaków sterujących, ukośników i cudzysłowów), `no-store` i `nosniff`.
