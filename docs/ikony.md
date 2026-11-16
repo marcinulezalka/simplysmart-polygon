@@ -32,14 +32,14 @@ Config `polygon.icons`:
 
 - `php artisan polygon:icons:subset <katalog> <zestaw:ikona>…` — zapisuje `<katalog>/<zestaw>.json` z podanymi ikonami
   (cały plik zestawu jest zastępowany — podaj wszystkie ikony zestawu, których strefa używa; brakująca ikona przerywa
-  komendę). Strefa zwykle ma własną komendę, która zbiera ikony swojego enuma (ulmed: `ulmed:icons:sync`).
+  komendę). Strefa zwykle ma własną komendę, która zbiera ikony swojego enuma (np. `<strefa>:icons:sync`).
 - `php artisan polygon:icons:png <zestaw:ikona> <plik.png> [--size=24] [--scale=2] [--color=#1d4873]` — ikona do
   e-maila jako PNG. Klienty poczty nie wyświetlają SVG ani web componentów, dlatego mail osadza PNG
   (`$message->embed()`) w rozmiarze `--size`; plik ma `--scale` razy więcej pikseli (ostry na ekranach o dużej
   gęstości), a kolor jest stały. Rasteryzuje `rsvg-convert` (`apt install librsvg2-bin`, zalecany) albo `inkscape`;
   PNG commituje się w paczce strefy.
 
-## Strefa — wzór (ulmed)
+## Strefa — wzór
 
 1. Enum ikon interfejsu z wartościami `zestaw:ikona`; `html()` → `IconifyIcon::html()` z klasą wyglądu strefy.
 2. Kolekcje `resources/icons/<zestaw>.json` z komendy `polygon:icons:subset` (własny zestaw spoza API — plik JSON

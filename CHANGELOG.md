@@ -4,6 +4,10 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- `Http\FileResponse::inline()` / `attachment()`: plik z pamięci jako odpowiedź z nagłówkiem `Content-Disposition` według RFC 6266 (nazwa UTF-8 i zastępcza ASCII, bez znaków sterujących, ukośników i cudzysłowów), `no-store` i `nosniff`.
+
 ## [0.14.0] - 2026-11-15
 
 ### Added
