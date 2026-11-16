@@ -17,14 +17,15 @@
  * `export default { build: { rollupOptions: { input: ['resources/scss/app.scss'] } } }`. Orkiestrator znajduje paczki
  * w `vendor/simplysmart/*`, używa Vite (i preprocesorów, np. `sass`) zainstalowanych raz w projekcie — tak samo pakietów
  * npm importowanych w JS paczki (projectModules, np. `iconify-icon`) — i buduje każdą do
- * jej `public/build/` z `manifest.json` (Assets\PackageAssets, adresy `/vendor/<paczka>/build/`), a na końcu projekt
+ * jej `public/build/` (albo `<root>/public/build/`, gdy konfiguracja paczki ma `root`, np. `'src'`) z `manifest.json`
+ * (Assets\PackageAssets, adresy `/vendor/<paczka>/build/`), a na końcu projekt
  * jego własnym `vite.config.js`. `build`: kolejno, błąd dowolnego builda kończy proces kodem 1. `dev`: paczki
  * w trybie watch (przebudowa przy zmianie) równolegle z serwerem dev Vite projektu.
  */
 
 import { spawn } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const project = process.cwd();
@@ -80,18 +81,23 @@ const projectModules = {
     },
 };
 
-/** Konfiguracja Vite paczki scalona z ustawieniami builda do jej public/build. */
+/**
+ * Konfiguracja Vite paczki scalona z ustawieniami builda do jej public/build. `root` z `vite.config.js` paczki
+ * (względny wobec jej katalogu, np. `'src'`) jest katalogiem źródeł: od niego liczą się wejścia i klucze manifestu,
+ * a build trafia do `<root>/public/build`. Bez `root` — katalog paczki.
+ */
 async function packageConfig(vite, { name, root }, watch) {
     const own = (await import(pathToFileURL(join(root, CONFIG)).href + `?t=${Date.now()}`)).default ?? {};
+    const sources = resolve(root, own.root ?? '.');
 
     return vite.mergeConfig(own, {
         configFile: false,
-        root,
+        root: sources,
         base: `/vendor/${name}/build/`,
         logLevel: 'info',
         plugins: [projectModules],
         build: {
-            outDir: join(root, 'public', 'build'),
+            outDir: join(sources, 'public', 'build'),
             emptyOutDir: true,
             manifest: 'manifest.json',
             watch: watch ? {} : null,

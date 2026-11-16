@@ -5,6 +5,26 @@ Mechanizm stref polygon (bez kontekstu w adresie, wyglądu stref i dziennika aud
 **polygon nie ma widoków**: daje logikę, trasy, kontrolery, limity i maile, a ekrany logowania, konta i szablony maili
 dostarcza paczka strefy.
 
+## Układ paczki
+
+Paczka (polygon i każda paczka strefy) ma kod i zasoby w `src/` w układzie aplikacji Laravela, a w katalogu głównym
+tylko pliki deweloperskie:
+
+```
+src/app/          klasy PHP — korzeń PSR-4 (`<Vendor>\<Paczka>\`): Providers/, Console/Commands/, Http/Controllers/,
+                  Models/, Enums/, View/Composers/, Support/ i katalogi domen
+src/config/       config paczki (scalany w providerze)
+src/database/     migrations/, seeders/ (osobne mapowanie PSR-4 `…\Database\Seeders\`), install/
+src/lang/         teksty paczki (`<locale>/*.php`)
+src/public/       pliki serwowane pod `/vendor/<paczka>/` (build/ commitowany, favicony, obrazy)
+src/resources/    views/, scss/, js/, icons/, fonts/, brand/ (źródła marki)
+src/routes/       trasy strefy
+```
+
+W katalogu głównym: `composer.json`, `vite.config.js` (z `root: 'src'`), `phpstan.neon`, `pint.json`, `tests/`,
+`docs/`, `bin/`, `README.md`, `CHANGELOG.md`, `VERSION`, licencje. Provider leży w `src/app/Providers/` i buduje każdą
+ścieżkę od jednej stałej `ROOT` (`__DIR__ . '/../..'` — katalog `src/`).
+
 ## Strefa w paczce
 
 ```php
@@ -12,21 +32,23 @@ use Simplysmart\Polygon\Database\PackageSeeders;
 use Simplysmart\Polygon\Install\InstallFiles;
 use Simplysmart\Polygon\Zones\ZoneServiceProvider;
 
-final class ShopServiceProvider extends ZoneServiceProvider
+final class ShopServiceProvider extends ZoneServiceProvider // src/app/Providers/
 {
+    private const string ROOT = __DIR__ . '/../..'; // src/
+
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/shop.php', 'shop');
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'shop');
-        $this->loadTranslationsFrom(__DIR__ . '/../lang', 'shop');
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
-        $this->callAfterResolving(InstallFiles::class, static fn(InstallFiles $files) => $files->add(__DIR__ . '/../database/install/shop.json'));
+        $this->mergeConfigFrom(self::ROOT . '/config/shop.php', 'shop');
+        $this->loadViewsFrom(self::ROOT . '/resources/views', 'shop');
+        $this->loadTranslationsFrom(self::ROOT . '/lang', 'shop');
+        $this->loadMigrationsFrom(self::ROOT . '/database/migrations');
+        $this->callAfterResolving(InstallFiles::class, static fn(InstallFiles $files) => $files->add(self::ROOT . '/database/install/shop.json'));
         $this->callAfterResolving(PackageSeeders::class, static fn(PackageSeeders $seeders) => $seeders->add(ShopSeeder::class)); // opcjonalnie
     }
 
     protected function routeNamePrefix(): string { return 'shop'; }          // stały: shop.dashboard
     protected function zoneConfig(): array { return config()->array('shop.zone'); }
-    protected function routesPath(): string { return __DIR__ . '/../routes'; }
+    protected function routesPath(): string { return self::ROOT . '/routes'; }
 }
 ```
 
@@ -35,8 +57,8 @@ guard i provider do config/auth (`ZoneGuardRegistrar`), grupę middleware `zone.
 rejestruje się tak samo (`Providers\PolygonZoneServiceProvider`, config `polygon.zone`): ma konta i guard, ale nie ma
 ekranów ani tras.
 
-Migracje paczki strefy (`database/migrations/`) tworzą tylko schemat; dane referencyjne strefy daje jej seeder
-(`database/seeders/`), dopisany do `Database\PackageSeeders` — `db:seed` uruchamia go po seederach bazowych polygon
+Migracje paczki strefy (`src/database/migrations/`) tworzą tylko schemat; dane referencyjne strefy daje jej seeder
+(`src/database/seeders/`), dopisany do `Database\PackageSeeders` — `db:seed` uruchamia go po seederach bazowych polygon
 (docs/baza-danych.md §1). Seedera nie woła się z migracji.
 
 ## Config strefy
@@ -98,7 +120,7 @@ wszystkie sesje i zaufane urządzenia unieważnione, bieżąca sesja wylogowana,
 | `security` | `account`, `currentPinLength`, `pinLength`, `codeLength`, `devices`, `currentSelector`, `recoveryEmail`, `pendingRecoveryEmail` |
 
 Komunikaty: `session(\Simplysmart\Polygon\Http\StatusMessage::KEY)` (kontrolery zapisują je pod tym kluczem)
-i błędy walidacji (`$errors`). Teksty domyślne: `lang/<locale>/sign_in.php`,
+i błędy walidacji (`$errors`). Teksty domyślne: `src/lang/<locale>/sign_in.php`,
 `account.php`, `emails.php` (strefa nadpisuje we własnym namespace; `ZoneDefinition::signInText()`).
 
 ## Maile (`mail.views`)
@@ -148,7 +170,7 @@ własny kontekst):
 
 ## Konta i komendy
 
-- `<strefa>:account:create {email} {name} [--role=*] [--organization=<klucz>=<rola>,…]* [--default-organization=<klucz>] [--skip-existing]` — podklasa `Console\CreateZoneAccountCommand`
+- `<strefa>:account:create {email} {name} [--role=*] [--organization=<klucz>=<rola>,…]* [--default-organization=<klucz>] [--skip-existing]` — podklasa `Console\Commands\CreateZoneAccountCommand`
   (ustawia `$name`, `$description`, `zoneName()`); akcja `Auth\CreateZoneAccount`.
 - `polygon:auth:prune` (co godzinę) — usuwa wygasłe kody logowania i nieaktywne zaufane urządzenia stref.
 - Role i uprawnienia strefy z plików instalacji ([instalacja.md](instalacja.md)).

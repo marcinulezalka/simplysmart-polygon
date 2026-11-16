@@ -9,11 +9,13 @@
 
 /**
  * Assety polygonu (układ toastu i dzwonka powiadomień — Notifications\NotificationAssets) budowane orkiestratorem
- * (`npm run build` / `npm run dev` w projekcie, `bin/assets.mjs`) do `public/build/` (commitowany). Zwykły obiekt
- * konfiguracji Vite, bez importu `vite` — zależności są w projekcie. `resources/js/notifications.js` nie jest
+ * (`npm run build` / `npm run dev` w projekcie, `bin/assets.mjs`) do `src/public/build/` (commitowany). Zwykły obiekt
+ * konfiguracji Vite, bez importu `vite` — zależności są w projekcie; `root: 'src'` — wejścia i klucze manifestu liczą się
+ * od `src/`. `resources/js/notifications.js` nie jest
  * wejściem — strefy importują z niego `initNotifications()` we własnym wejściu JS (NotificationAssets).
  */
 export default {
+    root: 'src',
     publicDir: false,
     build: {
         rollupOptions: {

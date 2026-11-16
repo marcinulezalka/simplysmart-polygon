@@ -42,8 +42,8 @@ Config `polygon.icons`:
 ## Strefa — wzór
 
 1. Enum ikon interfejsu z wartościami `zestaw:ikona`; `html()` → `IconifyIcon::html()` z klasą wyglądu strefy.
-2. Kolekcje `resources/icons/<zestaw>.json` z komendy `polygon:icons:subset` (własny zestaw spoza API — plik JSON
-   pisany ręcznie) i licencje zestawów `resources/icons/<zestaw>/LICENSE`.
+2. Kolekcje `src/resources/icons/<zestaw>.json` z komendy `polygon:icons:subset` (własny zestaw spoza API — plik JSON
+   pisany ręcznie) i licencje zestawów `src/resources/icons/<zestaw>/LICENSE`.
 3. Moduł JS ładowany na każdej stronie: `import { addCollection, appendCustomStyle } from 'iconify-icon'` i od razu
    `addCollection()` każdej kolekcji — nie `window.IconifyPreload`: Vite wykonuje wspólny fragment `iconify-icon` przed
    treścią modułu, więc komponent nie widzi globalu, pobiera ikony z API, a własnego zestawu (spoza API) nie pokazuje;

@@ -42,11 +42,11 @@
     },
     "autoload": {
         "psr-4": {
-            "Simplysmart\\Polygon\\Database\\Seeders\\": "database/seeders/",
-            "Simplysmart\\Polygon\\": "src/"
+            "Simplysmart\\Polygon\\Database\\Seeders\\": "src/database/seeders/",
+            "Simplysmart\\Polygon\\": "src/app/"
         },
         "files": [
-            "src/helpers.php"
+            "src/app/helpers.php"
         ]
     },
     "autoload-dev": {
@@ -74,7 +74,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Simplysmart\\Polygon\\PolygonServiceProvider"
+                "Simplysmart\\Polygon\\Providers\\PolygonServiceProvider"
             ]
         }
     },

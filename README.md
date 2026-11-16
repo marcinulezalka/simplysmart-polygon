@@ -15,7 +15,7 @@ Paczka Composer: `simplysmart/polygon`, namespace `Simplysmart\Polygon\`.
 
 - PHP ^8.4 z rozszerzeniami `intl` (dane ICU słowników) i `bcmath` (przeliczenia kursów), Laravel 13
 - MySQL 8 / MariaDB (triggery historii: uprawnienie `TRIGGER`, przy binlogu `log_bin_trust_function_creators = 1`) albo SQLite
-- provider `Simplysmart\Polygon\PolygonServiceProvider` rejestruje się sam (auto-discovery) i dokłada providery obszarów z `src/Providers/` (baza danych, tłumaczenia, konta, uprawnienia); klucze configu paczki są stałymi `PolygonConfig`
+- provider `Simplysmart\Polygon\Providers\PolygonServiceProvider` rejestruje się sam (auto-discovery) i dokłada providery obszarów z `src/app/Providers/` (baza danych, tłumaczenia, konta, uprawnienia); klucze configu paczki są stałymi `PolygonConfig`
 
 ## Instalacja w projekcie
 
@@ -29,14 +29,14 @@ Paczka leży lokalnie w `/var/www/packages/simplysmart/polygon`. W `composer.jso
 
 ```bash
 composer require simplysmart/polygon:@dev
-php artisan migrate                      # tabele paczki (database/migrations/)
+php artisan migrate                      # tabele paczki (src/database/migrations/)
 php artisan db:seed                      # seedery bazowe (słowniki, organizacja hero, pliki instalacji) + seedery paczek; migracje nie wstawiają danych
 php artisan polygon:organizations:seed   # same typy jednostek i organizacja hero (idempotentnie)
 php artisan polygon:install              # same pliki instalacji JSON: strefy, uprawnienia, role, konta startowe
 php artisan polygon:account:create jan@example.com "Jan Kowalski" --role=owner   # konto strefy polygon (polygon_accounts)
 ```
 
-Paczka jest w `require`, bo jej migracje i modele działają też na serwerach. Ustawienia (`config/polygon.php`) zmienia się przez `.env`: `APP_CURRENCY`, `APP_LOCALES`, `APP_COUNTRY`.
+Paczka jest w `require`, bo jej migracje i modele działają też na serwerach. Ustawienia (`src/config/polygon.php`) zmienia się przez `.env`: `APP_CURRENCY`, `APP_LOCALES`, `APP_COUNTRY`.
 
 Konfiguracje wdrażanych projektów leżą w projekcie: `infrastructure/deploy/vendors/<projekt>/<projekt>.env` albo `infrastructure/deploy/vendors/<projekt>.env` (wzór `resources/deploy/deploy-vendor.env.example`).
 

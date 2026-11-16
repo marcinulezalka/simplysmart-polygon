@@ -6,7 +6,7 @@ declare(strict_types=1);
 /**
  * Wdrożenie projektu: przed-produkcja na tym komputerze, potem (po potwierdzeniu) produkcja przez ssh.
  * Konfiguracja: `infrastructure/deploy/vendors/<projekt>.env` w repozytorium projektu
- * (wzór `resources/deploy/deploy-vendor.env.example` tej paczki).
+ * (wzór `src/resources/deploy/deploy-vendor.env.example` tej paczki).
  * Uruchamiaj z katalogu repozytorium projektu (albo wskaż je przez --root=).
  *
  * Użycie: vendor/bin/deploy <projekt> [--production|--no-production] [--dry-run] [--with-push] [--fresh] [--root=<katalog>]

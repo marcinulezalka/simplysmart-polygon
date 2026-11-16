@@ -11,7 +11,7 @@ php artisan db:seed             # słowniki, organizacje (hero), pliki instalacj
 
 ## Które pliki
 
-1. Plik paczki: `database/install/polygon.json` (zawsze pierwszy).
+1. Plik paczki: `src/database/install/polygon.json` (zawsze pierwszy).
 2. Pliki paczek stref, dodane w `register()` ich providerów:
    `$this->callAfterResolving(InstallFiles::class, static fn(InstallFiles $files) => $files->add($path))`.
 3. Pliki projektu z `.env`: `POLYGON_INSTALL_FILES=install/strefy.json,install/konta.json` (`polygon.install.files`,

@@ -4,6 +4,11 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- **BREAKING** Paczka w układzie Laravela w `src/` (docs/strefy.md → „Układ paczki”): klasy w `src/app/`, a `config/`, `database/`, `lang/`, `public/` i `resources/` (z `resources/brand/` zamiast `src/Brand/`) w `src/`; w katalogu głównym zostają pliki deweloperskie, `bin/`, `docs/` i `tests/`. Nowe nazwy klas: `Providers\PolygonServiceProvider`, `Console\Commands\*` (wszystkie komendy, m.in. `Console\Commands\CreateZoneAccountCommand` dla stref), `Support\PolygonConfig`. Plik instalacji: `src/database/install/polygon.json`, wzór konfiguracji wdrożenia: `src/resources/deploy/deploy-vendor.env.example`.
+- Orkiestrator assetów (`bin/assets.mjs`) uwzględnia `root` z `vite.config.js` paczki: wejścia i klucze manifestu liczą się od niego, a build trafia do `<root>/public/build/`; paczki bez `root` budują się jak dotąd.
+
 ### Added
 
 - `Http\FileResponse::inline()` / `attachment()`: plik z pamięci jako odpowiedź z nagłówkiem `Content-Disposition` według RFC 6266 (nazwa UTF-8 i zastępcza ASCII, bez znaków sterujących, ukośników i cudzysłowów), `no-store` i `nosniff`.

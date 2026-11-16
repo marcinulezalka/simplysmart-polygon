@@ -7,18 +7,19 @@ Skrypty projektu wołają orkiestrator `node vendor/simplysmart/polygon/bin/asse
 
 - **Paczka:** w katalogu głównym `vite.config.js` eksportujący zwykły obiekt konfiguracji Vite, bez importu `vite`
   (paczki leżą poza projektem i nie widzą jego `node_modules`), np.
-  `export default { build: { rollupOptions: { input: ['resources/scss/app.scss'] } } }`. Źródła w
-  `resources/scss/`, `resources/js/`. Opcjonalny `package.json` (`"private": true`, `"name": "@simplysmart/<paczka>"`)
+  `export default { build: { rollupOptions: { input: ['resources/scss/app.scss'] } } }`. Konfiguracja paczki w układzie `src/` (docs/strefy.md → „Układ paczki”) ma `root: 'src'`: wejścia
+  i klucze manifestu liczą się od `src/`, a build trafia do `src/public/build/`. Źródła w `src/resources/scss/`,
+  `src/resources/js/`. Opcjonalny `package.json` (`"private": true`, `"name": "@simplysmart/<paczka>"`)
   tylko jako opis — zależności npm są w projekcie. JS paczki może importować pakiety npm projektu (`import 'iconify-icon'`):
   orkiestrator rozwiązuje gołe importy z plików paczki od katalogu projektu (wtyczka `projectModules`).
 - **Orkiestrator:** Vite i preprocesory (np. `sass`) z `node_modules` projektu; każda paczka trafia do swojego
-  `public/build/` z `manifest.json` i bazą `/vendor/<paczka>/build/`. `build` buduje paczki po kolei, a na końcu
+  `public/build/` w katalogu `root` (`src/public/build/`) z `manifest.json` i bazą `/vendor/<paczka>/build/`. `build` buduje paczki po kolei, a na końcu
   projekt jego stockowym `vite.config.js`; błąd dowolnego builda kończy proces kodem 1. `dev` przebudowuje paczki przy
   zmianie (odświeżenie strony) i równolegle uruchamia serwer dev Vite projektu.
-- **Build w repozytorium paczki:** `public/build/` paczki jest commitowany — serwery instalują paczki z Gita i nie
+- **Build w repozytorium paczki:** `src/public/build/` paczki jest commitowany — serwery instalują paczki z Gita i nie
   potrzebują Node. Po zmianie stylów: `npm run build`, potem commit paczki razem z buildem.
 - **Serwowanie:** paczka rejestruje katalog `public/` w providerze:
-  `$this->callAfterResolving(PackageAssets::class, fn (PackageAssets $assets) => $assets->add('<paczka>', __DIR__ . '/../public'))`.
+  `$this->callAfterResolving(PackageAssets::class, fn (PackageAssets $assets) => $assets->add('<paczka>', self::ROOT . '/public'))`.
   `php artisan polygon:assets` tworzy symlink `public/vendor/<paczka>` (`--copy` kopiuje, gdy hosting nie obsługuje
   symlinków); deploy uruchamia ją sam (`remote.sh`, przed cache). `public/vendor/` projektu jest ignorowany przez git.
 - **Widoki:** `@packageAssets('<paczka>', ['resources/scss/app.scss', …])` zamiast `@vite` — znaczniki w kolejności
@@ -33,7 +34,7 @@ Skrypty projektu wołają orkiestrator `node vendor/simplysmart/polygon/bin/asse
 - Wybór zapisuje skrypt przełącznika strefy w ciasteczku `polygon_theme` (wspólne dla stref, bez szyfrowania —
   `Providers\AssetsServiceProvider` wyłącza je z `EncryptCookies`); serwer czyta je przez `View\ColorThemePreference`
   (nieznana wartość to `auto`) i wstawia w `data-theme` na `<html>`, więc strona nie miga po załadowaniu.
-- Każda strefa z widokami ma własne arkusze tokenów: `resources/scss/<strefa>/theme.scss` (jasny i ciemny, `auto`
+- Każda strefa z widokami ma własne arkusze tokenów: `src/resources/scss/<strefa>/theme.scss` (jasny i ciemny, `auto`
   przez media query), `<strefa>/wcag/theme.scss` i `<strefa>/wcag-contrast/theme.scss`, ładowane w tej kolejności po
   arkuszu komponentów. Komponenty używają tylko tokenów strefy.
 - **Prefiks paczki:** każda paczka z widokami ma własny, krótki prefiks klas i zmiennych CSS (`.<prefiks>-*`,

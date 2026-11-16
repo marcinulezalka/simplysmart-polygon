@@ -12,7 +12,7 @@ Silniki: MySQL 8 / MariaDB i SQLite (testy, lokalnie). Zasady obowiązują każd
 
 ## 1. Jedno miejsce schematu
 
-- Migracje **wszystkich** tabel bazowych leżą w paczce: `database/migrations/`, ładowane przez `Providers\DatabaseServiceProvider`
+- Migracje **wszystkich** tabel bazowych leżą w paczce: `src/database/migrations/`, ładowane przez `Providers\DatabaseServiceProvider`
   (`loadMigrationsFrom`) — także stockowe migracje Laravela (`create_users_table`, `create_cache_table`,
   `create_jobs_table`, nazwy jak w szkielecie, więc istniejące bazy uznają je za wykonane). Projekt nie ma własnych
   `database/migrations/` ani `database/seeders/`; tabelę `migrations` tworzy sam Laravel.
@@ -30,17 +30,17 @@ Silniki: MySQL 8 / MariaDB i SQLite (testy, lokalnie). Zasady obowiązują każd
   Konto strefy zakłada `php artisan <strefa>:account:create {email} {name} [--role=*] [--organization=<klucz>=<rola>,…]*
   [--default-organization=<klucz>] [--skip-existing]` — organizacje i role w nich jak `accounts[].organizations` w pliku instalacji, np.
   `<strefa>:account:create anna@example.com "Anna Nowak" --organization=<klucz-poradni>=registration`
-  (np. `polygon:account:create`; baza `Console\CreateZoneAccountCommand`, akcja `Auth\CreateZoneAccount`, jedna transakcja z rolami; adres zajęty także przez konto usunięte).
+  (np. `polygon:account:create`; baza `Console\Commands\CreateZoneAccountCommand`, akcja `Auth\CreateZoneAccount`, jedna transakcja z rolami; adres zajęty także przez konto usunięte).
 - Nazwa pliku migracji zaczyna się od daty (kolejność) i mówi, czyja jest tabela.
 - **Migracje i seedery są rozdzielone:** migracja tworzy i zmienia tylko schemat (tabele, historia, pula id), nigdy nie
-  wstawia danych ani nie woła seedera; dane referencyjne dają wyłącznie seedery. Seedery leżą w `database/seeders/`
-  (`Simplysmart\Polygon\Database\Seeders`, osobne mapowanie PSR-4 w `composer.json`), obok `database/migrations/`.
+  wstawia danych ani nie woła seedera; dane referencyjne dają wyłącznie seedery. Seedery leżą w `src/database/seeders/`
+  (`Simplysmart\Polygon\Database\Seeders`, osobne mapowanie PSR-4 w `composer.json`), obok `src/database/migrations/`.
 - Seeder główny `DatabaseSeeder` provider rejestruje pod nazwą `DatabaseSeeder`, więc `php artisan db:seed`
   i `migrate --seed` działają bez seedera w projekcie. Najpierw seedery bazowe polygon (`DatabaseSeeder::BASE`):
   słowniki (`LocalizationSeeder`, `polygon:localization:seed`), dane referencyjne organizacji (`OrganizationsSeeder`,
   `polygon:organizations:seed`, §16), pliki instalacji (`InstallSeeder`, `polygon:install`: uprawnienia, role i konta
   startowe stref, [instalacja.md](instalacja.md)); potem seedery paczek z rejestru `Database\PackageSeeders`, w kolejności
-  rejestracji providerów. Paczka dodaje swój seeder (z własnego `database/seeders/`) w `register()` providera:
+  rejestracji providerów. Paczka dodaje swój seeder (z własnego `src/database/seeders/`) w `register()` providera:
   `$this->callAfterResolving(PackageSeeders::class, static fn(PackageSeeders $seeders) => $seeders->add(ShopSeeder::class));`.
   Paczka nie tworzy danych demo. Seedery referencyjne są idempotentne
   (rekord szukany po kodzie z `codeColumn()`, nowy dostaje id z puli seederów, zapis przez model) i wolno je
@@ -126,7 +126,7 @@ Illuminate\Foundation\Auth\User
 - **Model jest czysty:** tabela, typy i relacje; bez logiki biznesowej, zapytań wieloetapowych i `Auth`.
 - **Typy:** każda kolumna ma cast; kolumna z wartością domyślną w migracji ma ją też w `$attributes`. Test projektu
   sprawdza casty każdego modelu paczki.
-- **Nazwy kolumn:** każda kolumna ma etykietę w `lang/<locale>/data.php` paczki, czytaną przez
+- **Nazwy kolumn:** każda kolumna ma etykietę w `src/lang/<locale>/data.php` paczki, czytaną przez
   `Localization\PackageText::data($model, $kolumna)` (`data.<model>.<kolumna>`, model w snake_case, potem wspólne
   `data.<kolumna>`); test sprawdza kompletność w pl i en. Projekt nadpisuje je w `lang/vendor/polygon/<locale>/data.php`.
 - **Relacje tylko w traitach:** `Models/Relations/Has<X>` / `BelongsTo<X>` (`BelongsToCountry`, `BelongsToCurrency`,
@@ -143,7 +143,7 @@ Illuminate\Foundation\Auth\User
   `Events\RecordStatusChanged` (tabela, token, stan przed i po, powód, `Auth\AccountActor`). Model ze stanem
   dziedzinowym nadpisuje `usesRecordStatus()` na `false` i sam podaje cast. `is_active` to wybór administratora
   (widoczność). Wiersz użyteczny = `active` i `is_active` (`usable()`).
-- Etykiety enumów (`label()`) to teksty paczki `polygon::enums.*` (`lang/<locale>/enums.php`, odczyt
+- Etykiety enumów (`label()`) to teksty paczki `polygon::enums.*` (`src/lang/<locale>/enums.php`, odczyt
   `Localization\PackageText`); projekt nadpisuje je w `lang/vendor/polygon/<locale>/enums.php`.
 
 ## 6. Warstwy
@@ -186,15 +186,15 @@ liczy go `DataModel` przy zapisie.
 
 ## 13. Lista kontrolna nowej tabeli
 
-1. Migracja w `database/migrations/`: `Columns::base()`, kolumny domenowe, `Columns::closing()`.
+1. Migracja w `src/database/migrations/`: `Columns::base()`, kolumny domenowe, `Columns::closing()`.
 2. `History::create()` i `IdSlots::reserve()` w tej samej migracji, `History::drop()` w `down()`.
 3. Słownik? Prefiks `locale_`, kody ISO w `alpha_code_2`/`alpha_code_3`/`numeric_code` (`Database\CodeColumns`),
    model implementuje `Contracts\DictionaryEntry`, `Columns::closing($table, i18n: true)`.
 4. Model dziedziczy `DataModel`, każda kolumna ma cast, wartości domyślne w `$attributes`.
-5. Etykiety kolumn w `lang/<locale>/data.php` dla każdego języka (pl, en).
-6. Enum statusu w `Enums/` z etykietą w `lang/<locale>/enums.php`; relacje jako traity w `Models/Relations/`.
+5. Etykiety kolumn w `src/lang/<locale>/data.php` dla każdego języka (pl, en).
+6. Enum statusu w `src/app/Enums/` z etykietą w `src/lang/<locale>/enums.php`; relacje jako traity w `src/app/Models/Relations/`.
 7. Odczyty w `Queries/`, zmiany w akcjach (transakcja, zapis przez model).
-8. Seeder referencyjny w `database/seeders/` (idempotentny, id z `IdSlots::next()`) w `DatabaseSeeder::BASE` albo,
+8. Seeder referencyjny w `src/database/seeders/` (idempotentny, id z `IdSlots::next()`) w `DatabaseSeeder::BASE` albo,
    w paczce, w `Database\PackageSeeders` — nigdy wywołany z migracji.
 9. Testy: casty, etykiety, triggery historii zgodne z kolumnami.
 

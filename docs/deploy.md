@@ -47,13 +47,13 @@ Oba pliki dodaj do `.gitignore` projektu.
 ## Struktura
 
 - `bin/`: punkty wejścia (`deploy`, `version-release`) i wspólny `autoload.php`, który bierze autoloader Composera projektu.
-- `src/Deploy/Console/`: wspólna warstwa poleceń (`Output`, `CommandLine`, `Confirmation`, `ExitCode`).
-- `src/Deploy/Release/`: wydania (`Changelog`, `ReleaseBump`, `SemanticVersion`, `ReleasePlanner`…).
-- `src/Deploy/Deployment/`: wdrożenia (`DeployCommand`, `DeployOptions`, `ProjectConfig`, `RemoteScript`, `RepositoryCheck`…).
-- `src/Deploy/PrivatePackages/`: paczki prywatne i manifest wdrożeniowy (`PrivatePackages`, `DeployLock`, `DeployManifest`, `PathRepositories`, `GitRepositorySource`…).
-- `src/Deploy/Process/`: uruchamianie procesów (`ProcessRunner`, `SystemProcessRunner`).
-- `resources/deploy/remote.sh`: część serwerowa, uruchamiana przez `bash -s` lokalnie (przed-produkcja) i przez `ssh` (produkcja).
-- `resources/deploy/deploy-vendor.env.example`: wzór konfiguracji projektu.
+- `src/app/Deploy/Console/`: wspólna warstwa poleceń (`Output`, `CommandLine`, `Confirmation`, `ExitCode`).
+- `src/app/Deploy/Release/`: wydania (`Changelog`, `ReleaseBump`, `SemanticVersion`, `ReleasePlanner`…).
+- `src/app/Deploy/Deployment/`: wdrożenia (`DeployCommand`, `DeployOptions`, `ProjectConfig`, `RemoteScript`, `RepositoryCheck`…).
+- `src/app/Deploy/PrivatePackages/`: paczki prywatne i manifest wdrożeniowy (`PrivatePackages`, `DeployLock`, `DeployManifest`, `PathRepositories`, `GitRepositorySource`…).
+- `src/app/Deploy/Process/`: uruchamianie procesów (`ProcessRunner`, `SystemProcessRunner`).
+- `src/resources/deploy/remote.sh`: część serwerowa, uruchamiana przez `bash -s` lokalnie (przed-produkcja) i przez `ssh` (produkcja).
+- `src/resources/deploy/deploy-vendor.env.example`: wzór konfiguracji projektu.
 
 ## Wdrożenie (`vendor/bin/deploy`)
 
