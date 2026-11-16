@@ -33,6 +33,9 @@ final class DateFormat
     /** Termin w formularzach zapisu. */
     public const string DATE_TIME = self::DATE . ' ' . self::TIME;
 
+    /** Reguła walidacji pola daty wpisywanej w formularzu: lokalnie (LOCAL) albo ISO (DATE) — jak parseInput(). */
+    public const string INPUT_RULE = 'date_format:' . self::LOCAL . ',' . self::DATE;
+
     /**
      * Data RRRR-MM-DD (np. z `?date=`, `?week=` albo pola formularza); błędna (także w innym formacie) albo pusta — null.
      */
