@@ -16,7 +16,8 @@ namespace Simplysmart\Polygon\Contracts;
 use DateTimeInterface;
 
 /**
- * Formatowanie regionalne według języka: kwoty, liczby, daty, nazwy dni i miesięcy.
+ * Formatowanie regionalne według języka: kwoty, liczby, daty, nazwy dni i miesięcy oraz porównanie tekstów w kolejności
+ * alfabetu języka.
  *
  * Bez podanego $locale używa bieżącego języka aplikacji.
  */
@@ -48,4 +49,10 @@ interface LocalFormatter
      * Nazwa miesiąca w mianowniku; liczba to miesiąc 1–12.
      */
     public function month(int|DateTimeInterface $month, ?string $format = null, ?string $locale = null): string;
+
+    /**
+     * Porównanie tekstów w kolejności alfabetu języka (np. w pl: Ł po L, Ż po Z), bez rozróżniania wielkości liter
+     * na pierwszym poziomie — do sortowania nazw.
+     */
+    public function compare(string $first, string $second, ?string $locale = null): int;
 }

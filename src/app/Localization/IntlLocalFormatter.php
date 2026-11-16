@@ -15,6 +15,7 @@ namespace Simplysmart\Polygon\Localization;
 
 use Simplysmart\Polygon\Support\PolygonConfig;
 use Carbon\CarbonImmutable;
+use Collator;
 use DateTimeInterface;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Translation\Translator;
@@ -27,7 +28,7 @@ use Simplysmart\Polygon\Contracts\LocalFormatter;
  * Formatowanie regionalne przez intl (Number) i Carbon; bieżący język bierze z translatora,
  * a domyślną walutę z `APP_CURRENCY` (PolygonConfig::CURRENCY).
  */
-final readonly class IntlLocalFormatter implements LocalFormatter
+final class IntlLocalFormatter implements LocalFormatter
 {
     private const string DATE_FORMAT = 'L';
 
@@ -44,9 +45,12 @@ final readonly class IntlLocalFormatter implements LocalFormatter
      */
     private const string REFERENCE_MONDAY = '2024-01-01';
 
+    /** @var array<string, Collator|false> Język => collator (false — bez rozszerzenia intl). */
+    private array $collators = [];
+
     public function __construct(
-        private Translator $translator,
-        private Repository $config,
+        private readonly Translator $translator,
+        private readonly Repository $config,
     ) {}
 
     public function money(int|float $amount, ?string $currency = null, ?string $locale = null): string
@@ -80,6 +84,16 @@ final readonly class IntlLocalFormatter implements LocalFormatter
             : new CarbonImmutable($month);
 
         return $this->localized($date, $locale)->isoFormat($format ?? self::MONTH_FORMAT);
+    }
+
+    public function compare(string $first, string $second, ?string $locale = null): int
+    {
+        $locale = $this->locale($locale);
+        $this->collators[$locale] ??= class_exists(Collator::class) ? new Collator($locale) : false;
+        $collator = $this->collators[$locale];
+        $result = $collator === false ? false : $collator->compare($first, $second);
+
+        return $result === false ? strcmp(mb_strtolower($first), mb_strtolower($second)) : $result;
     }
 
     /**

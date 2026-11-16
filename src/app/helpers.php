@@ -125,3 +125,13 @@ if (! function_exists('local_month')) {
         return Container::getInstance()->make(LocalFormatter::class)->month($month, $format, $locale);
     }
 }
+
+if (! function_exists('local_compare')) {
+    /**
+     * Porównanie tekstów w kolejności alfabetu języka (do sortowania nazw: Ł po L, Ż po Z w pl).
+     */
+    function local_compare(string $first, string $second, ?string $locale = null): int
+    {
+        return Container::getInstance()->make(LocalFormatter::class)->compare($first, $second, $locale);
+    }
+}

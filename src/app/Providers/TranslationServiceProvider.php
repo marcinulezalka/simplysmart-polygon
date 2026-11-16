@@ -46,7 +46,7 @@ final class TranslationServiceProvider extends ServiceProvider
             $this->app->langPath(),
         ))->extend($loader));
         $this->app->bind(TextTranslator::class, CascadeTextTranslator::class);
-        $this->app->bind(LocalFormatter::class, IntlLocalFormatter::class);
+        $this->app->scoped(LocalFormatter::class, IntlLocalFormatter::class);
         $this->app->bind(InterfaceLocales::class, DictionaryInterfaceLocales::class);
     }
 

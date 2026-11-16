@@ -47,6 +47,17 @@ final readonly class OrganizationUnits
     }
 
     /**
+     * Organizacja główna (klient) drzewa $organization: najwyższy przodek poza organizacją hero; bez przodków — ona sama.
+     */
+    public function root(Organization $organization): Organization
+    {
+        $lineage = array_values(array_filter($this->lineage($organization), static fn(int $id): bool => $id !== Organization::HERO_ID));
+        $rootId = $lineage === [] ? $organization->id : $lineage[count($lineage) - 1];
+
+        return $rootId === $organization->id ? $organization : Organization::query()->find($rootId) ?? $organization;
+    }
+
+    /**
      * @return Collection<int, Organization>
      */
     public function of(Organization $organization): Collection

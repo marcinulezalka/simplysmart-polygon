@@ -34,10 +34,7 @@ final readonly class InvoicingAccounts
 
     public function root(Organization $organization): Organization
     {
-        $lineage = array_values(array_filter($this->units->lineage($organization), static fn(int $id): bool => $id !== Organization::HERO_ID));
-        $rootId = $lineage === [] ? $organization->id : $lineage[count($lineage) - 1];
-
-        return $rootId === $organization->id ? $organization : Organization::query()->find($rootId) ?? $organization;
+        return $this->units->root($organization);
     }
 
     /**
