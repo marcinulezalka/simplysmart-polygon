@@ -7,7 +7,7 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 ### Changed
 
 - **BREAKING** Paczka w układzie Laravela w `src/` (docs/strefy.md → „Układ paczki”): klasy w `src/app/`, a `config/`, `database/`, `lang/`, `public/` i `resources/` (z `resources/brand/` zamiast `src/Brand/`) w `src/`; w katalogu głównym zostają pliki deweloperskie, `bin/`, `docs/` i `tests/`. Nowe nazwy klas: `Providers\PolygonServiceProvider`, `Console\Commands\*` (wszystkie komendy, m.in. `Console\Commands\CreateZoneAccountCommand` dla stref), `Support\PolygonConfig`. Plik instalacji: `src/database/install/polygon.json`, wzór konfiguracji wdrożenia: `src/resources/deploy/deploy-vendor.env.example`.
-- Leniwe ładowanie relacji Eloquent jest zablokowane poza produkcją (`Model::preventLazyLoading()`): lokalnie i w testach przerywa żądanie wyjątkiem, na pozostałych środowiskach (np. przed-produkcja) trafia do logu jako ostrzeżenie — paczki ładują relacje z góry (`with()` / `load()`).
+- Leniwe ładowanie relacji Eloquent jest zablokowane poza produkcją (`Model::preventLazyLoading()`): w testach przerywa żądanie wyjątkiem, na pozostałych środowiskach (lokalnie, przed-produkcja) trafia do logu jako ostrzeżenie — paczki ładują relacje z góry (`with()` / `load()`).
 - Orkiestrator assetów (`bin/assets.mjs`) uwzględnia `root` z `vite.config.js` paczki: wejścia i klucze manifestu liczą się od niego, a build trafia do `<root>/public/build/`; paczki bez `root` budują się jak dotąd.
 
 ### Added

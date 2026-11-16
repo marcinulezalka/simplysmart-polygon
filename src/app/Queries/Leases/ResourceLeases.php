@@ -116,7 +116,7 @@ final readonly class ResourceLeases
     {
         $query = $this->current();
         $query->whereIn(Organization::FOREIGN_KEY, $this->units->lineage($owner));
-        $query->with(['resource', 'lessee', 'cooperation']);
+        $query->with(['resource', 'lessee', 'cooperation.parent']);
         $query->orderBy(ResourceLease::VALID_FROM);
 
         return $query->get()->filter(static fn(ResourceLease $lease): bool => $lease->grants($access))->values();

@@ -37,9 +37,10 @@ final class PolygonServiceProvider extends ServiceProvider
     public const string ROOT = __DIR__ . '/../..';
 
     /**
-     * Środowiska, w których leniwe ładowanie relacji przerywa żądanie (wyjątek); poza nimi i produkcją trafia do logu.
+     * Środowiska, w których leniwe ładowanie relacji przerywa żądanie (wyjątek) — testy wyłapują N+1; poza nimi
+     * i produkcją (lokalnie, przed-produkcja) naruszenie trafia do logu, więc nie blokuje pracy na prawdziwych danych.
      */
-    public const array STRICT_ENVIRONMENTS = ['local', 'testing'];
+    public const array STRICT_ENVIRONMENTS = ['testing'];
 
     /**
      * @var list<class-string<ServiceProvider>>
