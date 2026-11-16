@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Providers;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\ServiceProvider;
 use Simplysmart\Polygon\Support\PolygonConfig;
 use Simplysmart\Polygon\Console\Commands\IconPngCommand;
@@ -32,8 +33,13 @@ use Simplysmart\Polygon\Console\Commands\SeedOrganizations;
  */
 final class PolygonServiceProvider extends ServiceProvider
 {
-    /** Katalog główny paczki (config/, database/, lang/). */
+    /** Katalog `src/` paczki (config/, database/, lang/, resources/). */
     public const string ROOT = __DIR__ . '/../..';
+
+    /**
+     * Środowiska, w których leniwe ładowanie relacji przerywa żądanie (wyjątek); poza nimi i produkcją trafia do logu.
+     */
+    public const array STRICT_ENVIRONMENTS = ['local', 'testing'];
 
     /**
      * @var list<class-string<ServiceProvider>>
@@ -77,6 +83,12 @@ final class PolygonServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Model::preventLazyLoading(! $this->app->environment('production'));
+
+        if (! $this->app->environment(self::STRICT_ENVIRONMENTS)) {
+            Model::handleLazyLoadingViolationUsing(static fn(Model $model, string $relation) => logger()->warning('Leniwe ładowanie relacji [' . $relation . '] modelu [' . $model::class . '].'));
+        }
+
         if ($this->app->runningInConsole()) {
             $this->commands(self::COMMANDS);
         }
