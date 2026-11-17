@@ -110,6 +110,20 @@ class ContractorsTest extends TestCase
         $this->assertCount(3, $search->in($clinic, withInactive: true));
     }
 
+    public function test_search_sorts_descending_and_pages_results_with_a_limit_and_an_offset(): void
+    {
+        $clinic = $this->organization('Poradnia');
+        $save = $this->app->make(SaveContractor::class);
+        $save->save($clinic, new ContractorData('Alfa'));
+        $save->save($clinic, new ContractorData('Beta'));
+        $save->save($clinic, new ContractorData('Gamma'));
+        $search = $this->app->make(ContractorSearch::class);
+
+        $this->assertSame(['Gamma', 'Beta', 'Alfa'], $search->in($clinic, descending: true)->pluck('name')->all());
+        $this->assertSame(['Alfa', 'Beta'], $search->in($clinic, limit: 2)->pluck('name')->all());
+        $this->assertSame(['Gamma'], $search->in($clinic, limit: 2, offset: 2)->pluck('name')->all());
+    }
+
     public function test_one_primary_contact_and_contract_status(): void
     {
         $contractor = $this->app->make(SaveContractor::class)->save($this->organization('Siedziba'), new ContractorData('Firma'));
