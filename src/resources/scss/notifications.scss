@@ -8,8 +8,9 @@
 .pg-toast.is-leaving { animation: pg-toast-out 0.15s ease forwards; }
 .pg-toast__body { flex: 1; min-width: 0; overflow-wrap: anywhere; white-space: pre-line; }
 .pg-toast__close { flex: none; display: inline-flex; width: 1.5rem; height: 1.5rem; align-items: center; justify-content: center; padding: 0; border: 0; background: none; cursor: pointer; }
-@keyframes pg-toast-in { from { opacity: 0; transform: translateY(0.5rem); } }
-@keyframes pg-toast-out { to { opacity: 0; transform: translateX(0.5rem); } }
+// Kierunek wejścia i wyjścia toastu ustawia kontener zmiennymi (np. pływający panel akcji — floating-panel.scss).
+@keyframes pg-toast-in { from { opacity: 0; transform: translate(var(--pg-toast-in-x, 0), var(--pg-toast-in-y, 0.5rem)); } }
+@keyframes pg-toast-out { to { opacity: 0; transform: translate(var(--pg-toast-out-x, 0.5rem), var(--pg-toast-out-y, 0)); } }
 
 // Ikona web componentu iconify-icon (Enums\Icon strefy ma własną klasę do tego — ta jest tylko dla znaczników,
 // które tworzy ten moduł JS, więc nie ma dostępu do klasy strefy).

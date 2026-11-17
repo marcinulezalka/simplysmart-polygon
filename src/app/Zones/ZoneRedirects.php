@@ -17,11 +17,10 @@ use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Routing\UrlGenerator;
 use Illuminate\Routing\Router;
-use Simplysmart\Polygon\Contracts\CurrentOrganization;
 use Simplysmart\Polygon\Contracts\CurrentZone;
 use Simplysmart\Polygon\Contracts\ZoneHome;
 use Simplysmart\Polygon\Models\ZoneAccount;
-use Simplysmart\Polygon\Permissions\OrganizationRoles;
+use Simplysmart\Polygon\Permissions\ContextPermissions;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -41,14 +40,14 @@ final readonly class ZoneRedirects
         private Router $router,
         private UrlGenerator $url,
         private Container $container,
-        private OrganizationRoles $roles,
-        private CurrentOrganization $organization,
+        private ContextPermissions $permissions,
         private AuthFactory $auth,
     ) {}
 
     /**
-     * Cel po zalogowaniu: trasa, którą Contracts\ZoneHome strefy wybiera dla konta (liczona w zespole spatie bieżącej
-     * organizacji konta; hero i konto bez organizacji — role globalne), a gdy strefa jej nie ma, nie wybiera żadnej albo
+     * Cel po zalogowaniu: trasa, którą Contracts\ZoneHome strefy wybiera dla konta (liczona w jego bieżącym kontekście —
+     * Permissions\ContextPermissions: zespół spatie bieżącej organizacji, w strefie z `role_contexts` aktywna rola; hero
+     * i konto bez organizacji — role globalne), a gdy strefa jej nie ma, nie wybiera żadnej albo
      * trasy nie ma — pulpit strefy (trasa `<prefiks>.dashboard`).
      */
     public function homeFor(ZoneDefinition $zone, ?ZoneAccount $account = null): string
@@ -127,11 +126,7 @@ final readonly class ZoneRedirects
     {
         $resolver = $this->container->make($home);
 
-        return $this->roles->within(
-            $account,
-            $this->organization->isHero() ? null : $this->organization->id(),
-            static fn(): ?string => $resolver->routeFor($account),
-        );
+        return $this->permissions->within($account, static fn(): ?string => $resolver->routeFor($account));
     }
 
     private function route(string $name): ?string

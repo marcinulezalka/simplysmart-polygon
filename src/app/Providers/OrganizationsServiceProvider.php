@@ -16,15 +16,18 @@ namespace Simplysmart\Polygon\Providers;
 use Illuminate\Support\ServiceProvider;
 use Simplysmart\Polygon\Contracts\CurrentOrganization;
 use Simplysmart\Polygon\Organizations\SessionCurrentOrganization;
+use Simplysmart\Polygon\Permissions\ActiveRole;
 
 /**
  * Organizacje: kontekst organizacji konta zalogowanego w strefie (Contracts\CurrentOrganization, sesja strefy żądania;
- * bez singletona, bo zależy od żądania).
+ * bez singletona, bo zależy od żądania) i aktywna rola konta w strefie z kontekstem roli (Permissions\ActiveRole, stan
+ * żądania — `scoped`).
  */
 final class OrganizationsServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
         $this->app->bind(CurrentOrganization::class, SessionCurrentOrganization::class);
+        $this->app->scoped(ActiveRole::class);
     }
 }

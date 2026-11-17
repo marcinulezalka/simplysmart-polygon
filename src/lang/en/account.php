@@ -80,4 +80,7 @@ return [
         'default_saved' => 'After signing in you will work in :name.',
     ],
 
+    'floating_panel' => [
+        'saved' => 'Action panel: :position.',
+    ],
 ];

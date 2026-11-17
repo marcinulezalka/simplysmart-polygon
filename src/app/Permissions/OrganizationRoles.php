@@ -24,12 +24,17 @@ use Spatie\Permission\PermissionRegistrar;
 /**
  * Role konta w organizacji (zespół spatie = organizacja, PermissionTables::TEAM_FOREIGN_KEY): nadaje i odczytuje role
  * w podanej organizacji niezależnie od zespołu bieżącego żądania, który potem przywraca. Organizacja null to role
- * globalne — hero i konta bez organizacji (docs/baza-danych.md §15).
+ * globalne — hero i konta bez organizacji (docs/baza-danych.md §15). Nadawanie i odczyt ról działają na wszystkich
+ * rolach konta, także gdy żądanie zawęża je do aktywnej roli (Permissions\ActiveRole::bypass()).
  */
 final readonly class OrganizationRoles
 {
+    /** Relacja uprawnień roli spatie (liczona przy wyborze najszerszej roli). */
+    private const string PERMISSIONS_RELATION = 'permissions';
+
     public function __construct(
         private PermissionRegistrar $registrar,
+        private ActiveRole $activeRole,
     ) {}
 
     /**
@@ -62,7 +67,7 @@ final readonly class OrganizationRoles
             return;
         }
 
-        $this->within($account, $organizationId, static fn(): ZoneAccount => $account->assignRole($roles));
+        $this->activeRole->bypass(fn(): ZoneAccount => $this->within($account, $organizationId, static fn(): ZoneAccount => $account->assignRole($roles)));
     }
 
     /**
@@ -72,21 +77,35 @@ final readonly class OrganizationRoles
      */
     public function names(ZoneAccount $account, ?int $organizationId): array
     {
-        $names = $this->within($account, $organizationId, static function () use ($account): array {
-            $names = [];
-
-            foreach ($account->getRoleNames() as $name) {
-                if (is_string($name)) {
-                    $names[] = $name;
-                }
-            }
-
-            return $names;
-        });
-
+        $names = array_keys($this->permissionCounts($account, $organizationId));
         sort($names);
 
         return $names;
+    }
+
+    /**
+     * Role konta w organizacji (null — role globalne) od najważniejszej — z największą liczbą uprawnień, przy remisie
+     * po nazwie (np. właściciel, kierownik; lekarz przed rejestracją). Kolejność kontekstów roli konta
+     * (Organizations\SessionCurrentOrganization::contexts()).
+     *
+     * @return list<string>
+     */
+    public function ranked(ZoneAccount $account, ?int $organizationId): array
+    {
+        $counts = $this->permissionCounts($account, $organizationId);
+        $names = array_keys($counts);
+        usort($names, static fn(string $first, string $second): int => [$counts[$second], $first] <=> [$counts[$first], $second]);
+
+        return $names;
+    }
+
+    /**
+     * Najszersza rola konta w organizacji — pierwsza z ranked(); null, gdy konto nie ma w niej ról. Domyślna rola
+     * kontekstu konta (Organizations\SessionCurrentOrganization), gdy nie wybrało ani nie zapisało innej.
+     */
+    public function broadest(ZoneAccount $account, ?int $organizationId): ?string
+    {
+        return $this->ranked($account, $organizationId)[0] ?? null;
     }
 
     /**
@@ -139,6 +158,29 @@ final readonly class OrganizationRoles
             $this->registrar->setPermissionsTeamId($previous);
             $this->forgetLoadedRoles($account);
         }
+    }
+
+    /**
+     * Wszystkie role konta w organizacji (bez zawężenia do aktywnej roli) z liczbą uprawnień każdej.
+     *
+     * @return array<string, int>
+     */
+    private function permissionCounts(ZoneAccount $account, ?int $organizationId): array
+    {
+        return $this->activeRole->bypass(fn(): array => $this->within($account, $organizationId, static function () use ($account): array {
+            $counts = [];
+
+            foreach ($account->roles()->withCount(self::PERMISSIONS_RELATION)->get() as $role) {
+                $name = $role->getAttribute(ColumnNames::NAME);
+                $count = $role->getAttribute(self::PERMISSIONS_RELATION . '_count');
+
+                if (is_string($name)) {
+                    $counts[$name] = is_numeric($count) ? (int) $count : 0;
+                }
+            }
+
+            return $counts;
+        }));
     }
 
     private function forgetLoadedRoles(?ZoneAccount $account): void

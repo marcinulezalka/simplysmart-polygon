@@ -25,8 +25,8 @@ use Simplysmart\Polygon\Models\ZoneAccount;
  * Buduje i waliduje ZoneDefinition z configu paczki strefy (docs/strefy.md): `name` (wymagane), `slug`, `guard`,
  * `provider`, `model` (z nim strefa ma logowanie), `session`, `auth` (nadpisania `polygon.auth`), `texts`, `views`
  * (ekrany ZoneView), `mail.views`, `url_key` (brak klucza albo `null` — domyślny `polygon.zones.url_key`,
- * `ZONE_URL_KEY`; strefa nadpisuje jawną wartością bool, np. tylko w `.env` swojej prywatnej paczki) i `home`
- * (Contracts\ZoneHome).
+ * `ZONE_URL_KEY`; strefa nadpisuje jawną wartością bool, np. tylko w `.env` swojej prywatnej paczki), `home`
+ * (Contracts\ZoneHome) i `role_contexts` (kontekst organizacja + rola, domyślnie false; tylko strefa z logowaniem).
  */
 final readonly class ZoneDefinitionFactory
 {
@@ -71,6 +71,7 @@ final readonly class ZoneDefinitionFactory
             mailViews: $this->mailViews($name, Arr::array($config, 'mail', [])),
             urlKey: $model !== null && ($this->nullableBool($config, 'url_key', null) ?? $this->config->boolean(PolygonConfig::ZONE_URL_KEY)),
             home: $model !== null ? $this->home($config['home'] ?? null, $name) : null,
+            roleContexts: $model !== null && ($this->nullableBool($config, 'role_contexts', null) ?? false),
         );
     }
 

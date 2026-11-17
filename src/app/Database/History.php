@@ -42,9 +42,17 @@ final readonly class History
         return $table . self::TABLE_SUFFIX;
     }
 
+    /**
+     * Nazwa indeksu aktora tabeli historii (dziennik zdarzeń konta szuka po strefie i id aktora).
+     */
+    public static function actorIndex(string $table): string
+    {
+        return self::tableFor($table) . '_actor_index';
+    }
+
     public function create(string $table): void
     {
-        $this->connection()->getSchemaBuilder()->create(self::tableFor($table), static function (Blueprint $history): void {
+        $this->connection()->getSchemaBuilder()->create(self::tableFor($table), static function (Blueprint $history) use ($table): void {
             $history->id();
             $history->unsignedBigInteger('row_id')->index();
             $history->string('action', 10);
@@ -54,6 +62,7 @@ final readonly class History
             $history->unsignedBigInteger('actor_id')->nullable();
             $history->string('request_id', 64)->nullable();
             $history->timestamp('created_at')->nullable();
+            $history->index(['actor_zone', 'actor_id'], self::actorIndex($table));
         });
 
         $this->sync($table);

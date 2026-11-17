@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Tests\Fixtures\Zones;
 
 /**
- * Strefa testowa beta z logowaniem, bez zaufanych urządzeń.
+ * Strefa testowa beta z logowaniem, bez zaufanych urządzeń, z kontekstem organizacja + rola (`role_contexts`).
  */
 class BetaZoneServiceProvider extends FixtureZoneServiceProvider
 {
@@ -25,6 +25,6 @@ class BetaZoneServiceProvider extends FixtureZoneServiceProvider
 
     protected function zoneConfig(): array
     {
-        return $this->signInZone(BetaAccount::class, ['auth' => ['trusted_devices' => ['enabled' => false]]]);
+        return $this->signInZone(BetaAccount::class, ['auth' => ['trusted_devices' => ['enabled' => false]], 'role_contexts' => true]);
     }
 }

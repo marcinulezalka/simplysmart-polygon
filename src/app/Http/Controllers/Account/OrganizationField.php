@@ -19,12 +19,17 @@ use Simplysmart\Polygon\Models\Organization;
 use Simplysmart\Polygon\Queries\Organizations\ActiveOrganizations;
 
 /**
- * Pole formularzy kontekstu organizacji (przełączenie, organizacja domyślna): token aktywnej organizacji w polu NAME;
- * czy organizacja jest kontekstem konta, sprawdza kontroler, zgłaszając wtedy unavailable().
+ * Pola formularzy kontekstu organizacji (przełączenie, kontekst domyślny): token aktywnej organizacji w polu NAME
+ * i opcjonalna rola w polu ROLE (strefa z kontekstem roli — `role_contexts`); czy para jest kontekstem konta, sprawdza
+ * kontroler (Contracts\CurrentOrganization::offers()), zgłaszając wtedy unavailable().
  */
 final readonly class OrganizationField
 {
     public const string NAME = 'organization';
+
+    public const string ROLE = 'role';
+
+    private const int ROLE_MAX_LENGTH = 255;
 
     public function __construct(
         private ActiveOrganizations $organizations,
@@ -39,6 +44,19 @@ final readonly class OrganizationField
         $token = $validated[self::NAME];
 
         return (is_string($token) ? $this->organizations->findByToken($token) : null) ?? throw self::unavailable();
+    }
+
+    /**
+     * Rola z pola ROLE albo null (pole puste albo brak).
+     *
+     * @throws ValidationException Gdy pole nie jest tekstem albo jest za długie.
+     */
+    public function role(Request $request): ?string
+    {
+        $validated = $request->validate([self::ROLE => ['nullable', 'string', 'max:' . self::ROLE_MAX_LENGTH]]);
+        $role = $validated[self::ROLE] ?? null;
+
+        return is_string($role) && $role !== '' ? $role : null;
     }
 
     /**

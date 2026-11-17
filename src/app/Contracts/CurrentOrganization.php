@@ -21,6 +21,8 @@ use Simplysmart\Polygon\Organizations\OrganizationContext;
  * Wybór trzyma sesja strefy; bez wyboru (albo gdy wybrana organizacja przestała być dostępna) — domyślna: zapisana
  * domyślna organizacja konta (Organizations\DefaultOrganization), o ile nadal jest kontekstem, inaczej organizacja hero
  * dla hero, a dla reszty najstarsze członkostwo. Organizacja hero jest kontekstem, ale frontend stref jej nie pokazuje.
+ * W strefie z kontekstem roli (`role_contexts`) kontekst to para organizacja + jedna rola konta w niej (role()):
+ * uprawnienia liczą się tylko z tej roli (Permissions\ActiveRole), a przełącznik ma pozycję na każdą parę.
  */
 interface CurrentOrganization
 {
@@ -42,14 +44,29 @@ interface CurrentOrganization
     public function isHero(): bool;
 
     /**
-     * Organizacje do przełącznika frontendu, w kolejności kontekstów konta, bez organizacji hero.
+     * Aktywna rola konta w bieżącej organizacji (strefa z `role_contexts`): wybrana w sesji, o ile konto nadal ją ma,
+     * inaczej rola zapisanego domyślnego kontekstu tej organizacji, inaczej najszersza
+     * (Permissions\OrganizationRoles::broadest()). Null: strefa bez kontekstu roli, hero, brak organizacji albo ról.
+     */
+    public function role(): ?string;
+
+    /**
+     * Konteksty do przełącznika frontendu, w kolejności organizacji konta, bez organizacji hero; w strefie
+     * z `role_contexts` pozycja na każdą rolę konta w organizacji (od najważniejszej —
+     * Permissions\OrganizationRoles::ranked(); organizacja bez ról — jedna pozycja bez roli).
      *
      * @return list<OrganizationContext>
      */
     public function contexts(): array;
 
     /**
-     * Ustawia kontekst konta żądania; false, gdy organizacja nie jest jego kontekstem (nic się nie zmienia).
+     * Ustawia kontekst konta żądania (organizację i — w strefie z `role_contexts` — rolę; null: zapamiętana albo
+     * domyślna rola tej organizacji); false, gdy para nie jest jego kontekstem (nic się nie zmienia).
      */
-    public function choose(Organization $organization): bool;
+    public function choose(Organization $organization, ?string $role = null): bool;
+
+    /**
+     * Czy organizacja i rola (null: bez roli) są kontekstem konta żądania — do walidacji formularzy kontekstu.
+     */
+    public function offers(Organization $organization, ?string $role): bool;
 }

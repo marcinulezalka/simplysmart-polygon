@@ -21,7 +21,7 @@ return [
     'doctor' => 'Lekarz',
     'accountant' => 'Księgowość',
     'analyst' => 'Analityk',
-    'manager' => 'Manager',
+    'manager' => 'Kierownik',
 
     'polygon' => [
         'owner' => 'Właściciel systemu',

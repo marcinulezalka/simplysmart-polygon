@@ -1,6 +1,15 @@
 {
+  "resources/scss/floating-panel.scss": {
+    "file": "assets/floating-panel-Bf1HGK8x.css",
+    "name": "floating-panel",
+    "names": [
+      "floating-panel.css"
+    ],
+    "src": "resources/scss/floating-panel.scss",
+    "isEntry": true
+  },
   "resources/scss/notifications.scss": {
-    "file": "assets/notifications-muQNfJBN.css",
+    "file": "assets/notifications-DyHfBgbS.css",
     "name": "notifications",
     "names": [
       "notifications.css"

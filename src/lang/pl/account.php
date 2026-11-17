@@ -80,4 +80,7 @@ return [
         'default_saved' => 'Po zalogowaniu będziesz pracować w organizacji :name.',
     ],
 
+    'floating_panel' => [
+        'saved' => 'Panel akcji: :position.',
+    ],
 ];

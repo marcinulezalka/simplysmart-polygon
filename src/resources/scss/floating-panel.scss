@@ -1,0 +1,38 @@
+// Pływający panel akcji (docs/strefy.md → „Pływający panel akcji”, resources/js/floating-panel.js) — układ
+// i zachowanie bez palety, jak notifications.scss: kolor, ramkę i cień klas `.pg-float*` maluje arkusz strefy.
+// Korzeń `.pg-float--<położenie>` (Enums\FloatingPanelPosition) stoi przy krawędzi ekranu; w nim toasty
+// (`.pg-toasts`) i panel. Przy położeniu z boku toast stoi obok panelu od strony środka ekranu i chowa się pod panel
+// w stronę krawędzi (z lewej — w lewo, z prawej — w prawo); na środku dołu stoi nad panelem i chowa się w dół, na środku
+// góry — pod panelem i chowa się w górę. W spoczynku panel jest lekko przezroczysty; najechanie, fokus i rozwinięcie
+// dają pełną widoczność.
+$pg-float-gap: 1rem;
+
+.pg-float { position: fixed; z-index: 40; display: flex; gap: 0.75rem; align-items: center; pointer-events: none; }
+.pg-float__panel { position: relative; z-index: 2; opacity: 0.55; pointer-events: auto; transition: opacity 0.15s ease; }
+.pg-float__panel:hover, .pg-float__panel:focus-within, .pg-float.is-open .pg-float__panel { opacity: 1; }
+.pg-float .pg-toasts { position: relative; z-index: 1; inset: auto; width: 22rem; max-width: calc(100vw - 6rem); }
+.pg-float .pg-toast { pointer-events: auto; }
+.pg-float .pg-toast.is-leaving { animation-duration: 0.25s; }
+
+.pg-float--top-left, .pg-float--top-center, .pg-float--top-right { top: $pg-float-gap; }
+.pg-float--bottom-left, .pg-float--bottom-center, .pg-float--bottom-right { bottom: $pg-float-gap; }
+.pg-float--middle-left, .pg-float--middle-right { top: 50%; transform: translateY(-50%); }
+.pg-float--top-left, .pg-float--middle-left, .pg-float--bottom-left { left: $pg-float-gap; flex-direction: row-reverse; }
+.pg-float--top-right, .pg-float--middle-right, .pg-float--bottom-right { right: $pg-float-gap; flex-direction: row; }
+.pg-float--top-center, .pg-float--bottom-center { left: 50%; transform: translateX(-50%); }
+.pg-float--bottom-center { flex-direction: column; }
+.pg-float--top-center { flex-direction: column-reverse; }
+.pg-float--top-left, .pg-float--top-right { align-items: flex-start; }
+.pg-float--bottom-left, .pg-float--bottom-right { align-items: flex-end; }
+
+.pg-float--top-right .pg-toasts, .pg-float--middle-right .pg-toasts, .pg-float--bottom-right .pg-toasts { --pg-toast-in-x: 100%; --pg-toast-in-y: 0; --pg-toast-out-x: 100%; --pg-toast-out-y: 0; }
+.pg-float--top-left .pg-toasts, .pg-float--middle-left .pg-toasts, .pg-float--bottom-left .pg-toasts { --pg-toast-in-x: -100%; --pg-toast-in-y: 0; --pg-toast-out-x: -100%; --pg-toast-out-y: 0; }
+.pg-float--bottom-center .pg-toasts { --pg-toast-in-x: 0; --pg-toast-in-y: 100%; --pg-toast-out-x: 0; --pg-toast-out-y: 100%; }
+.pg-float--top-center .pg-toasts { flex-direction: column-reverse; --pg-toast-in-x: 0; --pg-toast-in-y: -100%; --pg-toast-out-x: 0; --pg-toast-out-y: -100%; }
+
+// Menu przycisków panelu otwierają się od strony środka ekranu: przy dolnym położeniu w górę, przy prawym od prawej krawędzi.
+.pg-float__panel details > :not(summary) { position: absolute; }
+.pg-float--bottom-left, .pg-float--bottom-center, .pg-float--bottom-right, .pg-float--middle-left, .pg-float--middle-right { --pg-float-menu-top: auto; --pg-float-menu-bottom: calc(100% + 0.5rem); }
+.pg-float__panel details > :not(summary) { top: var(--pg-float-menu-top, calc(100% + 0.5rem)); bottom: var(--pg-float-menu-bottom, auto); }
+.pg-float--top-right .pg-float__panel details > :not(summary), .pg-float--middle-right .pg-float__panel details > :not(summary), .pg-float--bottom-right .pg-float__panel details > :not(summary) { right: 0; left: auto; }
+.pg-float--top-left .pg-float__panel details > :not(summary), .pg-float--middle-left .pg-float__panel details > :not(summary), .pg-float--bottom-left .pg-float__panel details > :not(summary) { left: 0; right: auto; }

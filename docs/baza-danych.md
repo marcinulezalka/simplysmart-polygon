@@ -87,7 +87,8 @@ zostaje także po zmianach z konsoli SQL.
   kolumny kończy się `->sync('tabela')`. `->trackedColumns('tabela')` zwraca kolumny zapisywane przez trigger.
 - Historię ma **każda** tabela danych (także `users`, uprawnienia, tabele łączące i konta strefy); bez historii są tylko
   tabele techniczne: `migrations`, `cache*`, `jobs`, `job_batches`, `failed_jobs`, `sessions`, `password_reset_tokens`
-  i jednorazowe tabele logowania strefy (`<strefa>_login_challenges`, `<strefa>_sessions`, `<strefa>_trusted_devices`).
+  jednorazowe tabele logowania strefy (`<strefa>_login_challenges`, `<strefa>_sessions`, `<strefa>_trusted_devices`)
+  i dziennik zdarzeń konta (`account_events`, tylko dopisywany).
   Test projektu porównuje to z bazą po migracjach.
 - Dialekty (`Contracts\HistoryTriggers`): `MysqlHistoryTriggers` (aktor ze zmiennych sesji MySQL `@actor_zone`,
   `@actor_id`, `@request_id`) i `SqliteHistoryTriggers` (aktor `NULL`).
@@ -100,6 +101,31 @@ zostaje także po zmianach z konsoli SQL.
   `Database\HistoryTriggersRejected`). Administrator serwera ustawia `log_bin_trust_function_creators = 1`
   (np. `SET PERSIST log_bin_trust_function_creators = ON`), a lokalnie można wyłączyć binlog. Hosting musi też dawać
   uprawnienie `TRIGGER`.
+
+### Dziennik zdarzeń konta
+
+Jeden dziennik dla wszystkich stref i paczek (`Queries\EventLog\AccountEventLog::recent($zone, $account, $limit, $channel)`
+→ `list<EventLog\LoggedEvent>`): kanał (`Enums\EventChannel`), typ, opis, chwila, IP, a dla zmian danych — tabela i id
+rekordu. Wpisy łączą źródła `Contracts\EventLogSource` z tagu `AccountEventLog::SOURCES_TAG`, od najnowszego.
+
+| Kanał | Źródło | Zapis |
+| --- | --- | --- |
+| `history` | `EventLog\Sources\HistoryEvents` — **wszystkie** tabele `*_history` w bazie (jedno zapytanie UNION ALL po indeksie `<tabela>_history_actor_index`) | triggery historii: zmiany, których aktorem było konto (`actor_zone`, `actor_id`), oraz utworzenie i zmiany rekordu konta `<strefa>_accounts` robione przez zalogowanego aktora |
+| `notification` | `EventLog\Sources\StoredEvents` (`account_events`) | `Http\Middleware\RecordNotificationEvent` w grupie middleware każdej strefy: komunikat statusu (`Http\StatusMessage`) wstawiony w żądaniu — ten sam co toast i dzwonek paska |
+| `security` | `StoredEvents` | `EventLog\Listeners\RecordSecurityEvent`: zdarzenia `Auth\Events` (logowanie udane i odrzucone, wylogowanie, blokada, zakończenie sesji, PIN, zapasowy e-mail, zaufane urządzenia) z IP |
+| `api` | `StoredEvents` | na przyszłość: `EventLog\EventLog::record($zone, $accountId, EventChannel::Api, $typ, …)` |
+
+- **Automatycznie w każdej paczce:** tabela utworzona przez `History::create()` (z indeksem aktora) trafia do kanału
+  historii bez konfiguracji; powiadomienia i bezpieczeństwo działają w każdej strefie z kontami. Paczka dokłada
+  własne źródło: klasa `EventLogSource` + `$this->app->tag([Źródło::class], AccountEventLog::SOURCES_TAG)`.
+- **Zapis własnych zdarzeń:** `EventLog\EventLog::record()` (tabela `account_events`: `zone`, `account_id`,
+  `channel`, `type`, `message` — gotowa treść albo null, `json_context` — wartości opisu, `ip`, `created_at`).
+- **Teksty** (teksty strefy, potem polygon): `event_log.types.<typ>` (zdarzenia bez treści, z wartościami
+  z `json_context`), `event_log.history.<insert|update|delete>` z `:subject` = `event_log.tables.<tabela>` (konto strefy
+  — `event_log.tables.zone_accounts`; bez tekstu nazwa tabeli), kanały `enums.event_channel.<kanał>`. Paczka podaje
+  nazwy swoich tabel we własnym `lang/<locale>/event_log.php`.
+- Czas historii to `CURRENT_TIMESTAMP` bazy — strefa czasu serwera bazy powinna być tą samą co `app.timezone`
+  (SQLite w testach zapisuje UTC).
 
 ## 5. Modele
 
@@ -267,6 +293,9 @@ liczy go `DataModel` przy zapisie.
   (przez `OrganizationRoles::within()`) na bieżącą organizację konta (`Contracts\CurrentOrganization`); hero i konto bez organizacji — null (role globalne).
   `hasRole()`, `can()`, `checkPermissionTo()` i `zone.permission:*` liczą więc role w bieżącej organizacji. Poza
   żądaniem strefy (konsola, kolejka) zespół to null.
+  W strefie z kontekstem roli (`role_contexts`) liczy się tylko aktywna rola konta w bieżącej organizacji
+  (`Permissions\ActiveRole`, docs/strefy.md → „Kontekst roli”); `OrganizationRoles::broadest()` daje domyślną —
+  rolę z największą liczbą uprawnień.
 - Role i uprawnienia mają pełny standard tabel danych (traity `HasRouteToken`, `HasStandardColumns`, `HasChecksum`,
   soft delete), historię i pulę id; tabele łączące mają `id` zamiast złożonego klucza spatie (dla historii).
 - Model z rolami dołącza `Spatie\Permission\Traits\HasRoles`; model inny niż provider guarda podaje `$guard_name`.

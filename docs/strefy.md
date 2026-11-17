@@ -70,6 +70,7 @@ Migracje paczki strefy (`src/database/migrations/`) tworzą tylko schemat; dane 
 | `guard`, `provider` | domyślnie nazwa strefy i `<strefa>_accounts` |
 | `model` | model kont, podklasa `Models\ZoneAccount`; bez niego strefa jest publiczna (tylko `public.php`) |
 | `url_key` | `true` — ekrany po zalogowaniu (konto, `account.php`, `zone.php`) pod hashem sesji: `/<slug>/<hash>/…` (`Zones\ZoneUrlKey`: 20 znaków `[a-z0-9]`, losowy dla sesji strefy, nowy po wylogowaniu). `route()` dokłada hash sam (`Http\Middleware\ApplyZoneUrlKey`); brak, zły albo cudzy hash to 404 dla zalogowanego (`RequireZoneUrlKey`) — linki z innej sesji, zakładki i adresy zebrane przez roboty nie działają. Niezalogowany z takim linkiem (np. po wylogowaniu albo wygaśnięciu sesji) trafia na logowanie, a po nim na tę stronę z hashem nowej sesji (`ZoneUrlKey::rewrite()` w `Auth\SignIn\CompleteSignIn`). Logowanie i `public.php` zostają pod `/<slug>/…`; maile linkują do logowania. Bez klucza albo `null` — domyślny `polygon.zones.url_key` (`ZONE_URL_KEY`, domyślnie `false`); strefa prywatnej paczki nadpisuje jawnym `true`/`false` tylko w swoim `.env`, bez wpisywania tego ustawienia do publicznego configu projektu. Tylko strefa z logowaniem |
+| `role_contexts` | `true` — kontekst konta to para organizacja + jedna rola (sekcja „Kontekst organizacji” → „Kontekst roli”): konto pracuje w jednej swojej roli naraz, a uprawnienia liczą się tylko z niej. Domyślnie `false` (suma ról w organizacji). Tylko strefa z logowaniem |
 | `home` | klasa `Contracts\ZoneHome` — strona startowa konta po zalogowaniu: `routeFor($account)` zwraca trasę strefy bez prefiksu (np. pulpit roli `registration.dashboard`), liczoną w zespole spatie bieżącej organizacji konta; `null` albo nieistniejąca trasa — `<strefa>.dashboard`. Pierwsze logowanie zawsze tu trafia, kolejne wracają na zamierzoną stronę, jeśli była (ogólny pulpit strefy jako zamierzona strona się nie liczy — `ZoneRedirects::isDashboard()`). Tu trafia też zalogowany na trasie tylko dla gości (np. zakładka z logowaniem) i na wejściu do strefy (`ZoneRedirects::entry()` — gość na logowanie). Domyślnie brak, tylko strefa z logowaniem |
 | `session` | nadpisania sesji strefy (`lifetime`, `table`…); domyślny czas `polygon.zones.session_lifetime` |
 | `auth` | nadpisania `polygon.auth` (np. `['trusted_devices' => ['enabled' => false]]`) |
@@ -146,9 +147,11 @@ własny kontekst):
 | --- | --- |
 | `get()`, `id()` | bieżąca organizacja; bez wyboru (albo gdy wybrana przestała być dostępna) domyślna, zapisana w sesji: domyślna organizacja konta (`json_default_settings.organization`), o ile nadal jest jego kontekstem, inaczej hero — organizacja hero, pozostali — najstarsze członkostwo; gość i konto bez organizacji — null |
 | `visible()` | bieżąca organizacja do pokazania we frontendzie (organizacja hero → null) |
-| `contexts()` | `list<Organizations\OrganizationContext>` (organizacja, `current`, `default`) do przełącznika, bez organizacji hero |
+| `role()` | aktywna rola w bieżącej organizacji (tylko strefa z `role_contexts`; inaczej, dla hero i bez ról — null) |
+| `contexts()` | `list<Organizations\OrganizationContext>` (organizacja, `current`, `default`, `role`; `label($zone)` — „organizacja — rola”) do przełącznika, bez organizacji hero |
 | `isHero()` | czy konto jest członkiem organizacji hero |
-| `choose()` | ustawia kontekst; false dla organizacji spoza kontekstów konta |
+| `choose($organization, $role = null)` | ustawia kontekst; false dla pary spoza kontekstów konta |
+| `offers($organization, $role)` | czy para jest kontekstem konta (walidacja formularzy) |
 
 - **Konteksty konta** (`Queries\Organizations\ActiveMemberships`): członkostwa w organizacjach aktywnych i nieusuniętych,
   od najstarszego. Członek organizacji hero dostaje organizację hero i wszystkie pozostałe aktywne organizacje (po
@@ -167,6 +170,48 @@ własny kontekst):
 - Kontekst wybiera też uprawnienia: role i uprawnienia konta liczą się w bieżącej organizacji (zespół spatie =
   organizacja, `Http\Middleware\UseOrganizationPermissions`; docs/baza-danych.md §15). Hero i konto bez organizacji
   mają role globalne.
+
+### Kontekst roli (`role_contexts`)
+
+W strefie z `role_contexts: true` kontekst to para **organizacja + jedna rola** konta w niej. Konto z kilkoma rolami
+w organizacji (np. lekarz i rejestracja w poradni) pracuje w jednej naraz — uprawnienia, `hasRole()` i
+`getRoleNames()` liczą tylko ją — i przełącza się między parami bez ponownego logowania.
+
+- **Aktywna rola** (`CurrentOrganization::role()`): wybrana w sesji strefy dla tej organizacji
+  (`polygon.role.<id organizacji>`), o ile konto nadal ją ma; inaczej rola zapisanego domyślnego kontekstu (gdy
+  dotyczy tej organizacji); inaczej najszersza (`Permissions\OrganizationRoles::broadest()` — najwięcej uprawnień,
+  przy remisie pierwsza po nazwie). Hero i organizacja bez ról konta — bez aktywnej roli.
+- **Zawężenie:** `UseOrganizationPermissions` ustawia `Permissions\ActiveRole` (stan żądania, `scoped`), a
+  `Models\ZoneAccount::setRelation()` zostawia we wczytanych rolach konta tylko aktywną — w zespole bieżącej
+  organizacji i tylko dla konta żądania. `OrganizationRoles::names()` / `assign()` działają na wszystkich rolach
+  (`ActiveRole::bypass()`); role konta zalogowanego nadaje się przez `OrganizationRoles::assign()`, nie wprost
+  `assignRole()`.
+- **Przełącznik:** `contexts()` ma pozycję na każdą rolę konta w organizacji, od najważniejszej
+  (`OrganizationRoles::ranked()` — najwięcej uprawnień, przy remisie po nazwie; organizacja bez ról — jedna pozycja
+  bez roli). Formularze przełączenia i kontekstu domyślnego wysyłają obok `organization` pole `role`; rola,
+  której konto nie ma w organizacji, to błąd pola `organization` (`account.organization.unavailable`). Komunikaty
+  podają „organizacja — rola” (`OrganizationContext::label()`).
+- **Domyślny kontekst:** `DefaultOrganization::save($account, $organization, $role)` zapisuje parę
+  (`json_default_settings.organization` i `.role`); plik instalacji ustawia tylko organizację (rola — najszersza).
+
+## Pływający panel akcji
+
+Panel akcji zawsze widoczny na ekranach strefy po zalogowaniu, z toastami przy nim. Polygon daje mechanizm, strefa —
+znaczniki, kolory i treść.
+
+| Część | Polygon | Strefa |
+| --- | --- | --- |
+| Położenie | `Enums\FloatingPanelPosition` (8: rogi, środki boków, środek góry i dołu; domyślnie `bottom-right`), `FloatingPanel\FloatingPanelPreference` (`json_default_settings.floating_panel`), trasa `<strefa>.account.floating-panel` (PUT, pole `position`, `Http\Controllers\Account\FloatingPanelController`) | formularz wyboru (np. Ustawienia → Wygląd, siatka `FloatingPanelPosition::grid()`) |
+| Układ | `resources/scss/floating-panel.scss` (`FloatingPanel\FloatingPanelAssets::ENTRIES`, `@packageAssets`): położenia `.pg-float--<położenie>`, toast obok panelu, kierunki wejścia i wyjścia toastu, przezroczystość w spoczynku | kolory, ramka i cień klas `.pg-float*` i swoich przycisków |
+| Zachowanie | `resources/js/floating-panel.js` (`initFloatingPanel()`): rozwinięcie, zwinięcie (przycisk, Esc, kliknięcie obok), jedno otwarte menu; `initNotifications()` wstawia toasty do `[data-pg-toasts]` | wywołanie obu funkcji z wejścia JS strefy |
+| Treść | — | korzeń `[data-pg-float]` z `[data-pg-toasts]` i `.pg-float__panel` (`[data-pg-float-toggle]`, `[data-pg-float-body]`, `[data-pg-float-close]`): wyszukiwarka, akcje globalne i opcje widoku ekranu |
+
+- **Toast przy panelu:** położenie z boku — toast stoi obok panelu od strony środka ekranu i chowa się pod panel w
+  stronę krawędzi (z prawej w prawo, z lewej w lewo); środek dołu — nad panelem, chowa się w dół; środek góry — pod
+  panelem, chowa się w górę. Kierunki to zmienne `--pg-toast-in-*` / `--pg-toast-out-*` animacji z
+  `notifications.scss`. Bez `[data-pg-toasts]` toasty stoją w prawym dolnym rogu jak dotąd.
+- **Stany:** w spoczynku sam przycisk panelu, lekko przezroczysty (najechanie i fokus — pełna widoczność); po
+  kliknięciu treść panelu i fokus w pierwszym polu; menu przycisków (`<details>`) otwierają się od strony środka ekranu.
 
 ## Konta i komendy
 

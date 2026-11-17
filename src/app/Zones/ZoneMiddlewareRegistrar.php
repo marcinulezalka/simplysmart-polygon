@@ -22,6 +22,7 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Simplysmart\Polygon\Http\Middleware\ApplyZoneUrlKey;
 use Simplysmart\Polygon\Http\Middleware\PreventRequestForgeryWithoutCookie;
 use Simplysmart\Polygon\Http\Middleware\RecordHistoryActor;
+use Simplysmart\Polygon\Http\Middleware\RecordNotificationEvent;
 use Simplysmart\Polygon\Http\Middleware\UseOrganizationPermissions;
 use Simplysmart\Polygon\Http\Middleware\UseZone;
 
@@ -30,7 +31,7 @@ use Simplysmart\Polygon\Http\Middleware\UseZone;
  *
  * UseZone musi poprzedzać StartSession (ustawia sesję i guard strefy); RecordHistoryActor potrzebuje sesji (konto
  * z guarda strefy), więc stoi po StartSession, tak jak UseOrganizationPermissions (zespół spatie = bieżąca organizacja
- * konta z sesji strefy).
+ * konta z sesji strefy). RecordNotificationEvent zapisuje po odpowiedzi komunikat statusu do dziennika zdarzeń konta.
  */
 final readonly class ZoneMiddlewareRegistrar
 {
@@ -59,6 +60,7 @@ final readonly class ZoneMiddlewareRegistrar
             ShareErrorsFromSession::class,
             PreventRequestForgeryWithoutCookie::class,
             RecordHistoryActor::class,
+            RecordNotificationEvent::class,
             UseOrganizationPermissions::class,
             SubstituteBindings::class,
         ]);

@@ -14,10 +14,12 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Organizations;
 
 use Simplysmart\Polygon\Models\Organization;
+use Simplysmart\Polygon\Zones\ZoneDefinition;
 
 /**
- * Pozycja przełącznika organizacji konta (Contracts\CurrentOrganization::contexts()): organizacja, czy jest bieżąca
- * i czy jest domyślną organizacją konta po zalogowaniu (DefaultOrganization).
+ * Pozycja przełącznika kontekstu konta (Contracts\CurrentOrganization::contexts()): organizacja, rola (w strefie
+ * z kontekstem roli — `role_contexts`; inaczej null), czy para jest bieżąca i czy jest domyślnym kontekstem konta po
+ * zalogowaniu (DefaultOrganization).
  */
 final readonly class OrganizationContext
 {
@@ -25,5 +27,17 @@ final readonly class OrganizationContext
         public Organization $organization,
         public bool $current,
         public bool $default = false,
+        public ?string $role = null,
     ) {}
+
+    /**
+     * Nazwa kontekstu do pokazania: nazwa organizacji (Organization::contextName()), z rolą — „organizacja — rola”
+     * (etykieta roli strefy, ZoneDefinition::roleLabel()).
+     */
+    public function label(ZoneDefinition $zone): string
+    {
+        $name = $this->organization->contextName();
+
+        return $this->role === null ? $name : $name . ' — ' . $zone->roleLabel($this->role);
+    }
 }

@@ -16,23 +16,22 @@ namespace Simplysmart\Polygon\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Simplysmart\Polygon\Contracts\CurrentAccount;
-use Simplysmart\Polygon\Contracts\CurrentOrganization;
 use Simplysmart\Polygon\Models\ZoneAccount;
-use Simplysmart\Polygon\Permissions\OrganizationRoles;
+use Simplysmart\Polygon\Permissions\ContextPermissions;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Zespół spatie żądania strefy: role i uprawnienia konta liczą się w jego bieżącej organizacji
  * (Contracts\CurrentOrganization). Hero i konto bez organizacji mają role globalne (zespół null). Stoi po StartSession
- * (sesja strefy z wyborem organizacji); zespół przełącza i po odpowiedzi przywraca Permissions\OrganizationRoles, który
- * też wczytuje od nowa role konta z guarda (to samo konto mogło mieć role wczytane w innym zespole, np. w kolejnych
- * żądaniach testu).
+ * (sesja strefy z wyborem organizacji). Zespół przełącza i po odpowiedzi przywraca Permissions\ContextPermissions —
+ * przez Permissions\OrganizationRoles, który też wczytuje od nowa role konta z guarda (to samo konto mogło mieć role
+ * wczytane w innym zespole, np. w kolejnych żądaniach testu); w strefie z kontekstem roli (`role_contexts`) zawęża też
+ * role konta do aktywnej (Contracts\CurrentOrganization::role(), Permissions\ActiveRole) do końca odpowiedzi.
  */
 final readonly class UseOrganizationPermissions
 {
     public function __construct(
-        private OrganizationRoles $roles,
-        private CurrentOrganization $organization,
+        private ContextPermissions $context,
         private CurrentAccount $account,
     ) {}
 
@@ -43,10 +42,6 @@ final readonly class UseOrganizationPermissions
     {
         $account = $this->account->get();
 
-        return $this->roles->within(
-            $account instanceof ZoneAccount ? $account : null,
-            $this->organization->isHero() ? null : $this->organization->id(),
-            static fn(): Response => $next($request),
-        );
+        return $this->context->within($account instanceof ZoneAccount ? $account : null, static fn(): Response => $next($request));
     }
 }

@@ -121,4 +121,20 @@ return [
         'cash' => 'cash',
         'card' => 'card',
     ],
+    'event_channel' => [
+        'history' => 'Change history',
+        'notification' => 'Notification',
+        'security' => 'Security',
+        'api' => 'API',
+    ],
+    'floating_panel_position' => [
+        'top-left' => 'Top left corner',
+        'top-center' => 'Top centre',
+        'top-right' => 'Top right corner',
+        'middle-left' => 'Middle left',
+        'middle-right' => 'Middle right',
+        'bottom-left' => 'Bottom left corner',
+        'bottom-center' => 'Bottom centre',
+        'bottom-right' => 'Bottom right corner',
+    ],
 ];

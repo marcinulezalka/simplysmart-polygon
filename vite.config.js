@@ -21,6 +21,7 @@ export default {
         rollupOptions: {
             input: [
                 'resources/scss/notifications.scss',
+                'resources/scss/floating-panel.scss',
             ],
         },
     },

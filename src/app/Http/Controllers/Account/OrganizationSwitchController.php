@@ -20,11 +20,14 @@ use Illuminate\Routing\Redirector;
 use Illuminate\Validation\ValidationException;
 use Simplysmart\Polygon\Contracts\CurrentOrganization;
 use Simplysmart\Polygon\Contracts\CurrentZone;
+use Simplysmart\Polygon\Organizations\OrganizationContext;
 use Simplysmart\Polygon\Zones\ZoneRedirects;
 
 /**
- * Przełączenie organizacji kontekstu konta (formularz POST z polem FIELD = token organizacji): tylko na organizację,
- * która jest kontekstem konta (Contracts\CurrentOrganization::choose()), potem pulpit strefy z komunikatem.
+ * Przełączenie kontekstu konta (formularz POST z polem FIELD = token organizacji i opcjonalnym polem
+ * OrganizationField::ROLE — rola w strefie z `role_contexts`): tylko na parę, która jest kontekstem konta
+ * (Contracts\CurrentOrganization::choose()), w tej samej sesji (bez ponownego logowania), potem pulpit strefy
+ * z komunikatem.
  */
 final readonly class OrganizationSwitchController
 {
@@ -38,16 +41,20 @@ final readonly class OrganizationSwitchController
     ) {}
 
     /**
-     * @throws ValidationException Gdy organizacji nie ma albo nie jest kontekstem konta.
+     * @throws ValidationException Gdy organizacji nie ma albo para organizacja + rola nie jest kontekstem konta.
      */
     public function __invoke(Request $request): RedirectResponse
     {
         $organization = $this->field->organization($request);
+        $role = $this->field->role($request);
 
-        if (! $this->organization->choose($organization)) {
+        if (! $this->organization->choose($organization, $role)) {
             throw OrganizationField::unavailable();
         }
 
-        return $this->redirect->route($this->zone->get()->routeName(ZoneRedirects::HOME_ROUTE))->with(StatusMessage::KEY, text('account.organization.switched', ['name' => $organization->contextName()]));
+        $zone = $this->zone->get();
+        $name = (new OrganizationContext($organization, true, role: $role))->label($zone);
+
+        return $this->redirect->route($zone->routeName(ZoneRedirects::HOME_ROUTE))->with(StatusMessage::KEY, text('account.organization.switched', ['name' => $name]));
     }
 }

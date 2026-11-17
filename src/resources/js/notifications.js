@@ -14,18 +14,21 @@
  * (`zone` w opcjach), bo jedna domena może obsługiwać więcej stref. Znaczniki — klasy `pg-*` i atrybuty `data-pg-*`
  * — są wspólne (resources/scss/notifications.scss, układ bez kolorów); kolor, obramowanie i cień tych klas maluje
  * arkusz strefy, która je ładuje na swoich stronach. Strefa woła initNotifications() ze swojego wejścia JS i podaje
- * tylko to, co jest jej: ikony (Enums\Icon strefy) i nazwę strefy — ten moduł nie zna żadnego zestawu ikon.
+ * tylko to, co jest jej: ikony (Enums\Icon strefy) i nazwę strefy — ten moduł nie zna żadnego zestawu ikon. Toasty
+ * trafiają do kontenera `toasts` z widoku (domyślnie `[data-pg-toasts]` — np. przy pływającym panelu akcji,
+ * resources/js/floating-panel.js), a bez niego do własnego w prawym dolnym rogu.
  *
  * @param {{
  *     zone: string,
  *     icons: { status: string, danger: string, close: string },
  *     bell?: string,
+ *     toasts?: string,
  *     autoHideMs?: number,
  *     limit?: number,
  * }} options
  */
 export function initNotifications(options) {
-    const { zone, icons, bell: bellSelector = '[data-pg-bell]', autoHideMs = 6000, limit = 20 } = options;
+    const { zone, icons, bell: bellSelector = '[data-pg-bell]', toasts: toastsSelector = '[data-pg-toasts]', autoHideMs = 6000, limit = 20 } = options;
     const STORE_KEY = `pg.${zone}.notifications`;
     const SEEN_KEY = `pg.${zone}.notifications.seen`;
 
@@ -68,6 +71,7 @@ export function initNotifications(options) {
     let toasts = null;
 
     const toastContainer = () => {
+        toasts ??= document.querySelector(toastsSelector);
         if (!toasts) {
             toasts = document.createElement('div');
             toasts.className = 'pg-toasts';

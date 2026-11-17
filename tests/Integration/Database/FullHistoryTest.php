@@ -29,13 +29,14 @@ class FullHistoryTest extends TestCase
     use RefreshDatabase;
 
     /**
-     * Tabele techniczne bez historii: migracje, cache, kolejka i sesje; do tego jednorazowe dane logowania każdej strefy
+     * Tabele techniczne bez historii: migracje, cache, kolejka, sesje i dziennik zdarzeń konta (tylko dopisywany); do tego jednorazowe dane logowania każdej strefy
      * (technicalTables()).
      *
      * @var list<string>
      */
     private const array TECHNICAL_TABLES = [
         'migrations', 'cache', 'cache_locks', 'jobs', 'job_batches', 'failed_jobs', 'sessions', 'password_reset_tokens',
+        'account_events',
     ];
 
     public function test_every_data_table_has_history_matching_its_columns(): void

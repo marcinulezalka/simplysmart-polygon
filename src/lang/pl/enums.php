@@ -121,4 +121,20 @@ return [
         'cash' => 'gotówka',
         'card' => 'karta',
     ],
+    'event_channel' => [
+        'history' => 'Historia zmian',
+        'notification' => 'Powiadomienie',
+        'security' => 'Bezpieczeństwo',
+        'api' => 'API',
+    ],
+    'floating_panel_position' => [
+        'top-left' => 'Lewy górny róg',
+        'top-center' => 'Środek u góry',
+        'top-right' => 'Prawy górny róg',
+        'middle-left' => 'Lewy środek',
+        'middle-right' => 'Prawy środek',
+        'bottom-left' => 'Lewy dolny róg',
+        'bottom-center' => 'Środek na dole',
+        'bottom-right' => 'Prawy dolny róg',
+    ],
 ];

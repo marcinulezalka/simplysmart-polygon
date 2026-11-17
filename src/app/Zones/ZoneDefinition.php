@@ -40,6 +40,9 @@ final readonly class ZoneDefinition
      * @param bool $urlKey Hash sesji w adresie ekranów po zalogowaniu (`url_key`, `/<slug>/<hash>/…`, Zones\ZoneUrlKey).
      * @param class-string<ZoneHome>|null $home Strona startowa konta po zalogowaniu (`home`, Contracts\ZoneHome); null —
      *                                         pulpit strefy.
+     * @param bool $roleContexts Kontekst konta to para organizacja + jedna rola (`role_contexts`, docs/strefy.md „Kontekst
+     *                           organizacji”): konto pracuje w jednej swojej roli naraz (Permissions\ActiveRole), a nie
+     *                           w sumie ról w organizacji.
      */
     public function __construct(
         public string $name,
@@ -56,6 +59,7 @@ final readonly class ZoneDefinition
         public ?string $mailViews = null,
         public bool $urlKey = false,
         public ?string $home = null,
+        public bool $roleContexts = false,
     ) {}
 
     /**
