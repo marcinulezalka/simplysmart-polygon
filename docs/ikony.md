@@ -28,6 +28,22 @@ Config `polygon.icons`:
 
 `Models\Organization::icon()` przyjmuje nazwy z `Organization::ICONS` i dowolne nazwy `zestaw:ikona`.
 
+## Pełne zestawy lokalne (heroicons, tabler, lucide, system-uicons)
+
+Cztery zestawy z `polygon.icons.sets` są serwowane lokalnie, bez zapytań do API Iconify — `src/public/icons/<prefix>.json`
+(`Icons\LocalIconSets`; `IconCatalog::exists()`/`svg()` sprawdzają je najpierw, zanim sięgną po API), udostępniane jak
+każdy plik `src/public/` (`Providers\AssetsServiceProvider`, `php artisan polygon:assets`) pod
+`/vendor/polygon/icons/<prefix>.json` — statycznie, bez PHP. Dane pochodzą z pakietów npm `@iconify-json/<nazwa>`
+(`devDependencies` projektu; opisowy `package.json` paczki dokumentuje te same wersje). Przeglądarka (strefa) pobiera
+ten sam plik raz i rejestruje go w web komponencie `iconify-icon` (`addCollection`) do renderu i wyszukiwania lokalnego.
+
+Aktualizacja (ręczna, gdy trzeba dociągnąć nowsze ikony — bez trwałej automatyzacji):
+1. W projekcie: `npm install` (zaciąga/odświeża `@iconify-json/{heroicons,tabler,lucide,system-uicons}`).
+2. Skopiować `node_modules/@iconify-json/<pakiet>/icons.json` do `src/public/icons/<prefix>.json` paczki (prefiks —
+   pole `"prefix"` w pliku, nie nazwa pakietu npm; dziś identyczne).
+3. `php artisan polygon:assets` (odświeża symlink/kopię `public/vendor/polygon`).
+4. Zaktualizować wersje w opisowym `package.json` paczki, żeby nie rozjechały się z tym, co faktycznie skopiowane.
+
 ## Komendy deweloperskie
 
 - `php artisan polygon:icons:subset <katalog> <zestaw:ikona>…` — zapisuje `<katalog>/<zestaw>.json` z podanymi ikonami

@@ -18,13 +18,15 @@ use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory as Http;
 use RuntimeException;
+use Simplysmart\Polygon\Assets\PackageAssets;
 use Simplysmart\Polygon\Support\PolygonConfig;
 
 /**
  * Katalog ikon Iconify (docs/ikony.md): zestawy dozwolone do wyboru przez użytkownika (`polygon.icons.sets`) i API
  * Iconify (`polygon.icons.api`) — sprawdzenie, czy ikona istnieje (exists(), wynik w cache: istniejąca na CACHE_FOUND,
  * brakująca na CACHE_MISSING; API nieosiągalne — null), wycinek zestawu w formacie Iconify JSON (subset() — lokalne
- * kolekcje stref) i SVG w kolorze i rozmiarze (svg() — PNG do e-maili, polygon:icons:png).
+ * kolekcje stref) i SVG w kolorze i rozmiarze (svg() — PNG do e-maili, polygon:icons:png). Zestawy z pełnymi danymi
+ * lokalnymi (LocalIconSets) nie trafiają do API wcale — exists()/svg() czytają je z dysku.
  */
 final readonly class IconCatalog
 {
@@ -58,6 +60,23 @@ final readonly class IconCatalog
         return in_array($icon->prefix, $this->sets(), true);
     }
 
+    /**
+     * @return list<string> Zestawy dozwolone (sets()) z lokalnymi danymi (LocalIconSets) — bez zapytań do API Iconify,
+     * ani z serwera, ani z przeglądarki (strefa przekazuje to do JS, żeby nie zgadywać prefiksów).
+     */
+    public function localSets(): array
+    {
+        return array_values(array_filter($this->sets(), LocalIconSets::has(...)));
+    }
+
+    /**
+     * Adres katalogu z lokalnymi zestawami (`/vendor/polygon/icons`); JS dokleja `/<prefix>.json`.
+     */
+    public function localIconsBaseUrl(): string
+    {
+        return asset(PackageAssets::PUBLIC_DIRECTORY . '/polygon/' . LocalIconSets::DIRECTORY);
+    }
+
     public function api(): string
     {
         $api = $this->config->get(PolygonConfig::ICON_API);
@@ -70,6 +89,12 @@ final readonly class IconCatalog
      */
     public function exists(IconifyIcon $icon): ?bool
     {
+        $local = LocalIconSets::get($icon->prefix);
+
+        if ($local !== null) {
+            return $local->has($icon->name);
+        }
+
         $key = 'polygon.icons.exists.' . $icon->value();
         $cached = $this->cache->get($key);
 
@@ -132,6 +157,14 @@ final readonly class IconCatalog
      */
     public function svg(IconifyIcon $icon, string $color, int $height): string
     {
+        $local = LocalIconSets::get($icon->prefix);
+
+        if ($local !== null) {
+            $svg = $local->svg($icon->name, ['height' => (string) $height, 'style' => 'color:' . $color . ';']);
+
+            return $svg ?? throw new RuntimeException("Local icon set has no icon [{$icon->value()}].");
+        }
+
         $response = $this->http->timeout(self::TIMEOUT)->get($this->api() . '/' . $icon->prefix . '/' . $icon->name . '.svg', ['color' => $color, 'height' => $height]);
         $svg = $response->successful() ? $response->body() : '';
 

@@ -73,19 +73,19 @@ class IconifyIconsTest extends TestCase
     public function test_the_catalog_checks_icons_in_the_api_and_caches_the_answer(): void
     {
         Http::fake([
-            'api.iconify.design/lucide.json?icons=heart' => Http::response(['prefix' => 'lucide', 'icons' => ['heart' => ['body' => '<path/>']]]),
-            'api.iconify.design/lucide.json?icons=home' => Http::response(['prefix' => 'lucide', 'icons' => [], 'aliases' => ['home' => ['parent' => 'house']]]),
-            'api.iconify.design/lucide.json?icons=nope' => Http::response(['prefix' => 'lucide', 'icons' => [], 'not_found' => ['nope']]),
+            'api.iconify.design/healthicons.json?icons=heart' => Http::response(['prefix' => 'healthicons', 'icons' => ['heart' => ['body' => '<path/>']]]),
+            'api.iconify.design/healthicons.json?icons=home' => Http::response(['prefix' => 'healthicons', 'icons' => [], 'aliases' => ['home' => ['parent' => 'house']]]),
+            'api.iconify.design/healthicons.json?icons=nope' => Http::response(['prefix' => 'healthicons', 'icons' => [], 'not_found' => ['nope']]),
         ]);
         $catalog = $this->app->make(IconCatalog::class);
 
-        $this->assertSame(['lucide', 'fluent', 'tabler', 'healthicons'], $catalog->sets());
+        $this->assertSame(['lucide', 'fluent', 'tabler', 'healthicons', 'heroicons', 'system-uicons'], $catalog->sets());
         $this->assertTrue($catalog->allows(IconifyIcon::from('healthicons:cardiology')));
         $this->assertFalse($catalog->allows(IconifyIcon::from('mdi:heart')));
-        $this->assertTrue($catalog->exists(IconifyIcon::from('lucide:heart')));
-        $this->assertTrue($catalog->exists(IconifyIcon::from('lucide:home')), 'Alias też jest ikoną.');
-        $this->assertFalse($catalog->exists(IconifyIcon::from('lucide:nope')));
-        $this->assertTrue($catalog->exists(IconifyIcon::from('lucide:heart')));
+        $this->assertTrue($catalog->exists(IconifyIcon::from('healthicons:heart')));
+        $this->assertTrue($catalog->exists(IconifyIcon::from('healthicons:home')), 'Alias też jest ikoną.');
+        $this->assertFalse($catalog->exists(IconifyIcon::from('healthicons:nope')));
+        $this->assertTrue($catalog->exists(IconifyIcon::from('healthicons:heart')));
         Http::assertSentCount(3);
     }
 
@@ -99,23 +99,46 @@ class IconifyIconsTest extends TestCase
         });
         $catalog = $this->app->make(IconCatalog::class);
 
-        $this->assertNull($catalog->exists(IconifyIcon::from('lucide:heart')));
-        $this->assertTrue($this->passes('lucide:heart'), 'Zapis nie czeka na zewnętrzną usługę.');
+        $this->assertNull($catalog->exists(IconifyIcon::from('healthicons:heart')));
+        $this->assertTrue($this->passes('healthicons:heart'), 'Zapis nie czeka na zewnętrzną usługę.');
         $this->assertSame(2, $attempts, 'Brak odpowiedzi nie trafia do cache — reguła pyta ponownie.');
     }
 
     public function test_the_rule_needs_a_name_from_an_allowed_set_that_exists(): void
     {
         Http::fake([
-            'api.iconify.design/lucide.json?icons=heart' => Http::response(['prefix' => 'lucide', 'icons' => ['heart' => ['body' => '<path/>']]]),
-            'api.iconify.design/lucide.json?icons=nope' => Http::response(['prefix' => 'lucide', 'icons' => [], 'not_found' => ['nope']]),
+            'api.iconify.design/healthicons.json?icons=heart' => Http::response(['prefix' => 'healthicons', 'icons' => ['heart' => ['body' => '<path/>']]]),
+            'api.iconify.design/healthicons.json?icons=nope' => Http::response(['prefix' => 'healthicons', 'icons' => [], 'not_found' => ['nope']]),
         ]);
 
-        $this->assertTrue($this->passes('lucide:heart'));
+        $this->assertTrue($this->passes('healthicons:heart'));
         $this->assertSame([text('icons.invalid')], $this->messages('serce'));
-        $this->assertSame([text('icons.invalid')], $this->messages(['lucide:heart']));
-        $this->assertSame([text('icons.set_not_allowed', ['sets' => 'lucide, fluent, tabler, healthicons'])], $this->messages('mdi:heart'));
-        $this->assertSame([text('icons.missing', ['icon' => 'lucide:nope'])], $this->messages('lucide:nope'));
+        $this->assertSame([text('icons.invalid')], $this->messages(['healthicons:heart']));
+        $this->assertSame([text('icons.set_not_allowed', ['sets' => 'lucide, fluent, tabler, healthicons, heroicons, system-uicons'])], $this->messages('mdi:heart'));
+        $this->assertSame([text('icons.missing', ['icon' => 'healthicons:nope'])], $this->messages('healthicons:nope'));
+    }
+
+    public function test_a_local_icon_set_is_checked_without_the_api(): void
+    {
+        Http::fake();
+        $catalog = $this->app->make(IconCatalog::class);
+
+        $this->assertContains('heroicons', $catalog->localSets());
+        $this->assertContains('tabler', $catalog->localSets());
+        $this->assertContains('lucide', $catalog->localSets());
+        $this->assertContains('system-uicons', $catalog->localSets());
+        $this->assertTrue($catalog->exists(IconifyIcon::from('heroicons:academic-cap')));
+        $this->assertFalse($catalog->exists(IconifyIcon::from('heroicons:nope-nope')));
+        Http::assertNothingSent();
+    }
+
+    public function test_svg_of_a_local_icon_is_coloured_without_the_api(): void
+    {
+        Http::fake();
+        $svg = $this->app->make(IconCatalog::class)->svg(IconifyIcon::from('heroicons:academic-cap'), '#1d4873', 24);
+
+        $this->assertStringContainsString('color:#1d4873', $svg);
+        Http::assertNothingSent();
     }
 
     public function test_the_subset_command_writes_a_collection_per_set(): void
