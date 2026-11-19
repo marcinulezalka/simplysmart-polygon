@@ -12,6 +12,11 @@ Skrypty projektu wołają orkiestrator `node vendor/simplysmart/polygon/bin/asse
   `src/resources/js/`. Opcjonalny `package.json` (`"private": true`, `"name": "@simplysmart/<paczka>"`)
   tylko jako opis — zależności npm są w projekcie. JS paczki może importować pakiety npm projektu (`import 'iconify-icon'`):
   orkiestrator rozwiązuje gołe importy z plików paczki od katalogu projektu (wtyczka `projectModules`).
+- **Tailwind w paczce:** paczka z własnym, niezależnym od jej zwykłego SCSS tematem Tailwind (np. osobny layout)
+  dodaje `tailwind: true` do swojego `vite.config.js` (zdjęte przed scaleniem configu, nie trafia do Vite) —
+  orkiestrator doda plugin `@tailwindcss/vite` z `node_modules` projektu, tym samym sposobem co ładuje samo Vite.
+  Wejście z `@import 'tailwindcss';` i własnym `@theme` idzie obok zwykłych wejść SCSS paczki (inny plik, inny prefiks
+  klas/tokenów — patrz „Prefiks paczki” niżej).
 - **Orkiestrator:** Vite i preprocesory (np. `sass`) z `node_modules` projektu; każda paczka trafia do swojego
   `public/build/` w katalogu `root` (`src/public/build/`) z `manifest.json` i bazą `/vendor/<paczka>/build/`. `build` buduje paczki po kolei, a na końcu
   projekt jego stockowym `vite.config.js`; błąd dowolnego builda kończy proces kodem 1. `dev` przebudowuje paczki przy

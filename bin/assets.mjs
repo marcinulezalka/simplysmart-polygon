@@ -21,6 +21,10 @@
  * (Assets\PackageAssets, adresy `/vendor/<paczka>/build/`), a na końcu projekt
  * jego własnym `vite.config.js`. `build`: kolejno, błąd dowolnego builda kończy proces kodem 1. `dev`: paczki
  * w trybie watch (przebudowa przy zmianie) równolegle z serwerem dev Vite projektu.
+ *
+ * Paczka z własnym, niezależnym od jej zwykłego SCSS tematem Tailwind (np. osobny layout) dodaje `tailwind: true`
+ * do swojego `vite.config.js` (poza kształtem Vite, zdjęte przed scaleniem configu) — orkiestrator doda wtedy
+ * plugin `@tailwindcss/vite` z `node_modules` projektu, tym samym sposobem co ładuje samo Vite (loadProjectModule).
  */
 
 import { spawn } from 'node:child_process';
@@ -38,12 +42,12 @@ if (mode !== 'build' && mode !== 'dev') {
     process.exit(2);
 }
 
-/** Moduł ESM Vite z node_modules projektu (wejście `import` z `exports` paczki vite). */
-async function loadVite() {
-    const manifestPath = join(project, 'node_modules', 'vite', 'package.json');
+/** Moduł ESM z node_modules projektu (wejście `import` z `exports` pakietu npm, np. `vite` albo `@tailwindcss/vite`). */
+async function loadProjectModule(name) {
+    const manifestPath = join(project, 'node_modules', ...name.split('/'), 'package.json');
 
     if (!existsSync(manifestPath)) {
-        throw new Error('Brak node_modules/vite w projekcie — uruchom npm install.');
+        throw new Error(`Brak node_modules/${name} w projekcie — uruchom npm install.`);
     }
 
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
@@ -51,6 +55,15 @@ async function loadVite() {
     const entry = typeof root === 'string' ? root : (root?.import?.default ?? root?.import ?? root?.default ?? manifest.module ?? manifest.main);
 
     return import(pathToFileURL(join(dirname(manifestPath), entry)).href);
+}
+
+async function loadVite() {
+    return loadProjectModule('vite');
+}
+
+/** Plugin `@tailwindcss/vite` dla paczek z `tailwind: true` w swoim `vite.config.js`. */
+async function loadTailwindPlugin() {
+    return (await loadProjectModule('@tailwindcss/vite')).default;
 }
 
 /** Paczki z `vite.config.js`: nazwa (katalog w vendor/simplysmart) i rzeczywista ścieżka. */
@@ -87,15 +100,22 @@ const projectModules = {
  * a build trafia do `<root>/public/build`. Bez `root` — katalog paczki.
  */
 async function packageConfig(vite, { name, root }, watch) {
-    const own = (await import(pathToFileURL(join(root, CONFIG)).href + `?t=${Date.now()}`)).default ?? {};
+    const { tailwind: wantsTailwind, ...own } = (await import(pathToFileURL(join(root, CONFIG)).href + `?t=${Date.now()}`)).default ?? {};
     const sources = resolve(root, own.root ?? '.');
+    const plugins = wantsTailwind ? [projectModules, (await loadTailwindPlugin())()] : [projectModules];
+
+    // `@tailwindcss/vite` resolve'uje `@import 'tailwindcss';` swoim resolwerem zbudowanym z `config.resolve`
+    // (bez projectModules — to inny mechanizm niż bare importy JS), więc bez aliasu szukałby `tailwindcss` od
+    // katalogu paczki, gdzie nie ma `node_modules`.
+    const resolveConfig = wantsTailwind ? { resolve: { alias: { tailwindcss: join(project, 'node_modules', 'tailwindcss') } } } : {};
 
     return vite.mergeConfig(own, {
+        ...resolveConfig,
         configFile: false,
         root: sources,
         base: `/vendor/${name}/build/`,
         logLevel: 'info',
-        plugins: [projectModules],
+        plugins,
         build: {
             outDir: join(sources, 'public', 'build'),
             emptyOutDir: true,
