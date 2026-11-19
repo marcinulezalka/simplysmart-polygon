@@ -154,6 +154,13 @@ return [
 
         'challenge_prune_hours' => 24,
 
+        /*
+         * Segment adresu strony bezpieczeństwa pod `account/` (Http\AccountRoutes::SECURITY zostaje pod tym samym
+         * adresem). Strefa przechodząca na nowy widok tej strony nadpisuje go (np. `security-1`), żeby zwolnić
+         * dotychczasowy adres pod nową treść we własnych trasach — bez zmiany dla pozostałych stref.
+         */
+        'security_path' => 'security',
+
     ],
 
     'icons' => [

@@ -24,6 +24,9 @@ final readonly class ZoneAuthSettings
      * @param list<class-string<SignInStep>> $steps
      * @param list<int> $lockoutMinutes Czas kolejnych blokad; ostatni powtarza się dla dalszych.
      * @param array<string, array{max: int, decay_minutes: int}> $limits
+     * @param string $securityPath Segment adresu strony bezpieczeństwa pod `account/` (Http\AccountRoutes) — domyślnie
+     *     `security`; strefa przechodząca na nowy widok tej strony nadpisuje go (np. `security-1`), żeby zwolnić
+     *     dotychczasowy adres pod nową treść we własnych trasach, bez zmiany dla pozostałych stref.
      */
     public function __construct(
         public array $steps,
@@ -41,6 +44,7 @@ final readonly class ZoneAuthSettings
         public bool $trustedDevicesEnabled = false,
         public int $trustedDeviceLifetimeDays = 30,
         public int $trustedDevicesPerAccount = 10,
+        public string $securityPath = 'security',
     ) {}
 
     /**

@@ -31,6 +31,7 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 - `Calendar\FreeSlots::between()`: wolne terminy wykonawcy w okresie — grafiki, rezerwacje, dni wolne, grafiki blokujące i najmy wczytane raz na cały okres, siatka w pamięci; `on()` i `days()` z niej korzystają, więc szukanie wolnych dni nie pyta bazy o każdy dzień.
 - `Queries\Leases\ResourceLeases::bookingCountsFor()`: wizyty wielu najmów po stanie jednym zapytaniem (lista najmów bez zapytania na każdy najem); `bookingCounts()` z niego korzysta.
 - `Http\FileResponse::inline()` / `attachment()`: plik z pamięci jako odpowiedź z nagłówkiem `Content-Disposition` według RFC 6266 (nazwa UTF-8 i zastępcza ASCII, bez znaków sterujących, ukośników i cudzysłowów), `no-store` i `nosniff`.
+- Adres strony bezpieczeństwa konta (`account/security`, `Http\AccountRoutes`) jest teraz `auth.security_path` strefy (`Auth\ZoneAuthSettings`, domyślnie `security` — bez zmian dla stref bez nadpisania): strefa przechodząca na nowy widok tej strony zwalnia nim dotychczasowy adres pod nową treść we własnych trasach (np. `security-1`), bez wpływu na pozostałe strefy. Nazwa trasy (`AccountRoutes::SECURITY`) zostaje ta sama niezależnie od adresu.
 
 ### Fixed
 

@@ -60,6 +60,7 @@ final readonly class ZoneAuthSettingsFactory
             trustedDevicesEnabled: Arr::boolean($settings, 'trusted_devices.enabled'),
             trustedDeviceLifetimeDays: max(1, Arr::integer($settings, 'trusted_devices.lifetime_days')),
             trustedDevicesPerAccount: max(1, Arr::integer($settings, 'trusted_devices.max_per_account')),
+            securityPath: Arr::string($settings, 'security_path', 'security'),
         );
     }
 

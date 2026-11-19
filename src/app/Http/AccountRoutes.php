@@ -29,7 +29,10 @@ use Simplysmart\Polygon\Zones\ZoneDefinition;
  * Trasy konta zalogowanego w strefie (poziom Authenticated, pod `account/`): przełączenie organizacji kontekstu, blokada
  * i odblokowanie ekranu oraz strona
  * bezpieczeństwa — zmiana PIN-u, zapasowy adres e-mail, w strefie z zaufanymi urządzeniami ich odwołanie i wylogowanie
- * wszędzie (dawne `pin` i `devices` przekierowują do sekcji strony). Każda zmiana ma limit `polygon.sign-in`.
+ * wszędzie (dawne `pin` i `devices` przekierowują do sekcji strony). Każda zmiana ma limit `polygon.sign-in`. Adres
+ * strony bezpieczeństwa to `auth.security_path` strefy (Auth\ZoneAuthSettings, domyślnie `security`) — nazwa trasy
+ * (self::SECURITY) zostaje ta sama niezależnie od adresu, więc wszystkie odesłania do niej (ta klasa, nawigacja
+ * stref, maile o nowym zaufanym urządzeniu) nie potrzebują zmian przy jego nadpisaniu.
  */
 final readonly class AccountRoutes
 {
@@ -94,8 +97,9 @@ final readonly class AccountRoutes
     public function register(ZoneDefinition $zone): void
     {
         $throttle = 'throttle:' . SignInRoutes::THROTTLE;
+        $securityPath = $zone->auth()->securityPath;
 
-        $this->router->middleware(AccessTier::Authenticated->middleware($zone))->prefix(self::PREFIX)->group(function () use ($zone, $throttle): void {
+        $this->router->middleware(AccessTier::Authenticated->middleware($zone))->prefix(self::PREFIX)->group(function () use ($zone, $throttle, $securityPath): void {
             $this->router->post('lock', [ScreenLockController::class, 'lock'])->name(self::LOCK);
             $this->router->get('unlock', [ScreenLockController::class, 'show'])->name(self::UNLOCK);
             $this->router->post('unlock', [ScreenLockController::class, 'unlock'])->middleware($throttle)->name(self::UNLOCK_STORE);
@@ -103,8 +107,8 @@ final readonly class AccountRoutes
             $this->router->post('organization', OrganizationSwitchController::class)->name(self::ORGANIZATION_SWITCH);
             $this->router->post('organization/default', OrganizationDefaultController::class)->name(self::ORGANIZATION_DEFAULT);
             $this->router->put('floating-panel', FloatingPanelController::class)->name(self::FLOATING_PANEL);
-            $this->router->get('security', [SecurityController::class, 'show'])->name(self::SECURITY);
-            $this->router->delete('security/sessions', [SecurityController::class, 'signOutEverywhere'])->middleware($throttle)->name(self::SIGN_OUT_EVERYWHERE);
+            $this->router->get($securityPath, [SecurityController::class, 'show'])->name(self::SECURITY);
+            $this->router->delete($securityPath . '/sessions', [SecurityController::class, 'signOutEverywhere'])->middleware($throttle)->name(self::SIGN_OUT_EVERYWHERE);
             $this->router->get('pin', [SecurityController::class, 'section'])->defaults('section', self::SECTION_PIN)->name(self::PIN);
             $this->router->post('pin/code', [PinChangeController::class, 'sendCode'])->middleware($throttle)->name(self::PIN_CODE);
             $this->router->put('pin', [PinChangeController::class, 'update'])->middleware($throttle)->name(self::PIN_UPDATE);
