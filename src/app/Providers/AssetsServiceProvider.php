@@ -20,11 +20,13 @@ use Simplysmart\Polygon\Assets\PackageAssets;
 use Simplysmart\Polygon\Console\Commands\PublishAssetsCommand;
 use Simplysmart\Polygon\Notifications\NotificationAssets;
 use Simplysmart\Polygon\View\ColorThemePreference;
+use Simplysmart\Polygon\View\FontSizePreference;
 
 /**
- * Assety paczek i tryb kolorystyczny: rejestr Assets\PackageAssets (singleton, paczki dopisują się w providerach —
- * polygon dopisuje też siebie, Notifications\NotificationAssets), dyrektywa `@packageAssets('<paczka>', [wejścia])`,
- * komenda `polygon:assets` i ciasteczko trybu bez szyfrowania (View\ColorThemePreference).
+ * Assety paczek, tryb kolorystyczny i rozmiar czcionki: rejestr Assets\PackageAssets (singleton, paczki dopisują się
+ * w providerach — polygon dopisuje też siebie, Notifications\NotificationAssets), dyrektywa
+ * `@packageAssets('<paczka>', [wejścia])`, komenda `polygon:assets` i ciasteczka preferencji bez szyfrowania
+ * (View\ColorThemePreference, View\FontSizePreference).
  */
 final class AssetsServiceProvider extends ServiceProvider
 {
@@ -36,6 +38,7 @@ final class AssetsServiceProvider extends ServiceProvider
     public function boot(): void
     {
         EncryptCookies::except(ColorThemePreference::COOKIE);
+        EncryptCookies::except(FontSizePreference::COOKIE);
         Blade::directive('packageAssets', static fn(string $expression): string => '<?php echo app(' . PackageAssets::class . '::class)->tags(' . $expression . '); ?>');
         $this->callAfterResolving(PackageAssets::class, static fn(PackageAssets $assets) => $assets->add('polygon', NotificationAssets::PUBLIC_PATH));
 

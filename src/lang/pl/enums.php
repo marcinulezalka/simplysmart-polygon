@@ -52,6 +52,11 @@ return [
         'wcag' => 'WCAG',
         'wcag-contrast' => 'WCAG duży kontrast',
     ],
+    'font_size' => [
+        'a' => 'Standardowa',
+        'aa' => 'Powiększona',
+        'aaa' => 'Znacznie powiększona',
+    ],
     'booking_status' => [
         'booked' => 'zapisana',
         'confirmed' => 'potwierdzona',

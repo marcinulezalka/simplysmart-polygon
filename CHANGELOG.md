@@ -12,6 +12,8 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Added
 
+- Rozmiar czcionki interfejsu jako preferencja wspólna dla stref (`Enums\FontSize`, `View\FontSizePreference`,
+  ciasteczko `polygon_font_size`), na wzór trybu kolorystycznego (docs/assety.md → „Rozmiar czcionki”).
 - Pełne zestawy ikon Iconify (`heroicons`, `tabler`, `lucide`, `system-uicons`) serwowane lokalnie, bez zapytań do API
   Iconify (`Icons\LocalIconSets`, `IconCatalog::exists()`/`svg()`/`localSets()`/`localIconsBaseUrl()`, docs/ikony.md →
   „Pełne zestawy lokalne”) — dane z npm `@iconify-json/*`, pliki statyczne `src/public/icons/<prefix>.json` serwowane

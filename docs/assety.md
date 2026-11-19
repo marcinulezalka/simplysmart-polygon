@@ -44,6 +44,18 @@ Skrypty projektu wołają orkiestrator `node vendor/simplysmart/polygon/bin/asse
   `wcag` i `wcag-contrast`; `light` i `dark` nie muszą ich w pełni spełniać. W trybach WCAG stanów treści nie
   wyszarza się przezroczystością (obniża kontrast) — tylko elementy nieaktywne.
 
+## Rozmiar czcionki
+
+`Enums\FontSize`: `a` (standardowy), `aa` (powiększony) i `aaa` (znacznie powiększony) — ten sam mechanizm co tryb
+kolorystyczny, niezależny od niego (można łączyć np. `wcag-contrast` z `aaa`).
+
+- Wybór zapisuje skrypt przełącznika strefy w ciasteczku `polygon_font_size` (wspólne dla stref, bez szyfrowania —
+  `Providers\AssetsServiceProvider` wyłącza je z `EncryptCookies`); serwer czyta je przez `View\FontSizePreference`
+  (nieznana wartość to `a`) i wstawia w `data-font-size` na `<html>`, więc strona nie miga po załadowaniu.
+- Każda strefa skaluje swój root font-size w `src/resources/scss/<strefa>/theme.scss`, obok reguł trybu
+  kolorystycznego: `:root[data-font-size='aa']` i `:root[data-font-size='aaa']` (rem-y komponentów przeliczają się
+  automatycznie — tokeny motywu nie wymagają zmian).
+
 ## Bazowe zasady UI stref
 
 Wspólne dla każdej strefy z widokami (tokeny i nazwy — z prefiksem paczki; wzór wartości: `docs/ui.md` paczki strefy):
