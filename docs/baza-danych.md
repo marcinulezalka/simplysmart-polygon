@@ -523,3 +523,23 @@ w Fakturowni są pobierane do kart kontrahentów (tylko do odczytu).
 - **Wdrożenie**: kolejka z działającym workerem (bez niego faktury i synchronizacja na żądanie czekają w kolejce),
   cron `schedule:run` co minutę (bez niego nie ruszy synchronizacja nocna). Teksty: `invoicing.*`, `enums.invoice_*`,
   `enums.payment_method`, `enums.invoicing_provider`, `enums.invoicing_sync_trigger`.
+
+## 22. Nadawca „noreply” organizacji
+
+Organizacja główna klienta (jak konto Fakturowni — `Mail\NoreplyMailboxAccounts::root()`) może nadpisać ustawienia
+SMTP z `.env` dla poczty wysyłanej w jej imieniu (np. powiadomienia do pacjentów), własnym adresem nadawcy
+(`noreply@klinika.pl`); jednostki podrzędne korzystają z niego. Bez wiersza albo z pustym `host` — mailer domyślny
+z `.env` (`config('mail.default')`).
+
+| Tabela | Model | Kolumny domenowe |
+| --- | --- | --- |
+| `noreply_mailbox_accounts` | `Models\NoreplyMailboxAccount` | `organization_id` (unikalne — organizacja główna), `host` (pusty — nadpisanie wyłączone, `overridesMail()`), `port`, `encryption` (ssl/tls/null), `username`, `password` (cast `encrypted`, `$hidden`), `from_address`, `last_error` |
+
+- **Zapis** (`Mail\SaveNoreplyMailboxAccount`): puste hasło zostawia zapisane; bez eager-check połączenia przy
+  zapisie — weryfikacja jest osobną akcją (test wysyłki, ekran ustawień).
+- **Wysyłka**: `Mail\NoreplyMailer::send()` — testowa wiadomość (MailManager::build(), bez rejestrowania w
+  `config('mail.mailers')`); `Mail\OrganizationMailer::mailerFor()` — mailer organizacji dla innego kodu (`null` —
+  wywołujący wraca do mailera domyślnego). Poczta systemowa konta strefy (reset PIN, zablokowane konto —
+  `Mail\PinResetMail` i pokrewne) nie przechodzi przez ten resolver — nie jest związana z żadną organizacją.
+- **Uprawnienie i interfejs**: ekran ustawień żyje w ulmed (`Http\Controllers\NoreplyMailboxController`,
+  uprawnienie `communication.configure` — właściciel), jak integracja Fakturowni.
