@@ -59,8 +59,8 @@ class AccountEventLogTest extends ZoneTestCase
         $account = $this->account(AlphaAccount::class);
         $other = $this->account(AlphaAccount::class, ['email' => 'ola@example.com']);
         $organization = $this->organization('Północ');
-        $this->history(Organization::TABLE, $organization->id, 'update', $account, '2026-11-19 10:00:00');
-        $this->history(Organization::TABLE, $organization->id, 'delete', $other, '2026-11-19 11:00:00');
+        $this->history(Organization::TABLE, $organization->id, 'update', $account, now()->addMinute()->toDateTimeString());
+        $this->history(Organization::TABLE, $organization->id, 'delete', $other, now()->addMinutes(2)->toDateTimeString());
 
         $history = $this->log($account, EventChannel::History);
 
