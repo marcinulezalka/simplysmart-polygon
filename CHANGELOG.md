@@ -13,6 +13,9 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Added
 
+- Rezerwacja od ręki w kalendarzu (`Calendar\BookSlot::bookInstant()`): na podaną godzinę, długość i zasób, bez
+  sprawdzania siatki slotów grafiku — np. wykonawca zapisujący pacjenta, który jest u niego teraz. Rezerwację odróżnia
+  `ResourceBooking::INSTANT` (`isInstant()`); zajmuje swój czas jak zwykła rezerwacja, więc pokrywane sloty nie są wolne.
 - `Enums\MailEncryption` — szyfrowanie skrzynki pocztowej (SSL/TLS, pusta wartość — bez szyfrowania) z etykietami,
   opcjami listy wyboru i schematem transportu SMTP (`smtpScheme()`, dotąd warunek powtarzany w każdym mailerze).
 - `putDefaultSettings()` na modelach ze standardowymi kolumnami — jedyne miejsce zapisu kluczy pierwszego poziomu

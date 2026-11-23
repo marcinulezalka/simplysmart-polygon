@@ -206,6 +206,18 @@ class CalendarTest extends ZoneTestCase
         $book->bookOverflow($this->clinic, $this->doctor, CalendarWeek::at('08:30'), self::KIND);
     }
 
+    public function test_an_instant_booking_takes_its_own_time_off_the_grid_and_blocks_the_slot_it_covers(): void
+    {
+        $this->save($this->input());
+        $instant = $this->app->make(BookSlot::class)->bookInstant($this->clinic, $this->doctor, $this->room->id, CalendarWeek::at('08:20'), 15, self::KIND);
+
+        $this->assertTrue($instant->isInstant());
+        $this->assertFalse($instant->isOverflow());
+        $this->assertSame([CalendarWeek::MONDAY . ' 08:20', '08:35', $this->room->id], [$instant->starts_at->format('Y-m-d H:i'), $instant->ends_at->format('H:i'), $instant->resource_id]);
+        $this->assertSame(['08:00', '08:45'], $this->times(CalendarWeek::MONDAY), 'Od ręki zajmuje swój czas — sloty 08:15 i 08:30 nie są wolne.');
+        $this->assertTrue($this->app->make(BookSlot::class)->bookInstant($this->clinic, $this->doctor, $this->room->id, CalendarWeek::at('18:00'), 15, self::KIND)->isInstant(), 'Także poza godzinami grafiku.');
+    }
+
     public function test_a_cancelled_overflow_frees_its_place_in_the_queue_and_the_room_check_follows_the_queue(): void
     {
         $block = $this->save($this->input());

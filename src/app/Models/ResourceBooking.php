@@ -83,6 +83,13 @@ final class ResourceBooking extends DataModel
      */
     public const string OVERFLOW_AFTER = 'overflow_after';
 
+    /**
+     * Klucz `json_attributes` rezerwacji od ręki (Calendar\BookSlot::bookInstant()): zapisanej na wskazaną godzinę
+     * i zasób poza siatką slotów grafiku (np. wizyta lekarza zapisana w chwili rejestracji badania). Zajmuje swój czas
+     * jak każda rezerwacja — wolne sloty (Calendar\FreeSlots) ją omijają.
+     */
+    public const string INSTANT = 'instant';
+
     protected $table = self::TABLE;
 
     /**
@@ -101,6 +108,14 @@ final class ResourceBooking extends DataModel
     public function isOverflow(): bool
     {
         return $this->jsonAttribute(self::OVERFLOW) === true;
+    }
+
+    /**
+     * Czy to rezerwacja od ręki — poza siatką slotów grafiku (INSTANT).
+     */
+    public function isInstant(): bool
+    {
+        return $this->jsonAttribute(self::INSTANT) === true;
     }
 
     /**

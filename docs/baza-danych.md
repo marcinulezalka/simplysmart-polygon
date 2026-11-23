@@ -403,6 +403,11 @@ przed zapisem grafiku.
   (`Calendar\RoomTaken` — od kiedy, powód `Enums\RoomTakenBy`, wykonawca i jednostka): inny grafik zasobu (bez
   wypełniających), okno najmu na wyłączność innej jednostki, rezerwacja zajmująca termin innego wykonawcy (koniec
   własnego najmu kooperacji po bloku kolizją nie jest); null — zasób dostępny. Czy kolizja wyłącza zapis nadliczbowy — decyduje paczka strefy.
+- **Rezerwacja od ręki** (`BookSlot::bookInstant()`): na podaną godzinę, długość (minuty) i zasób, bez sprawdzania
+  siatki slotów grafiku — np. wykonawca zapisujący pacjenta, który jest u niego teraz. `json_attributes.instant`
+  (`ResourceBooking::INSTANT`, `isInstant()`) ją odróżnia; zajmuje swój czas jak zwykła rezerwacja (`FreeSlots` omija
+  sloty, które pokrywa). Blokady jak przy `book()`. Czy wykonawca może tak zapisać i na którym zasobie — decyduje paczka
+  strefy.
 - **Stan** (`Calendar\BookingStatusChange`): zapisana → potwierdzona, wykonana, odwołana, nieobecność; potwierdzona →
   wykonana, odwołana, nieobecność; wykonana, odwołana i nieobecność są końcowe; odwołana zwalnia termin. **Lista dnia**: `Calendar\DayBookings` (jednostki, dzień, opcjonalnie rodzaj).
 - **Jednostki** (`Queries\Organizations\OrganizationUnits`): organizacja i jej aktywne jednostki podrzędne bez hero —

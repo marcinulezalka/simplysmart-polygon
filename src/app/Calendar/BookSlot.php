@@ -106,4 +106,36 @@ final readonly class BookSlot
             return $booking;
         });
     }
+
+    /**
+     * Rezerwacja od ręki: na godzinę $startsAt i $minutes minut na zasobie $resourceId, bez sprawdzania siatki slotów
+     * grafiku (np. wizyta zapisana przez samego wykonawcę w chwili przyjęcia pacjenta). `json_attributes` odróżnia ją
+     * (ResourceBooking::INSTANT). Blokady zasobu i wykonawcy jak przy book(), więc równoległe zapisy czekają na siebie;
+     * czy wykonawca może tak zapisać i na którym zasobie — decyduje paczka strefy przed wywołaniem.
+     */
+    public function bookInstant(Organization $unit, ZoneAccount $performer, int $resourceId, CarbonImmutable $startsAt, int $minutes, string $kind, ?ZoneAccount $bookedBy = null): ResourceBooking
+    {
+        return $this->db->transaction(function () use ($unit, $performer, $resourceId, $startsAt, $minutes, $kind, $bookedBy): ResourceBooking {
+            OrganizationResource::query()->whereKey($resourceId)->lockForUpdate()->first();
+            $performer->newQuery()->whereKey($performer->id)->lockForUpdate()->first();
+
+            $booking = new ResourceBooking();
+            $booking->forceFill([
+                ColumnNames::NAME => $startsAt->format('Y-m-d H:i'),
+                ColumnNames::STATUS => BookingStatus::Booked,
+                Organization::FOREIGN_KEY => $unit->id,
+                OrganizationResource::FOREIGN_KEY => $resourceId,
+                ResourceSchedule::PERFORMER_TYPE => $performer->getMorphClass(),
+                ResourceSchedule::PERFORMER_ID => $performer->id,
+                ResourceBooking::KIND => $kind,
+                ResourceBooking::STARTS_AT => $startsAt,
+                ResourceBooking::ENDS_AT => $startsAt->addMinutes(max(1, $minutes)),
+                ColumnNames::JSON_ATTRIBUTES => [ResourceBooking::INSTANT => true],
+                'booked_by_type' => $bookedBy?->getMorphClass(),
+                'booked_by_id' => $bookedBy?->id,
+            ])->save();
+
+            return $booking;
+        });
+    }
 }
