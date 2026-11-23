@@ -142,4 +142,9 @@ return [
         'bottom-center' => 'Bottom centre',
         'bottom-right' => 'Bottom right corner',
     ],
+    'mail_encryption' => [
+        'ssl' => 'SSL',
+        'tls' => 'TLS',
+        'none' => 'None',
+    ],
 ];

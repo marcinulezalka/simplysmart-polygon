@@ -17,6 +17,7 @@ use Illuminate\Mail\MailManager;
 use Illuminate\Mail\Message;
 use Simplysmart\Polygon\Models\NoreplyMailboxAccount;
 use Throwable;
+use Simplysmart\Polygon\Enums\MailEncryption;
 
 /**
  * Wysyłanie przez prawdziwy serwer SMTP skonfigurowany jako nadawca „noreply” organizacji (MailManager::build() —
@@ -39,7 +40,7 @@ final readonly class SmtpNoreplyMailer implements NoreplyMailer
                 'transport' => 'smtp',
                 'host' => $account->host,
                 'port' => $account->port,
-                'scheme' => $account->encryption === 'ssl' ? 'smtps' : 'smtp',
+                'scheme' => MailEncryption::smtpScheme($account->encryption),
                 'username' => $account->username,
                 'password' => $account->password,
             ]);

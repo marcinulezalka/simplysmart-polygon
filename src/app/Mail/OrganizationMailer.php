@@ -16,6 +16,7 @@ namespace Simplysmart\Polygon\Mail;
 use Illuminate\Contracts\Mail\Mailer;
 use Illuminate\Mail\MailManager;
 use Simplysmart\Polygon\Models\Organization;
+use Simplysmart\Polygon\Enums\MailEncryption;
 
 /**
  * Mailer organizacji: zbudowany z jej nadawcy „noreply” (NoreplyMailboxAccounts::of()), gdy skonfigurowany —
@@ -45,7 +46,7 @@ final readonly class OrganizationMailer
             'transport' => 'smtp',
             'host' => $account->host,
             'port' => $account->port,
-            'scheme' => $account->encryption === 'ssl' ? 'smtps' : 'smtp',
+            'scheme' => MailEncryption::smtpScheme($account->encryption),
             'username' => $account->username,
             'password' => $account->password,
         ]);

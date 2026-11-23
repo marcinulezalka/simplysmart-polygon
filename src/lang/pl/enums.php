@@ -142,4 +142,9 @@ return [
         'bottom-center' => 'Środek na dole',
         'bottom-right' => 'Prawy dolny róg',
     ],
+    'mail_encryption' => [
+        'ssl' => 'SSL',
+        'tls' => 'TLS',
+        'none' => 'Brak',
+    ],
 ];

@@ -13,6 +13,8 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Added
 
+- `Enums\MailEncryption` — szyfrowanie skrzynki pocztowej (SSL/TLS, pusta wartość — bez szyfrowania) z etykietami,
+  opcjami listy wyboru i schematem transportu SMTP (`smtpScheme()`, dotąd warunek powtarzany w każdym mailerze).
 - `putDefaultSettings()` na modelach ze standardowymi kolumnami — jedyne miejsce zapisu kluczy pierwszego poziomu
   `json_default_settings` (wartość null usuwa klucz, reszta ustawień zostaje); korzystają z niego położenie panelu
   akcji i domyślna organizacja konta, a strefy — dla własnych ustawień konta.
