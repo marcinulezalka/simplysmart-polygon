@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\FloatingPanel;
 
-use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Enums\FloatingPanelPosition;
 use Simplysmart\Polygon\Models\ZoneAccount;
 
@@ -39,7 +38,6 @@ final readonly class FloatingPanelPreference
      */
     public function save(ZoneAccount $account, FloatingPanelPosition $position): void
     {
-        $current = $account->getAttribute(ColumnNames::JSON_DEFAULT_SETTINGS);
-        $account->forceFill([ColumnNames::JSON_DEFAULT_SETTINGS => [...(is_array($current) ? $current : []), self::SETTING => $position->value]])->save();
+        $account->putDefaultSettings([self::SETTING => $position->value]);
     }
 }

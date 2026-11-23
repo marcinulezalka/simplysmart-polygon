@@ -107,13 +107,40 @@ export function initNotifications(options) {
         close.append(icon(icons.close, 'pg-icon'));
         toast.append(icon(kind === 'danger' ? icons.danger : icons.status, 'pg-icon pg-toast__icon'), body, close);
 
+        // Wyjście czeka na animację `.is-leaving` (notifications.scss), ale tylko gdy ona naprawdę trwa: bez arkusza
+        // mechanizmu albo z animacją wyłączoną (prefers-reduced-motion strefy) `animationend` nigdy nie przychodzi,
+        // więc toast znika od razu — a awaryjny limit czasu zamyka go także, gdyby zdarzenie zgubiło się po drodze.
         const dismiss = () => {
+            if (toast.classList.contains('is-leaving')) {
+                return;
+            }
+
             toast.classList.add('is-leaving');
-            toast.addEventListener('animationend', () => toast.remove(), { once: true });
+            const { animationName, animationDuration } = getComputedStyle(toast);
+            const seconds = Math.max(0, ...animationDuration.split(',').map((value) => parseFloat(value) || 0));
+
+            if (animationName === 'none' || seconds === 0) {
+                toast.remove();
+
+                return;
+            }
+
+            const remove = () => toast.remove();
+            toast.addEventListener('animationend', (event) => {
+                if (event.target === toast && event.pseudoElement === '') {
+                    remove();
+                }
+            });
+            setTimeout(remove, seconds * 1000 + 100);
         };
         close.addEventListener('click', dismiss);
-        const timeout = setTimeout(dismiss, autoHideMs);
+        // Najechanie wstrzymuje auto-chowanie, zjechanie odlicza od nowa (dotąd po najechaniu toast zostawał na stałe).
+        let timeout = setTimeout(dismiss, autoHideMs);
         toast.addEventListener('mouseenter', () => clearTimeout(timeout));
+        toast.addEventListener('mouseleave', () => {
+            clearTimeout(timeout);
+            timeout = setTimeout(dismiss, autoHideMs);
+        });
 
         toastContainer().append(toast);
     };

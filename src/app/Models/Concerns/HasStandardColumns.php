@@ -73,6 +73,21 @@ trait HasStandardColumns
     }
 
     /**
+     * Zapisuje klucze pierwszego poziomu `json_default_settings` (wartość null usuwa klucz); pozostałe ustawienia
+     * rekordu zostają. Jedyne miejsce scalania tej kolumny — ustawienia konta (np. położenie panelu akcji, domyślna
+     * organizacja) wołają tylko to.
+     *
+     * @param array<string, mixed> $settings
+     */
+    public function putDefaultSettings(array $settings): void
+    {
+        $current = $this->getAttribute(ColumnNames::JSON_DEFAULT_SETTINGS);
+        $merged = [...(is_array($current) ? $current : []), ...$settings];
+
+        $this->forceFill([ColumnNames::JSON_DEFAULT_SETTINGS => array_filter($merged, static fn(mixed $value): bool => $value !== null)])->save();
+    }
+
+    /**
      * Czy `status` trzyma standardowy stan wiersza (RecordStatus); model ze stanem dziedzinowym zwraca false.
      */
     public function usesRecordStatus(): bool

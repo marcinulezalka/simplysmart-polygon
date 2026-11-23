@@ -13,6 +13,11 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Added
 
+- `putDefaultSettings()` na modelach ze standardowymi kolumnami — jedyne miejsce zapisu kluczy pierwszego poziomu
+  `json_default_settings` (wartość null usuwa klucz, reszta ustawień zostaje); korzystają z niego położenie panelu
+  akcji i domyślna organizacja konta, a strefy — dla własnych ustawień konta.
+- `Auth\Devices\TrustedDevicesOverview` (zaufane urządzenia konta i urządzenie bieżącej przeglądarki do widoku)
+  i `Auth\PinFormSettings` (długości do formularzy PIN-u) — wspólne dla strony bezpieczeństwa i ekranów stref.
 - Rozmiar czcionki interfejsu jako preferencja wspólna dla stref (`Enums\FontSize`, `View\FontSizePreference`,
   ciasteczko `polygon_font_size`), na wzór trybu kolorystycznego (docs/assety.md → „Rozmiar czcionki”).
 - Pełne zestawy ikon Iconify (`heroicons`, `tabler`, `lucide`, `system-uicons`) serwowane lokalnie, bez zapytań do API
@@ -35,6 +40,8 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Fixed
 
+- Toast powiadomień zamyka się zawsze — także bez arkusza mechanizmu albo z wyłączoną animacją (dotąd czekał na
+  koniec animacji wyjścia, która wtedy nie przychodziła) — a po zjechaniu z niego myszą znów chowa się sam.
 - Wyszukiwanie kontrahentów po nazwie traktuje `%` i `_` we frazie jak zwykłe znaki (`Database\LikePattern`), a nie jak symbole wieloznaczne.
 
 ## [0.14.0] - 2026-11-15

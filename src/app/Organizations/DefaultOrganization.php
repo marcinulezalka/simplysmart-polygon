@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Organizations;
 
-use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Models\Organization;
 use Simplysmart\Polygon\Models\ZoneAccount;
 
@@ -67,14 +66,7 @@ final readonly class DefaultOrganization
             return false;
         }
 
-        $current = $account->getAttribute(ColumnNames::JSON_DEFAULT_SETTINGS);
-        $settings = [...(is_array($current) ? $current : []), self::SETTING => $id, self::ROLE_SETTING => $role];
-
-        if ($role === null) {
-            unset($settings[self::ROLE_SETTING]);
-        }
-
-        $account->forceFill([ColumnNames::JSON_DEFAULT_SETTINGS => $settings])->save();
+        $account->putDefaultSettings([self::SETTING => $id, self::ROLE_SETTING => $role]);
 
         return true;
     }

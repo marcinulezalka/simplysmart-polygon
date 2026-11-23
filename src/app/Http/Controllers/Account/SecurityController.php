@@ -19,18 +19,16 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Redirector;
 use Simplysmart\Polygon\Auth\AccessRevocationReason;
-use Simplysmart\Polygon\Auth\Devices\DeviceCookie;
-use Simplysmart\Polygon\Auth\PinLength;
+use Simplysmart\Polygon\Auth\Devices\TrustedDevicesOverview;
+use Simplysmart\Polygon\Auth\PinFormSettings;
 use Simplysmart\Polygon\Auth\Recovery\RecoveryEmailRegistration;
 use Simplysmart\Polygon\Auth\RevokeAccountAccess;
 use Simplysmart\Polygon\Auth\SignIn\SignOut;
 use Simplysmart\Polygon\Contracts\CurrentAccount;
 use Simplysmart\Polygon\Contracts\CurrentZone;
-use Simplysmart\Polygon\Contracts\TrustedDeviceRepository;
 use Simplysmart\Polygon\Http\AccountRoutes;
 use Simplysmart\Polygon\Zones\ZoneRedirects;
 use Simplysmart\Polygon\Zones\ZoneView;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * Bezpieczeństwo zalogowanego konta na jednej stronie: zmiana PIN-u (sekcja `pin`), zapasowy adres e-mail
@@ -46,20 +44,16 @@ final readonly class SecurityController
         private Redirector $redirect,
     ) {}
 
-    public function show(Request $request, TrustedDeviceRepository $devices, DeviceCookie $cookie, RecoveryEmailRegistration $recovery): View
+    public function show(Request $request, TrustedDevicesOverview $devices, PinFormSettings $pin, RecoveryEmailRegistration $recovery): View
     {
         $zone = $this->zone->get();
-        $settings = $zone->auth();
         $account = $this->account->require();
-        $accountId = $this->account->id() ?? throw new AccessDeniedHttpException();
+
         return view($zone->view(ZoneView::Security), [
             'zone' => $zone,
             'account' => $account,
-            'currentPinLength' => PinLength::accepted(),
-            'pinLength' => $settings->pinLength,
-            'codeLength' => $settings->codeLength,
-            'devices' => $settings->trustedDevicesEnabled ? $devices->activeFor($accountId) : null,
-            'currentSelector' => $settings->trustedDevicesEnabled ? $cookie->read($zone, $request)?->selector : null,
+            ...$pin->toArray(),
+            ...$devices->forRequest($request),
             'recoveryEmail' => $account->recoveryEmail(),
             'pendingRecoveryEmail' => $recovery->pending($request),
         ]);
