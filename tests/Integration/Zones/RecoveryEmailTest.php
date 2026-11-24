@@ -13,12 +13,15 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Tests\Integration\Zones;
 
+use InvalidArgumentException;
+use Simplysmart\Polygon\Auth\ZoneAuthSettingsFactory;
 use Simplysmart\Polygon\Http\StatusMessage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Simplysmart\Polygon\Mail\LoginCodeMail;
 use Simplysmart\Polygon\Mail\SecurityCodeMail;
 use Simplysmart\Polygon\Tests\Fixtures\Zones\AlphaAccount;
+use Simplysmart\Polygon\Tests\Fixtures\Zones\BetaAccount;
 
 /**
  * Zapasowy adres e-mail i reset PIN-u przez niego: adres potwierdzony kodem wysłanym na ten adres (inny niż adres
@@ -53,6 +56,20 @@ class RecoveryEmailTest extends SignInTestCase
         $this->delete('/alpha/account/recovery-email')->assertSessionHas(StatusMessage::KEY, text('account.recovery.removed'));
         $this->assertNull($saved->fresh()?->recoveryEmail());
         $this->get('/alpha/account/security')->assertViewHas('recoveryEmail', null);
+    }
+
+    public function test_actions_return_to_the_own_page_of_the_section(): void
+    {
+        $this->signedIn($this->account(BetaAccount::class, pin: self::PIN), 'beta');
+
+        $this->delete('/beta/account/recovery-email')->assertRedirect('/beta/dashboard');
+    }
+
+    public function test_unknown_security_section_is_rejected(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $this->app->make(ZoneAuthSettingsFactory::class)->make(['security_pages' => ['unknown' => 'dashboard']]);
     }
 
     public function test_recovery_e_mail_must_differ_from_the_account_address(): void

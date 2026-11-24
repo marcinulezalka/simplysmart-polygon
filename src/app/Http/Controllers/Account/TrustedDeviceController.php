@@ -18,11 +18,11 @@ use Simplysmart\Polygon\Contracts\CurrentAccount;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Redirector;
 use Simplysmart\Polygon\Auth\Devices\DeviceCookie;
 use Simplysmart\Polygon\Auth\Events\TrustedDevicesRevoked;
 use Simplysmart\Polygon\Contracts\CurrentZone;
 use Simplysmart\Polygon\Http\AccountRoutes;
+use Simplysmart\Polygon\Http\SecurityPage;
 use Simplysmart\Polygon\Contracts\TrustedDeviceRepository;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -41,7 +41,7 @@ final readonly class TrustedDeviceController
         private CurrentZone $zone,
         private CurrentAccount $account,
         private Dispatcher $events,
-        private Redirector $redirect,
+        private SecurityPage $page,
     ) {}
 
     public function destroy(Request $request, string $device): RedirectResponse
@@ -80,6 +80,6 @@ final readonly class TrustedDeviceController
 
     private function back(): RedirectResponse
     {
-        return SecurityController::redirectTo($this->redirect, $this->zone, AccountRoutes::SECTION_DEVICES)->with(StatusMessage::KEY, text('account.devices_revoked'));
+        return $this->page->redirect($this->zone->get(), AccountRoutes::SECTION_DEVICES)->with(StatusMessage::KEY, text('account.devices_revoked'));
     }
 }

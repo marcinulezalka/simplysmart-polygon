@@ -161,6 +161,13 @@ return [
          */
         'security_path' => 'security',
 
+        /*
+         * Własne strony sekcji bezpieczeństwa: sekcja (`pin`, `recovery`, `devices`) => nazwa trasy strefy (bez jej
+         * prefiksu). Akcje sekcji wracają na jej stronę (Http\SecurityPage); sekcja bez wpisu jest kotwicą strony
+         * bezpieczeństwa.
+         */
+        'security_pages' => [],
+
     ],
 
     'icons' => [

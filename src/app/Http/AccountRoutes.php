@@ -40,6 +40,9 @@ final readonly class AccountRoutes
 
     public const string PIN_CODE = 'account.pin.code';
 
+    /** Pierwszy PIN konta zalogowanego bez PIN-u (POST, PinChangeController::define(), Auth\DefinePin). */
+    public const string PIN_DEFINE = 'account.pin.define';
+
     public const string PIN_UPDATE = 'account.pin.update';
 
     /** Reset PIN-u obecnym PIN-em i wylogowanie (DELETE, PinChangeController::reset()); nowy PIN przy logowaniu. */
@@ -88,6 +91,9 @@ final readonly class AccountRoutes
 
     public const string SECTION_LOCK = 'lock';
 
+    /** Sekcje, które strefa może przenieść na własną stronę (`auth.security_pages`, SecurityPage). */
+    public const array SECTIONS = [self::SECTION_PIN, self::SECTION_RECOVERY, self::SECTION_DEVICES];
+
     private const string PREFIX = 'account';
 
     public function __construct(
@@ -111,6 +117,7 @@ final readonly class AccountRoutes
             $this->router->delete($securityPath . '/sessions', [SecurityController::class, 'signOutEverywhere'])->middleware($throttle)->name(self::SIGN_OUT_EVERYWHERE);
             $this->router->get('pin', [SecurityController::class, 'section'])->defaults('section', self::SECTION_PIN)->name(self::PIN);
             $this->router->post('pin/code', [PinChangeController::class, 'sendCode'])->middleware($throttle)->name(self::PIN_CODE);
+            $this->router->post('pin', [PinChangeController::class, 'define'])->middleware($throttle)->name(self::PIN_DEFINE);
             $this->router->put('pin', [PinChangeController::class, 'update'])->middleware($throttle)->name(self::PIN_UPDATE);
             $this->router->delete('pin', [PinChangeController::class, 'reset'])->middleware($throttle)->name(self::PIN_RESET);
             $this->router->post('recovery-email/code', [RecoveryEmailController::class, 'sendCode'])->middleware($throttle)->name(self::RECOVERY_EMAIL_CODE);

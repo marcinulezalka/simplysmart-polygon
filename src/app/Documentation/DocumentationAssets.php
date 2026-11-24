@@ -15,6 +15,7 @@ namespace Simplysmart\Polygon\Documentation;
 
 use Simplysmart\Polygon\FloatingPanel\FloatingPanelAssets;
 use Simplysmart\Polygon\Notifications\NotificationAssets;
+use Simplysmart\Polygon\Pinpad\PinpadAssets;
 use Simplysmart\Polygon\Theme\ThemeAssets;
 
 /**
@@ -33,6 +34,7 @@ final class DocumentationAssets
     public const array EXAMPLE = [
         ...NotificationAssets::ENTRIES,
         ...FloatingPanelAssets::ENTRIES,
+        ...PinpadAssets::ENTRIES,
         'resources/scss/documentation/example.scss',
         ...ThemeAssets::ENTRIES,
         'resources/js/documentation-example.js',

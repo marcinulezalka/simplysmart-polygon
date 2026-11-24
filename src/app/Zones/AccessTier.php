@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Zones;
 
 use Simplysmart\Polygon\Http\Middleware\EnsureAccountCanSignIn;
+use Simplysmart\Polygon\Http\Middleware\EnsurePinDefined;
 use Simplysmart\Polygon\Http\Middleware\EnsureScreenUnlocked;
 
 /**
@@ -30,7 +31,7 @@ enum AccessTier
     /** Tylko niezalogowani w tej strefie (logowanie); zalogowany trafia na dashboard. */
     case GuestOnly;
 
-    /** Każde konto strefy, także z rolą bez uprawnień; sesja konta nieaktywnego lub unieważnionego jest wylogowywana, a przy zablokowanym ekranie (Auth\ScreenLock) strony prowadzą na ekran PIN-u. */
+    /** Każde konto strefy, także z rolą bez uprawnień; sesja konta nieaktywnego lub unieważnionego jest wylogowywana, konto bez PIN-u prowadzona na jego definiowanie (Auth\MissingPin), a przy zablokowanym ekranie (Auth\ScreenLock) strony prowadzą na ekran PIN-u. */
     case Authenticated;
 
     /**
@@ -43,7 +44,7 @@ enum AccessTier
         return match ($this) {
             self::Public => [],
             self::GuestOnly => ['guest:' . $zone->guard],
-            self::Authenticated => ['auth:' . $zone->guard, EnsureAccountCanSignIn::class, EnsureScreenUnlocked::class],
+            self::Authenticated => ['auth:' . $zone->guard, EnsureAccountCanSignIn::class, EnsurePinDefined::class, EnsureScreenUnlocked::class],
         };
     }
 

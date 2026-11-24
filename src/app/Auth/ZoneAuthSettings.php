@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Auth;
 
+use Simplysmart\Polygon\Auth\SignIn\Steps\PinSetupStep;
+use Simplysmart\Polygon\Auth\SignIn\Steps\PinStep;
 use Simplysmart\Polygon\Contracts\SignInStep;
 
 /**
@@ -27,6 +29,8 @@ final readonly class ZoneAuthSettings
      * @param string $securityPath Segment adresu strony bezpieczeństwa pod `account/` (Http\AccountRoutes) — domyślnie
      *     `security`; strefa przechodząca na nowy widok tej strony nadpisuje go (np. `security-1`), żeby zwolnić
      *     dotychczasowy adres pod nową treść we własnych trasach, bez zmiany dla pozostałych stref.
+     * @param array<string, string> $securityPages Sekcja bezpieczeństwa (Http\AccountRoutes::SECTIONS) => nazwa trasy
+     *     strefy z jej własną stroną (Http\SecurityPage); sekcja bez wpisu jest na stronie bezpieczeństwa.
      */
     public function __construct(
         public array $steps,
@@ -45,7 +49,16 @@ final readonly class ZoneAuthSettings
         public int $trustedDeviceLifetimeDays = 30,
         public int $trustedDevicesPerAccount = 10,
         public string $securityPath = 'security',
+        public array $securityPages = [],
     ) {}
+
+    /**
+     * Czy konto bez PIN-u ustawia go dopiero po zalogowaniu (MissingPin): strefa ma krok PIN-u, ale nie krok jego ustawienia.
+     */
+    public function definesPinInAccount(): bool
+    {
+        return in_array(PinStep::class, $this->steps, true) && ! in_array(PinSetupStep::class, $this->steps, true);
+    }
 
     /**
      * Czas blokady po `$lockLevel` wcześniejszych blokadach.

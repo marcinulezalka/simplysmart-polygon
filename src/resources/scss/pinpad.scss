@@ -1,0 +1,10 @@
+// Klawiatura numeryczna pola PIN-u (components/pinpad.blade.php, resources/js/pinpad.js) — jeden mechanizm dla wszystkich stref.
+// Ten arkusz daje tylko układ — bez żadnej palety: kolor, obramowanie i zaokrąglenie klas `.pg-pinpad*` maluje arkusz strefy.
+// Zasada dla strefy: najechanie i wciśnięcie klawisza cyfry nie zmienia jego kolorów (najwyżej lekki cień), żeby z daleka nie
+// było widać, które cyfry są wybierane.
+.pg-pinpad { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
+.pg-pinpad[hidden] { display: none; }
+.pg-pinpad__key { display: flex; align-items: center; justify-content: center; min-height: 2.75rem; padding: 0; font: inherit; font-size: 1.125rem; font-weight: 600; cursor: pointer; touch-action: manipulation; user-select: none; }
+
+// „OK” klawiatury wysyła formularz, więc przy otwartej klawiaturze jego zwykły przycisk znika.
+form:has(.pg-pinpad:not([hidden])) [data-pg-pinpad-submit] { display: none; }

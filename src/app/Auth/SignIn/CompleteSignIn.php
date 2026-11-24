@@ -19,6 +19,8 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Redirector;
+use Simplysmart\Polygon\Auth\DefinePin;
+use Simplysmart\Polygon\Auth\MissingPin;
 use Simplysmart\Polygon\Auth\Devices\RegisterTrustedDevice;
 use Simplysmart\Polygon\Auth\Events\SignInSucceeded;
 use Simplysmart\Polygon\Auth\SignIn\Steps\EmailCodeStep;
@@ -35,7 +37,8 @@ use Simplysmart\Polygon\Zones\ZoneRedirects;
  * np. pulpit roli, a bez niej dashboard strefy). Pierwsze logowanie (z ustawieniem PIN-u) zawsze kończy się na stronie
  * startowej: zamierzona strona sprzed logowania jest pomijana, bo nowe konto zaczyna od pulpitu swojej roli, a nie od
  * strony, którą ktoś otworzył przed nim. Zamierzoną stronę (hash bieżącej sesji, bez ogólnego pulpitu) przygotowuje
- * IntendedPage.
+ * IntendedPage. Konto bez PIN-u w strefie, która definiuje go po zalogowaniu (Auth\MissingPin), trafia na definiowanie PIN-u,
+ * a o zapamiętaniu urządzenia decyduje dopiero DefinePin.
  */
 final readonly class CompleteSignIn
 {
@@ -52,6 +55,7 @@ final readonly class CompleteSignIn
         private RegisterTrustedDevice $devices,
         private ZoneRedirects $redirects,
         private IntendedPage $intended,
+        private MissingPin $missingPin,
     ) {}
 
     public function handle(PendingSignIn $signIn, Request $request): RedirectResponse
@@ -70,13 +74,21 @@ final readonly class CompleteSignIn
         $request->session()->put(self::EPOCH_SESSION_KEY, $account->authEpoch());
         $this->store->recordSignIn($account, $request->ip());
 
+        $missingPin = $this->missingPin->of($zone, $account);
+
         if ($zone->auth()->trustedDevicesEnabled && $signIn->wantsDeviceRemembered(EmailCodeStep::KEY)) {
-            $this->devices->handle($account, $request);
+            $missingPin ? $request->session()->put(DefinePin::REMEMBER_DEVICE_SESSION_KEY, true) : $this->devices->handle($account, $request);
         }
 
         $this->state->clear();
 
         $this->events->dispatch(new SignInSucceeded($zone->name, $account, $request->ip()));
+
+        if ($missingPin) {
+            $this->intended->forget($request->session());
+
+            return $this->redirect->to($this->missingPin->url($zone));
+        }
 
         $home = $this->redirects->homeFor($zone, $account instanceof ZoneAccount ? $account : null);
 

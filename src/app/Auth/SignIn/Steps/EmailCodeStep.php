@@ -27,7 +27,7 @@ use Simplysmart\Polygon\Contracts\SignInStep;
 
 /**
  * Kod z e-maila (posiadanie skrzynki). Bez konta (decoy) zachowuje się tak samo, tylko nigdy nie przechodzi.
- * Na zaufanym urządzeniu konta krok jest pomijany (czynnikiem posiadania jest urządzenie); tu konto może
+ * Na zaufanym urządzeniu konta z PIN-em krok jest pomijany (czynnikiem posiadania jest urządzenie); tu konto może
  * poprosić o zapamiętanie przeglądarki.
  */
 final readonly class EmailCodeStep implements SignInStep
@@ -50,7 +50,7 @@ final readonly class EmailCodeStep implements SignInStep
 
     public function isRequired(PendingSignIn $signIn): bool
     {
-        return ! ($signIn->deviceTrusted && $signIn->account !== null);
+        return ! ($signIn->deviceTrusted && $signIn->account?->hasPin() === true);
     }
 
     public function ttlMinutes(): int

@@ -115,7 +115,13 @@ final readonly class ZoneDefinition
      */
     public function hasScreens(): bool
     {
-        return $this->requiresLogin() && array_diff(array_column(ZoneView::cases(), 'value'), array_keys($this->views)) === [];
+        if (! $this->requiresLogin()) {
+            return false;
+        }
+
+        $required = array_filter(ZoneView::cases(), fn(ZoneView $view): bool => $view !== ZoneView::PinSetup || ! $this->auth()->definesPinInAccount());
+
+        return array_diff(array_column($required, 'value'), array_keys($this->views)) === [];
     }
 
     /**

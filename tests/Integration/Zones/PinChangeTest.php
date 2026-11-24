@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Simplysmart\Polygon\Auth\SignInLimit;
+use Simplysmart\Polygon\Mail\LoginCodeMail;
 use Simplysmart\Polygon\Mail\PinChangedMail;
 use Simplysmart\Polygon\Zones\ZoneCacheKey;
 use Simplysmart\Polygon\Tests\Fixtures\Zones\AlphaAccount;
@@ -35,7 +36,7 @@ class PinChangeTest extends SignInTestCase
         $account = $this->account(AlphaAccount::class, pin: self::PIN);
         $this->signedIn($account, 'alpha');
 
-        $this->post('/alpha/account/pin/code')->assertRedirect('/alpha/account/security#pin');
+        $this->post('/alpha/account/pin/code', ['current_pin' => self::PIN])->assertRedirect('/alpha/account/security#pin');
         $this->changePin(self::PIN, $this->sentCode(), self::NEW_PIN)
             ->assertRedirect('/alpha/account/security#pin')
             ->assertSessionHas(StatusMessage::KEY, text('account.pin_changed'));
@@ -53,7 +54,7 @@ class PinChangeTest extends SignInTestCase
         $account = $this->account(AlphaAccount::class, pin: self::PIN);
         $this->signedIn($account, 'alpha');
 
-        $this->post('/alpha/account/pin/code');
+        $this->post('/alpha/account/pin/code', ['current_pin' => self::PIN]);
         $this->changePin('951357', $this->sentCode(), self::NEW_PIN);
         $account->refresh();
 
@@ -62,11 +63,36 @@ class PinChangeTest extends SignInTestCase
         $this->assertTrue(Hash::check(self::PIN, (string) $account->pinHash()));
     }
 
+    public function test_code_is_sent_only_with_the_current_pin(): void
+    {
+        $account = $this->account(AlphaAccount::class, pin: self::PIN);
+        $this->signedIn($account, 'alpha');
+
+        $this->post('/alpha/account/pin/code', ['current_pin' => '951357'])->assertRedirect('/alpha/account/security#pin');
+        $this->assertSessionError('current_pin', text('account.pin_invalid'));
+        $this->postJson('/alpha/account/pin/code', ['current_pin' => '951357'])->assertUnprocessable()->assertJsonValidationErrors(['current_pin' => text('account.pin_invalid')]);
+        $this->assertSame(2, $account->fresh()?->failedPinAttempts());
+        Mail::assertNotSent(LoginCodeMail::class);
+
+        $this->postJson('/alpha/account/pin/code', ['current_pin' => self::PIN])->assertOk()->assertJson(['message' => text('account.code_sent')]);
+        Mail::assertSent(LoginCodeMail::class);
+    }
+
+    public function test_rejected_change_returns_to_the_section_without_the_typed_secrets(): void
+    {
+        $this->signedIn($this->account(AlphaAccount::class, pin: self::PIN), 'alpha');
+
+        $this->post('/alpha/account/pin/code', ['current_pin' => self::PIN]);
+        $this->changePin(self::PIN, $this->wrongCode($this->sentCode()), self::NEW_PIN)->assertRedirect('/alpha/account/security#pin');
+
+        $this->assertNull($this->app->make('session.store')->get('_old_input'));
+    }
+
     public function test_wrong_code_is_rejected(): void
     {
         $this->signedIn($this->account(AlphaAccount::class, pin: self::PIN), 'alpha');
 
-        $this->post('/alpha/account/pin/code');
+        $this->post('/alpha/account/pin/code', ['current_pin' => self::PIN]);
         $this->changePin(self::PIN, $this->wrongCode($this->sentCode()), self::NEW_PIN);
 
         $this->assertSessionError('code', text('account.code_invalid'));
@@ -76,7 +102,7 @@ class PinChangeTest extends SignInTestCase
     {
         $this->signedIn($this->account(AlphaAccount::class, pin: self::PIN), 'alpha');
 
-        $this->post('/alpha/account/pin/code');
+        $this->post('/alpha/account/pin/code', ['current_pin' => self::PIN]);
         $this->changePin(self::PIN, $this->sentCode(), self::PIN);
 
         $this->assertSessionError('pin', text('account.pin_same'));
@@ -96,7 +122,7 @@ class PinChangeTest extends SignInTestCase
             RateLimiter::hit($key);
         }
 
-        $this->post('/alpha/account/pin/code');
+        $this->post('/alpha/account/pin/code', ['current_pin' => self::PIN]);
         $this->changePin(self::PIN, $this->sentCode(), self::NEW_PIN);
 
         $this->assertMatchesRegularExpression('/^' . preg_quote(explode(':seconds', text('sign_in.too_many_attempts'))[0], '/') . '\d+/', $this->sessionError('current_pin'));

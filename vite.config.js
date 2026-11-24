@@ -12,7 +12,7 @@
  * (`npm run build` / `npm run dev` w projekcie, `bin/assets.mjs`) do `src/public/build/` (commitowany). Zwykły obiekt
  * konfiguracji Vite, bez importu `vite` — zależności są w projekcie; `root: 'src'` — wejścia i klucze manifestu liczą się
  * od `src/`. `resources/js/notifications.js` nie jest
- * wejściem — strefy importują z niego `initNotifications()` we własnym wejściu JS (NotificationAssets). Wejścia
+ * wejściem — strefy importują z niego `initNotifications()` we własnym wejściu JS (NotificationAssets); tak samo `pinpad.js`. Wejścia
  * `documentation*` to layout Wiki, Docs i Preview (Documentation\DocumentationAssets).
  */
 export default {
@@ -23,6 +23,7 @@ export default {
             input: [
                 'resources/scss/notifications.scss',
                 'resources/scss/floating-panel.scss',
+                'resources/scss/pinpad.scss',
                 'resources/scss/documentation/app.scss',
                 'resources/scss/documentation/example.scss',
                 'resources/scss/polygon/components.scss',

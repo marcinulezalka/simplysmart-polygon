@@ -16,11 +16,11 @@ namespace Simplysmart\Polygon\Http\Controllers\Account;
 use Simplysmart\Polygon\Http\StatusMessage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Redirector;
 use Simplysmart\Polygon\Auth\Recovery\RecoveryEmailRegistration;
 use Simplysmart\Polygon\Contracts\CurrentAccount;
 use Simplysmart\Polygon\Contracts\CurrentZone;
 use Simplysmart\Polygon\Http\AccountRoutes;
+use Simplysmart\Polygon\Http\SecurityPage;
 
 /**
  * Zapasowy adres e-mail zalogowanego konta (sekcja `recovery` strony bezpieczeństwa,
@@ -31,7 +31,7 @@ final readonly class RecoveryEmailController
     public function __construct(
         private CurrentZone $zone,
         private CurrentAccount $account,
-        private Redirector $redirect,
+        private SecurityPage $page,
     ) {}
 
     public function sendCode(Request $request, RecoveryEmailRegistration $registration): RedirectResponse
@@ -61,6 +61,6 @@ final readonly class RecoveryEmailController
 
     private function back(): RedirectResponse
     {
-        return SecurityController::redirectTo($this->redirect, $this->zone, AccountRoutes::SECTION_RECOVERY);
+        return $this->page->redirect($this->zone->get(), AccountRoutes::SECTION_RECOVERY);
     }
 }

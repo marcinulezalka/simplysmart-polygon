@@ -37,6 +37,7 @@ return [
     'code_invalid' => 'Kod jest nieprawidłowy albo wygasł. Wyślij nowy.',
     'pin_same' => 'Nowy PIN musi różnić się od obecnego.',
     'pin_changed' => 'PIN zmieniony. Pozostałe sesje zostały wylogowane, a zapamiętane urządzenia odwołane.',
+    'pin_defined' => 'PIN ustawiony.',
     'pin_reset_title' => 'Resetuj PIN',
     'pin_reset_intro' => 'Reset usuwa obecny PIN — nowy ustawisz przy następnym logowaniu. Tak to przebiega:',
     'pin_reset_step_confirm' => 'Rozwiń „Resetuj PIN”, wpisz obecny PIN i potwierdź.',

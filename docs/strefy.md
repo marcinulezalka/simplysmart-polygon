@@ -102,11 +102,23 @@ dla nieznanego adresu, limity prób (`polygon.auth.limits`), blokady po błędny
 urządzenia (bez kodu, PIN nadal wymagany), reset PIN-u kodem na zapasowy adres, wylogowanie (`auth.logout`), wygasły
 formularz (419) wraca do logowania. Kroki: `polygon.auth.steps` (`Contracts\SignInStep`).
 
-Konto (`<strefa>.account.*`, `/<slug>/account`): `security`, `lock`/`unlock` (blokada ekranu), zmiana PIN-u kodem,
+Konto (`<strefa>.account.*`, `/<slug>/account`): `security`, `lock`/`unlock` (blokada ekranu), zmiana PIN-u kodem (kod
+wysyłany dopiero po poprawnym polu `current_pin`; żądanie JSON dostaje odpowiedź JSON, błąd to 422),
 reset PIN-u (`account.pin.reset`, `DELETE account/pin`, pole `reset_pin` = obecny PIN, `Auth\ResetOwnPin`: PIN usunięty,
 wszystkie sesje i zaufane urządzenia unieważnione, bieżąca sesja wylogowana, potwierdzenie e-mailem (`pin-reset`), logowanie z komunikatem
-`account.pin_reset_done`; nowy PIN przy następnym logowaniu kodem — `pin_setup`; teksty opisu procesu dla widoku:
+`account.pin_reset_done`; nowy PIN przy następnym logowaniu kodem — `pin_setup` albo po zalogowaniu (niżej); teksty opisu procesu dla widoku:
 `account.pin_reset_*`), zapasowy e-mail, zaufane urządzenia, `security/sessions` (wyloguj wszędzie).
+
+Akcje sekcji wracają na stronę `security` z kotwicą sekcji. Strefa z własną stroną sekcji wpisuje jej trasę w `zone.auth`:
+`'security_pages' => ['pin' => 'account.security.pin.edit']` (sekcje `pin`, `recovery`, `devices`; nazwa trasy bez prefiksu
+strefy) — wracają tam akcje sekcji, dawne adresy `account/pin` i `account/devices` oraz link z maila o nowym urządzeniu
+(`Http\SecurityPage`), więc strefa nie powtarza kontrolerów.
+
+Strefa, której `auth.steps` ma `PinStep` bez `PinSetupStep`, definiuje PIN po zalogowaniu (`ZoneAuthSettings::definesPinInAccount()`,
+`Auth\MissingPin`): konto bez PIN-u (pierwsze logowanie albo po resecie) wchodzi samym kodem z e-maila i trafia na stronę
+sekcji `pin`. Dopóki nie zapisze PIN-u (`POST account.pin.define`, pola `pin` i `pin_confirmation`, `Auth\DefinePin`), każda inna
+strona dla zalogowanych na nią prowadzi (`EnsurePinDefined`; JSON — 403), poza wylogowaniem. Zapis unieważnia pozostałe sesje,
+a urządzenie wybrane do zapamiętania staje się zaufane dopiero wtedy. Taka strefa nie podaje ekranu `pin_setup`.
 
 ## Widoki strefy (`views`)
 
@@ -212,6 +224,21 @@ znaczniki, kolory i treść.
   `notifications.scss`. Bez `[data-pg-toasts]` toasty stoją w prawym dolnym rogu jak dotąd.
 - **Stany:** w spoczynku sam przycisk panelu, lekko przezroczysty (najechanie i fokus — pełna widoczność); po
   kliknięciu treść panelu i fokus w pierwszym polu; menu przycisków (`<details>`) otwierają się od strony środka ekranu.
+
+## Klawiatura numeryczna PIN-u
+
+Klawisze 0–9, „C” (czyści pole) i „OK” (wysyła formularz) przy polu PIN-u. Polygon daje komponent, układ i zachowanie,
+strefa — pole, przycisk i kolory.
+
+| Część | Polygon | Strefa |
+| --- | --- | --- |
+| Klawisze | `<x-polygon::pinpad id="…">` (`resources/views/components/pinpad.blade.php`), teksty `polygon::pinpad.*` | miejsce pod polem, w korzeniu `[data-pg-pinpad]` |
+| Układ | `resources/scss/pinpad.scss` (`Pinpad\PinpadAssets::ENTRIES`, `@packageAssets`) | kolory klas `.pg-pinpad__key` i `.pg-pinpad__key--submit` |
+| Zachowanie | `resources/js/pinpad.js` (`initPinpad()`) | wywołanie z wejścia JS, pole z `maxlength`, przycisk `[data-pg-pinpad-toggle]` (`hidden`, `aria-controls`, `polygon::pinpad.toggle`) |
+| Przycisk formularza | ukryty przy otwartej klawiaturze | atrybut `data-pg-pinpad-submit` |
+
+Najechanie i wciśnięcie klawisza cyfry nie zmienia jego kolorów (najwyżej lekki cień), żeby z daleka nie było widać PIN-u.
+Bez JS zostaje zwykłe pole. Podgląd: Preview → „Klawiatura numeryczna PIN-u”.
 
 ## Konta i komendy
 

@@ -134,6 +134,13 @@ export function initNotifications(options) {
             setTimeout(remove, seconds * 1000 + 100);
         };
         close.addEventListener('click', dismiss);
+        // Strefa z paskiem odliczania (animacja `::after` toastu) zamyka toast dokładnie wtedy, gdy pasek dojdzie do końca —
+        // najechanie wstrzymuje pasek w arkuszu strefy. Zegar niżej zostaje dla stref bez paska.
+        toast.addEventListener('animationend', (event) => {
+            if (event.target === toast && event.pseudoElement === '::after') {
+                dismiss();
+            }
+        });
         // Najechanie wstrzymuje auto-chowanie, zjechanie odlicza od nowa (dotąd po najechaniu toast zostawał na stałe).
         let timeout = setTimeout(dismiss, autoHideMs);
         toast.addEventListener('mouseenter', () => clearTimeout(timeout));

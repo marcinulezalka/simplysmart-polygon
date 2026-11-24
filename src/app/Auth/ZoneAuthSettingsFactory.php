@@ -17,6 +17,7 @@ use Illuminate\Config\Repository;
 use Illuminate\Support\Arr;
 use InvalidArgumentException;
 use Simplysmart\Polygon\Contracts\SignInStep;
+use Simplysmart\Polygon\Http\AccountRoutes;
 use Simplysmart\Polygon\Support\PolygonConfig;
 
 /**
@@ -61,7 +62,32 @@ final readonly class ZoneAuthSettingsFactory
             trustedDeviceLifetimeDays: max(1, Arr::integer($settings, 'trusted_devices.lifetime_days')),
             trustedDevicesPerAccount: max(1, Arr::integer($settings, 'trusted_devices.max_per_account')),
             securityPath: Arr::string($settings, 'security_path', 'security'),
+            securityPages: $this->securityPages(Arr::array($settings, 'security_pages', [])),
         );
+    }
+
+    /**
+     * @param array<array-key, mixed> $pages
+     *
+     * @return array<string, string>
+     */
+    private function securityPages(array $pages): array
+    {
+        $result = [];
+
+        foreach ($pages as $section => $route) {
+            if (! in_array($section, AccountRoutes::SECTIONS, true)) {
+                throw new InvalidArgumentException("Unknown security section [{$section}]; allowed: " . implode(', ', AccountRoutes::SECTIONS) . '.');
+            }
+
+            if (! is_string($route) || $route === '') {
+                throw new InvalidArgumentException("Security page of [{$section}] must be a zone route name.");
+            }
+
+            $result[$section] = $route;
+        }
+
+        return $result;
     }
 
     /**

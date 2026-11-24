@@ -24,6 +24,7 @@
     - [Toasty](toasts.md)
     - [Dzwonek powiadomień](notification-bell.md)
     - [Pływający panel akcji](floating-panel.md)
+    - [Klawiatura numeryczna PIN-u](pinpad.md)
 - ## Layout dokumentacji
     - [Trzy kolumny](documentation-layout.md)
     - [Alerty](alerts.md)

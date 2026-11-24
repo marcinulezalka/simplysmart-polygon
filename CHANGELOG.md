@@ -6,6 +6,7 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Changed
 
+- **BREAKING** Kod do zmiany PIN-u (`account.pin.code`) jest wysyłany dopiero po poprawnym obecnym PIN-ie (pole `current_pin`, błędy liczone do blokady); żądanie JSON dostaje odpowiedź JSON. Odrzucona zmiana PIN-u wraca do swojej sekcji bez zapisywania wpisanych PIN-ów i kodu w sesji. Zamiast `SecurityController::redirectTo()` — `Http\SecurityPage`.
 - **BREAKING** Paczka w układzie Laravela w `src/` (docs/strefy.md → „Układ paczki”): klasy w `src/app/`, a `config/`, `database/`, `lang/`, `public/` i `resources/` (z `resources/brand/` zamiast `src/Brand/`) w `src/`; w katalogu głównym zostają pliki deweloperskie, `bin/`, `docs/` i `tests/`. Nowe nazwy klas: `Providers\PolygonServiceProvider`, `Console\Commands\*` (wszystkie komendy, m.in. `Console\Commands\CreateZoneAccountCommand` dla stref), `Support\PolygonConfig`. Plik instalacji: `src/database/install/polygon.json`, wzór konfiguracji wdrożenia: `src/resources/deploy/deploy-vendor.env.example`.
 - Leniwe ładowanie relacji Eloquent jest zablokowane poza produkcją (`Model::preventLazyLoading()`): w testach przerywa żądanie wyjątkiem, na pozostałych środowiskach (lokalnie, przed-produkcja) trafia do logu jako ostrzeżenie — paczki ładują relacje z góry (`with()` / `load()`).
 - Orkiestrator assetów (`bin/assets.mjs`) uwzględnia `root` z `vite.config.js` paczki: wejścia i klucze manifestu liczą się od niego, a build trafia do `<root>/public/build/`; paczki bez `root` budują się jak dotąd.
@@ -13,6 +14,9 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Added
 
+- Definiowanie PIN-u po zalogowaniu: strefa z `PinStep` bez `PinSetupStep` w `auth.steps` wpuszcza konto bez PIN-u samym kodem wyłącznie na stronę ustawienia PIN-u (`Auth\MissingPin`, `Auth\DefinePin`, `account.pin.define`; docs/strefy.md). Zaufane urządzenie nie zwalnia konta bez PIN-u z kodu z e-maila.
+- Klawiatura numeryczna PIN-u jako komponent bazowy: `<x-polygon::pinpad>`, układ `Pinpad\PinpadAssets`, zachowanie `initPinpad()` (docs/strefy.md → „Klawiatura numeryczna PIN-u”, podgląd w Preview).
+- Własne strony sekcji bezpieczeństwa strefy (`zone.auth.security_pages`: `pin`, `recovery`, `devices`; docs/strefy.md): wracają na nie akcje sekcji, dawne adresy i link z maila o nowym urządzeniu (`Http\SecurityPage`), więc strefa nie powtarza kontrolerów konta.
 - Motyw Polygon (docs/assety.md → „Motyw Polygon”): tokeny `--pg-*` w czterech trybach i komponenty `.pg-*` (przyciski, karty,
   pola, odznaki, tabele, kolory toastów, dzwonka i panelu akcji) jako opcjonalne wejścia `Theme\ThemeAssets::ENTRIES`, z podglądem
   w Preview i testem kontrastu trybów WCAG.
@@ -53,6 +57,7 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Fixed
 
+- Toast z paskiem odliczania zamyka się, gdy pasek dojdzie do końca — także po najechaniu, które wstrzymuje pasek, zamiast samego zegara.
 - Komunikaty walidacji logowania i zmiany PIN-u po polsku z czytelną nazwą pola („Pole PIN…”, „potwierdzenie PIN-u”,
   „kod”) zamiast technicznej (`current pin`); plakietka bieżącego urządzenia na liście zaufanych urządzeń wielką literą.
 

@@ -37,6 +37,7 @@ return [
     'code_invalid' => 'The code is incorrect or has expired. Send a new one.',
     'pin_same' => 'The new PIN must differ from the current one.',
     'pin_changed' => 'PIN changed. Your other sessions were signed out and remembered devices revoked.',
+    'pin_defined' => 'Your PIN is set.',
     'pin_reset_title' => 'Reset PIN',
     'pin_reset_intro' => 'A reset removes your current PIN — you will set a new one at your next sign-in. Here is how it works:',
     'pin_reset_step_confirm' => 'Open “Reset PIN”, enter your current PIN and confirm.',

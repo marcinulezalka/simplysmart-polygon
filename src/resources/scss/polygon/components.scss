@@ -1,5 +1,6 @@
 // Komponenty motywu Polygon (docs/assety.md → „Motyw Polygon”): przyciski, karty, formularze, odznaki, tabele i malowanie
-// klas, które w polygonie mają tylko układ (`.pg-toast*`, `.pg-bell*`, `.pg-notifications*`, `.pg-float*`). Tylko tokeny
+// klas, które w polygonie mają tylko układ (`.pg-toast*`, `.pg-bell*`, `.pg-notifications*`, `.pg-float*`,
+// `.pg-pinpad*`). Tylko tokeny
 // `--pg-*` z theme.scss. Arkusz jest opcjonalny — strefa z własnym motywem go nie ładuje.
 .pg-button { display: inline-flex; gap: 0.5rem; align-items: center; justify-content: center; min-height: 2.5rem; padding: 0.5rem 1rem; border: 1px solid transparent; border-radius: var(--pg-radius); background: var(--pg-accent); box-shadow: var(--pg-shadow-button); color: var(--pg-on-accent); font: 600 0.9375rem/1.4 var(--pg-font); text-decoration: none; cursor: pointer; }
 .pg-button:hover, .pg-button:active { background: var(--pg-accent-hover); }
@@ -47,3 +48,8 @@
 .pg-notifications { padding: 0.5rem; border: 1px solid var(--pg-border); border-radius: var(--pg-radius); background: var(--pg-surface); }
 .pg-notifications__time { color: var(--pg-muted); }
 .pg-float__panel [data-pg-float-body] { padding: 0.75rem; border: 1px solid var(--pg-border); border-radius: var(--pg-radius); background: var(--pg-surface); box-shadow: var(--pg-shadow); }
+
+.pg-pinpad__key { border: 1px solid var(--pg-control); border-radius: var(--pg-radius); background: var(--pg-surface); color: var(--pg-text); }
+.pg-pinpad__key:hover, .pg-pinpad__key:active { box-shadow: var(--pg-shadow-item); }
+.pg-pinpad__key--submit { border-color: transparent; background: var(--pg-accent); color: var(--pg-on-accent); }
+.pg-pinpad__key--submit:hover, .pg-pinpad__key--submit:active { background: var(--pg-accent-hover); }

@@ -26,7 +26,7 @@ use Simplysmart\Polygon\Auth\RevokeAccountAccess;
 use Simplysmart\Polygon\Auth\SignIn\SignOut;
 use Simplysmart\Polygon\Contracts\CurrentAccount;
 use Simplysmart\Polygon\Contracts\CurrentZone;
-use Simplysmart\Polygon\Http\AccountRoutes;
+use Simplysmart\Polygon\Http\SecurityPage;
 use Simplysmart\Polygon\Zones\ZoneRedirects;
 use Simplysmart\Polygon\Zones\ZoneView;
 
@@ -34,7 +34,7 @@ use Simplysmart\Polygon\Zones\ZoneView;
  * Bezpieczeństwo zalogowanego konta na jednej stronie: zmiana PIN-u (sekcja `pin`), zapasowy adres e-mail
  * (sekcja `recovery`, RecoveryEmailController), zaufane urządzenia
  * (sekcja `devices`, gdy strefa je ma) i wylogowanie ze wszystkich urządzeń; widok ekranu ZoneView::Security strefy.
- * Dawne adresy sekcji (`account.pin`, `account.devices`) przekierowują do kotwicy na tej stronie.
+ * Dawne adresy sekcji (`account.pin`, `account.devices`) przekierowują do miejsca sekcji (Http\SecurityPage).
  */
 final readonly class SecurityController
 {
@@ -42,6 +42,7 @@ final readonly class SecurityController
         private CurrentZone $zone,
         private CurrentAccount $account,
         private Redirector $redirect,
+        private SecurityPage $page,
     ) {}
 
     public function show(Request $request, TrustedDevicesOverview $devices, PinFormSettings $pin, RecoveryEmailRegistration $recovery): View
@@ -60,11 +61,11 @@ final readonly class SecurityController
     }
 
     /**
-     * Dawny adres sekcji: przekierowanie do jej kotwicy na stronie bezpieczeństwa.
+     * Dawny adres sekcji: przekierowanie do jej miejsca (Http\SecurityPage).
      */
     public function section(string $section): RedirectResponse
     {
-        return self::redirectTo($this->redirect, $this->zone, $section);
+        return $this->page->redirect($this->zone->get(), $section);
     }
 
     /**
@@ -79,13 +80,5 @@ final readonly class SecurityController
         $signOut->handle($request);
 
         return $this->redirect->route($zone->routeName(ZoneRedirects::LOGIN_ROUTE))->with(StatusMessage::KEY, text('account.signed_out_everywhere'));
-    }
-
-    /**
-     * Strona bezpieczeństwa przewinięta do sekcji (`pin`, `devices`); dla kontrolerów zmian w tych sekcjach.
-     */
-    public static function redirectTo(Redirector $redirect, CurrentZone $zone, string $section): RedirectResponse
-    {
-        return $redirect->to($redirect->getUrlGenerator()->route($zone->get()->routeName(AccountRoutes::SECURITY)) . '#' . $section);
     }
 }

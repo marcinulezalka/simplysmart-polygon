@@ -14,64 +14,93 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Http\Controllers\Account;
 
 use Illuminate\Contracts\Bus\Dispatcher;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Redirector;
 use Illuminate\Validation\ValidationException;
 use Simplysmart\Polygon\Auth\ChangePin;
+use Simplysmart\Polygon\Auth\DefinePin;
 use Simplysmart\Polygon\Auth\PinRules;
 use Simplysmart\Polygon\Auth\ResetOwnPin;
 use Simplysmart\Polygon\Auth\SignIn\IssueSignInCode;
 use Simplysmart\Polygon\Auth\SignIn\LoginAttemptLimiter;
+use Simplysmart\Polygon\Auth\SignIn\PinCheckResult;
+use Simplysmart\Polygon\Auth\SignIn\PinVerifier;
 use Simplysmart\Polygon\Auth\SignIn\SignOut;
 use Simplysmart\Polygon\Auth\SignInLimit;
 use Simplysmart\Polygon\Contracts\CurrentAccount;
 use Simplysmart\Polygon\Contracts\CurrentZone;
 use Simplysmart\Polygon\Http\AccountRoutes;
+use Simplysmart\Polygon\Http\SecurityPage;
 use Simplysmart\Polygon\Http\StatusMessage;
 use Simplysmart\Polygon\Models\ZoneAccount;
 use Simplysmart\Polygon\Zones\ZoneRedirects;
 
 /**
- * Zmiana PIN-u zalogowanego konta (formularz na stronie bezpieczeństwa, SecurityController): wysłanie kodu na adres
- * konta i zapis nowego PIN-u albo reset PIN-u obecnym PIN-em z wylogowaniem (nowy PIN przy następnym logowaniu).
+ * Zmiana PIN-u zalogowanego konta (formularz na stronie bezpieczeństwa albo własnej stronie sekcji, Http\SecurityPage):
+ * wysłanie kodu na adres konta po poprawnym obecnym PIN-ie (żądanie fetch dostaje JSON), zapis nowego PIN-u, pierwszy PIN konta bez PIN-u (define()) albo reset
+ * PIN-u obecnym PIN-em z wylogowaniem (nowy PIN przy następnym logowaniu).
  */
 final readonly class PinChangeController
 {
+    private const string CURRENT_PIN = 'current_pin';
+
     public function __construct(
         private CurrentZone $zone,
         private CurrentAccount $current,
         private Redirector $redirect,
+        private SecurityPage $page,
     ) {}
 
-    public function sendCode(Request $request, LoginAttemptLimiter $limiter, Dispatcher $bus): RedirectResponse
+    /**
+     * @throws ValidationException Gdy obecny PIN jest błędny albo limit kodów wyczerpany, a żądanie oczekuje JSON.
+     */
+    public function sendCode(Request $request, PinVerifier $pins, LoginAttemptLimiter $limiter, Dispatcher $bus): RedirectResponse|JsonResponse
+    {
+        try {
+            $this->issueCode($request, $pins, $limiter, $bus);
+        } catch (ValidationException $rejected) {
+            return $this->rejected($request, $rejected);
+        }
+
+        return $request->expectsJson()
+            ? new JsonResponse(['message' => text('account.code_sent')])
+            : $this->back()->with(StatusMessage::KEY, text('account.code_sent'));
+    }
+
+    /**
+     * @throws ValidationException Gdy pola są błędne, a żądanie oczekuje JSON.
+     */
+    public function update(Request $request, ChangePin $change): RedirectResponse
+    {
+        try {
+            $this->changePin($request, $change);
+        } catch (ValidationException $rejected) {
+            return $this->rejected($request, $rejected);
+        }
+
+        return $this->back()->with(StatusMessage::KEY, text('account.pin_changed'));
+    }
+
+    /**
+     * Pierwszy PIN konta zalogowanego bez PIN-u; potem strona startowa konta.
+     *
+     * @throws ValidationException Gdy PIN jest błędny, a żądanie oczekuje JSON.
+     */
+    public function define(Request $request, DefinePin $define, ZoneRedirects $redirects): RedirectResponse
     {
         $account = $this->account();
 
-        $limiter->attempt(SignInLimit::AccountCodeRequests, $account->emailAddress(), 'code');
-        $bus->dispatch(new IssueSignInCode($this->zone->get()->name, $account->emailAddress(), $request->ip(), $request->userAgent()));
+        try {
+            $validated = $request->validate(['pin' => PinRules::forNewPin($this->zone->get()->auth()->pinLength)]);
+        } catch (ValidationException $rejected) {
+            return $this->rejected($request, $rejected);
+        }
 
-        return $this->back()->with(StatusMessage::KEY, text('account.code_sent'));
-    }
+        $define->handle($account, self::entered($validated, 'pin'), $request);
 
-    public function update(Request $request, ChangePin $change): RedirectResponse
-    {
-        $settings = $this->zone->get()->auth();
-        $validated = $request->validate([
-            'current_pin' => PinRules::forEnteredPin(),
-            'code' => ['required', 'string', 'digits:' . $settings->codeLength],
-            'pin' => PinRules::forNewPin($settings->pinLength),
-        ]);
-
-        $change->handle(
-            $this->account(),
-            is_string($validated['current_pin']) ? $validated['current_pin'] : '',
-            is_string($validated['code']) ? $validated['code'] : '',
-            is_string($validated['pin']) ? $validated['pin'] : '',
-            $request,
-        );
-
-        return $this->back()->with(StatusMessage::KEY, text('account.pin_changed'));
+        return $this->redirect->to($redirects->homeFor($this->zone->get(), $account))->with(StatusMessage::KEY, text('account.pin_defined'));
     }
 
     /**
@@ -83,12 +112,72 @@ final readonly class PinChangeController
     public function reset(Request $request, ResetOwnPin $reset, SignOut $signOut): RedirectResponse
     {
         $validated = $request->validate([ResetOwnPin::FIELD => PinRules::forEnteredPin()]);
-        $pin = $validated[ResetOwnPin::FIELD];
 
-        $reset->handle($this->account(), is_string($pin) ? $pin : '', $request);
+        $reset->handle($this->account(), self::entered($validated, ResetOwnPin::FIELD), $request);
         $signOut->handle($request);
 
         return $this->redirect->route($this->zone->get()->routeName(ZoneRedirects::LOGIN_ROUTE))->with(StatusMessage::KEY, text('account.pin_reset_done'));
+    }
+
+    /**
+     * @throws ValidationException Gdy obecny PIN jest błędny albo limit kodów wyczerpany.
+     */
+    private function issueCode(Request $request, PinVerifier $pins, LoginAttemptLimiter $limiter, Dispatcher $bus): void
+    {
+        $account = $this->account();
+        $validated = $request->validate([self::CURRENT_PIN => PinRules::forEnteredPin()]);
+
+        if ($pins->verify($account, self::entered($validated, self::CURRENT_PIN), $request->ip()) !== PinCheckResult::Valid) {
+            throw ValidationException::withMessages([self::CURRENT_PIN => text('account.pin_invalid')]);
+        }
+
+        $limiter->attempt(SignInLimit::AccountCodeRequests, $account->emailAddress(), 'code');
+        $bus->dispatch(new IssueSignInCode($this->zone->get()->name, $account->emailAddress(), $request->ip(), $request->userAgent()));
+    }
+
+    /**
+     * @throws ValidationException Gdy pola są błędne albo zmiana jest odrzucona (Auth\ChangePin).
+     */
+    private function changePin(Request $request, ChangePin $change): void
+    {
+        $settings = $this->zone->get()->auth();
+        $validated = $request->validate([
+            self::CURRENT_PIN => PinRules::forEnteredPin(),
+            'code' => ['required', 'string', 'digits:' . $settings->codeLength],
+            'pin' => PinRules::forNewPin($settings->pinLength),
+        ]);
+
+        $change->handle(
+            $this->account(),
+            self::entered($validated, self::CURRENT_PIN),
+            self::entered($validated, 'code'),
+            self::entered($validated, 'pin'),
+            $request,
+        );
+    }
+
+    /**
+     * Odrzucone żądanie: 422 dla fetch, a z formularza powrót do sekcji z błędami — bez wpisanych PIN-ów i kodu w sesji.
+     *
+     * @throws ValidationException
+     */
+    private function rejected(Request $request, ValidationException $rejected): RedirectResponse
+    {
+        if ($request->expectsJson()) {
+            throw $rejected;
+        }
+
+        return $this->back()->withErrors($rejected->errors());
+    }
+
+    /**
+     * @param array<array-key, mixed> $validated
+     */
+    private static function entered(array $validated, string $field): string
+    {
+        $value = $validated[$field] ?? null;
+
+        return is_string($value) ? $value : '';
     }
 
     private function account(): ZoneAccount
@@ -98,6 +187,6 @@ final readonly class PinChangeController
 
     private function back(): RedirectResponse
     {
-        return SecurityController::redirectTo($this->redirect, $this->zone, AccountRoutes::SECTION_PIN);
+        return $this->page->redirect($this->zone->get(), AccountRoutes::SECTION_PIN);
     }
 }
