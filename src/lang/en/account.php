@@ -52,7 +52,7 @@ return [
     'device' => 'Device',
     'device_last_used' => 'Last used',
     'device_expires' => 'Valid until',
-    'this_device' => 'this device',
+    'this_device' => 'This device',
     'device_revoke' => 'Revoke',
     'devices_revoke_all' => 'Revoke all',
     'devices_revoked' => 'The device is no longer trusted: signing in on it requires an e-mail code again.',

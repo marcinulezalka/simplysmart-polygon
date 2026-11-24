@@ -180,8 +180,16 @@ return [
     ],
 
     /*
-     * Czytelne nazwy atrybutów podstawiane za :attribute (np. "email" → "adres e-mail").
+     * Czytelne nazwy atrybutów podstawiane za :attribute (np. "email" → "adres e-mail"); bez nich Laravel
+     * spolszcza tylko samą regułę, nie nazwę pola — "Pole current pin musi mieć..." zamiast "Pole PIN musi
+     * mieć...". Pola logowania/zmiany PIN-u (Auth\PinRules, wszystkie strefy): current_pin/pin to ten sam PIN
+     * (obecny/nowy), code — kod z e-maila.
      */
-    'attributes' => [],
+    'attributes' => [
+        'current_pin' => 'PIN',
+        'pin' => 'PIN',
+        'pin_confirmation' => 'potwierdzenie PIN-u',
+        'code' => 'kod',
+    ],
 
 ];

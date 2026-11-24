@@ -52,7 +52,7 @@ return [
     'device' => 'Urządzenie',
     'device_last_used' => 'Ostatnio użyte',
     'device_expires' => 'Ważne do',
-    'this_device' => 'to urządzenie',
+    'this_device' => 'To urządzenie',
     'device_revoke' => 'Odwołaj',
     'devices_revoke_all' => 'Odwołaj wszystkie',
     'devices_revoked' => 'Urządzenie nie jest już zaufane: logowanie na nim znowu wymaga kodu z e-maila.',

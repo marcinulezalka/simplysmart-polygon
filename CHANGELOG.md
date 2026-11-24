@@ -45,6 +45,9 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Fixed
 
+- Komunikaty walidacji logowania i zmiany PIN-u po polsku z czytelną nazwą pola („Pole PIN…”, „potwierdzenie PIN-u”,
+  „kod”) zamiast technicznej (`current pin`); plakietka bieżącego urządzenia na liście zaufanych urządzeń wielką literą.
+
 - Toast powiadomień zamyka się zawsze — także bez arkusza mechanizmu albo z wyłączoną animacją (dotąd czekał na
   koniec animacji wyjścia, która wtedy nie przychodziła) — a po zjechaniu z niego myszą znów chowa się sam.
 - Wyszukiwanie kontrahentów po nazwie traktuje `%` i `_` we frazie jak zwykłe znaki (`Database\LikePattern`), a nie jak symbole wieloznaczne.
