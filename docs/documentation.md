@@ -1,0 +1,55 @@
+# Docs
+
+- ## Pierwsze kroki
+    - [Pliki instalacji](instalacja.md)
+    - [Które pliki](instalacja.md#które-pliki)
+    - [Katalog ról](instalacja.md#katalog-ról)
+    - [Format pliku](instalacja.md#format)
+- ## Architektura
+    - [Strefy i logowanie](strefy.md)
+    - [Układ paczki](strefy.md#układ-paczki)
+    - [Strefa w paczce](strefy.md#strefa-w-paczce)
+    - [Config strefy](strefy.md#config-strefy)
+    - [Trasy](strefy.md#trasy)
+- ## Bezpieczeństwo
+    - [Logowanie](strefy.md#logowanie-strefaauth-slugsignin)
+    - [Widoki strefy](strefy.md#widoki-strefy-views)
+    - [Maile](strefy.md#maile-mailviews)
+    - [Kontekst organizacji](strefy.md#kontekst-organizacji)
+    - [Kontekst roli](strefy.md#kontekst-roli-role_contexts)
+    - [Konta i komendy](strefy.md#konta-i-komendy)
+    - [Uprawnienia](baza-danych.md#15-uprawnienia-spatielaravel-permission-zespół--organizacja)
+- ## Baza danych
+    - [Baza danych i modele](baza-danych.md)
+    - [Schemat](baza-danych.md#1-jedno-miejsce-schematu)
+    - [Kolumny standardowe](baza-danych.md#2-kolumny-standardowe-databasecolumns)
+    - [Historia zmian](baza-danych.md#4-historia-zmian-tabela_history)
+    - [Dziennik zdarzeń konta](baza-danych.md#dziennik-zdarzeń-konta)
+    - [Modele](baza-danych.md#5-modele)
+    - [Warstwy](baza-danych.md#6-warstwy)
+    - [Lista kontrolna nowej tabeli](baza-danych.md#13-lista-kontrolna-nowej-tabeli)
+- ## Domena
+    - [Słowniki lokalizacji](baza-danych.md#14-słowniki-lokalizacji)
+    - [Organizacje](baza-danych.md#16-organizacje)
+    - [Zasoby organizacji](baza-danych.md#17-zasoby-organizacji)
+    - [Kalendarz zasobów](baza-danych.md#18-kalendarz-zasobów)
+    - [Kontrahenci](baza-danych.md#19-kontrahenci)
+    - [Najem zasobów](baza-danych.md#20-najem-zasobów-i-kooperacja)
+    - [Faktury](baza-danych.md#21-faktury-i-integracja-z-fakturownią)
+    - [Nadawca „noreply”](baza-danych.md#22-nadawca-noreply-organizacji)
+- ## Frontend
+    - [Assety paczek](assety.md)
+    - [Tryby kolorystyczne](assety.md#tryby-kolorystyczne)
+    - [Motyw Polygon](assety.md#motyw-polygon)
+    - [Bazowe zasady UI stref](assety.md#bazowe-zasady-ui-stref)
+    - [Ikony](ikony.md)
+    - [Pływający panel akcji](strefy.md#pływający-panel-akcji)
+- ## Teksty
+    - [Tłumaczenia i formatowanie](tlumaczenia.md)
+- ## Wydania i wdrożenia
+    - [Wydania i wdrożenia](deploy.md)
+    - [Paczki prywatne](deploy.md#paczki-prywatne-vendorbincomposer-private)
+    - [Wdrożenie](deploy.md#wdrożenie-vendorbindeploy)
+    - [Cron](deploy.md#cron)
+- ## Meta
+    - [Wiki, Docs i Preview](dokumentacja.md)

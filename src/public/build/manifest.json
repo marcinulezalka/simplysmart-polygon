@@ -1,4 +1,34 @@
 {
+  "resources/js/documentation-example.js": {
+    "file": "assets/documentation-example-D53IRfug.js",
+    "name": "documentation-example",
+    "src": "resources/js/documentation-example.js",
+    "isEntry": true
+  },
+  "resources/js/documentation.js": {
+    "file": "assets/documentation-CDnNdLyK.js",
+    "name": "documentation",
+    "src": "resources/js/documentation.js",
+    "isEntry": true
+  },
+  "resources/scss/documentation/app.scss": {
+    "file": "assets/app-rerF4f63.css",
+    "name": "app",
+    "names": [
+      "app.css"
+    ],
+    "src": "resources/scss/documentation/app.scss",
+    "isEntry": true
+  },
+  "resources/scss/documentation/example.scss": {
+    "file": "assets/example-BRZWSSEe.css",
+    "name": "example",
+    "names": [
+      "example.css"
+    ],
+    "src": "resources/scss/documentation/example.scss",
+    "isEntry": true
+  },
   "resources/scss/floating-panel.scss": {
     "file": "assets/floating-panel-Bf1HGK8x.css",
     "name": "floating-panel",
@@ -15,6 +45,42 @@
       "notifications.css"
     ],
     "src": "resources/scss/notifications.scss",
+    "isEntry": true
+  },
+  "resources/scss/polygon/components.scss": {
+    "file": "assets/components-CL8A2LhJ.css",
+    "name": "components",
+    "names": [
+      "components.css"
+    ],
+    "src": "resources/scss/polygon/components.scss",
+    "isEntry": true
+  },
+  "resources/scss/polygon/theme.scss": {
+    "file": "assets/theme-CYdZz5G-.css",
+    "name": "theme",
+    "names": [
+      "theme.css"
+    ],
+    "src": "resources/scss/polygon/theme.scss",
+    "isEntry": true
+  },
+  "resources/scss/polygon/wcag-contrast/theme.scss": {
+    "file": "assets/theme-CTcQPrOj.css",
+    "name": "theme",
+    "names": [
+      "theme.css"
+    ],
+    "src": "resources/scss/polygon/wcag-contrast/theme.scss",
+    "isEntry": true
+  },
+  "resources/scss/polygon/wcag/theme.scss": {
+    "file": "assets/theme-D6lo0xGB.css",
+    "name": "theme",
+    "names": [
+      "theme.css"
+    ],
+    "src": "resources/scss/polygon/wcag/theme.scss",
     "isEntry": true
   }
 }

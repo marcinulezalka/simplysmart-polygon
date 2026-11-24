@@ -2,7 +2,7 @@
 
 Strefa to wydzielona część aplikacji z własnym segmentem URL, prefiksem nazw tras, guardem, tabelami kont i sesją.
 Mechanizm stref polygon (bez kontekstu w adresie, wyglądu stref i dziennika audytu).
-**polygon nie ma widoków**: daje logikę, trasy, kontrolery, limity i maile, a ekrany logowania, konta i szablony maili
+**polygon nie ma widoków stref** (ma tylko layout dokumentacji, [dokumentacja.md](dokumentacja.md)): daje logikę, trasy, kontrolery, limity i maile, a ekrany logowania, konta i szablony maili
 dostarcza paczka strefy.
 
 ## Układ paczki
@@ -22,7 +22,7 @@ src/routes/       trasy strefy
 ```
 
 W katalogu głównym: `composer.json`, `vite.config.js` (z `root: 'src'`), `phpstan.neon`, `pint.json`, `tests/`,
-`docs/`, `bin/`, `README.md`, `CHANGELOG.md`, `VERSION`, licencje. Provider leży w `src/app/Providers/` i buduje każdą
+`docs/`, `wiki/` i `preview/` (strony dokumentacji, [dokumentacja.md](dokumentacja.md)), `bin/`, `README.md`, `CHANGELOG.md`, `VERSION`, licencje. Provider leży w `src/app/Providers/` i buduje każdą
 ścieżkę od jednej stałej `ROOT` (`__DIR__ . '/../..'` — katalog `src/`).
 
 ## Strefa w paczce

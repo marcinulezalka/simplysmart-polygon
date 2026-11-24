@@ -7,9 +7,13 @@ wdrożeń. Opis: `README.md`, tematy: `docs/README.md`.
   śledzonych i w commitach — przykłady w docs na neutralnych nazwach (`shop`, `<strefa>`).
 - **Tylko mechanizmy ogólne:** polygon nie zna paczek, które go używają; strefa dokłada swoje przez punkty rozszerzeń
   (`InstallFiles`, `PackageSeeders`, `PackageAssets`, `ZoneServiceProvider`, kontrakty w `Contracts\`).
-- **Bez widoków:** ekrany i szablony maili dostarcza paczka strefy; polygon ma tylko własne assety (powiadomienia).
+- **Bez widoków stref:** ekrany i szablony maili dostarcza paczka strefy; polygon ma własne assety (powiadomienia, opcjonalny motyw Polygon)
+  i widoki wyłącznie dokumentacji.
+- **Dokumentacja** (`docs/dokumentacja.md`): `wiki/` (biznesowa, użytkownik), `docs/` (techniczna, programista), `preview/`
+  (design system). Nowa strona trafia do spisu `documentation.md`. Wszystkie trzy
+  są w strefie po zalogowaniu.
 - **Układ paczki** (`docs/strefy.md` → „Układ paczki”): klasy w `src/app/`, zasoby w `src/{config,database,lang,public,
-  resources}`; w katalogu głównym `bin/` (narzędzia dla projektów), `docs/`, `tests/` i pliki deweloperskie. Provider
+  resources}`; w katalogu głównym `bin/` (narzędzia dla projektów), `docs/`, `wiki/`, `preview/`, `tests/` i pliki deweloperskie. Provider
   `Providers\PolygonServiceProvider` buduje ścieżki od `ROOT`.
 - **`Deploy\` bez Laravela:** narzędzia wydań i wdrożeń działają bez aplikacji (`bin/autoload.php`); testy w `tests/Deploy`.
 - **Schemat i dane:** migracje tylko schemat, dane referencyjne z seederów (`docs/baza-danych.md`, lista kontrolna §13).

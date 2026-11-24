@@ -1,0 +1,49 @@
+// Komponenty motywu Polygon (docs/assety.md → „Motyw Polygon”): przyciski, karty, formularze, odznaki, tabele i malowanie
+// klas, które w polygonie mają tylko układ (`.pg-toast*`, `.pg-bell*`, `.pg-notifications*`, `.pg-float*`). Tylko tokeny
+// `--pg-*` z theme.scss. Arkusz jest opcjonalny — strefa z własnym motywem go nie ładuje.
+.pg-button { display: inline-flex; gap: 0.5rem; align-items: center; justify-content: center; min-height: 2.5rem; padding: 0.5rem 1rem; border: 1px solid transparent; border-radius: var(--pg-radius); background: var(--pg-accent); box-shadow: var(--pg-shadow-button); color: var(--pg-on-accent); font: 600 0.9375rem/1.4 var(--pg-font); text-decoration: none; cursor: pointer; }
+.pg-button:hover, .pg-button:active { background: var(--pg-accent-hover); }
+.pg-button--secondary { border-color: var(--pg-control); background: var(--pg-surface); box-shadow: none; color: var(--pg-text); }
+.pg-button--secondary:hover, .pg-button--secondary:active { background: var(--pg-sunken); }
+.pg-button--danger { background: var(--pg-danger); box-shadow: none; }
+.pg-button--danger:hover, .pg-button--danger:active { background: color-mix(in srgb, var(--pg-danger) 85%, var(--pg-text)); }
+.pg-button--block { width: 100%; }
+.pg-button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+// Promień elementu przy krawędzi karty = promień karty − padding, nie mniej niż `--pg-radius-sm`.
+.pg-card { padding: 1.25rem; border: 1px solid var(--pg-border); border-radius: var(--pg-radius-card); background: var(--pg-surface); box-shadow: var(--pg-shadow); color: var(--pg-text); }
+.pg-card__title { margin: 0 0 0.5rem; font-size: 1.125rem; line-height: 1.35; }
+.pg-card__text { margin: 0; color: var(--pg-muted); }
+.pg-card__footer { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; }
+.pg-card__item { margin-top: 1rem; padding: 0.75rem 1rem; border: 1px solid var(--pg-border); border-radius: var(--pg-radius-sm); background: var(--pg-surface); box-shadow: var(--pg-shadow-item); }
+
+.pg-field { display: grid; gap: 0.375rem; max-width: 24rem; }
+.pg-field + .pg-field { margin-top: 1rem; }
+.pg-field__label { font-size: 0.875rem; font-weight: 600; }
+.pg-field__hint { margin: 0; color: var(--pg-muted); font-size: 0.875rem; }
+.pg-field__error { margin: 0; color: var(--pg-danger); font-size: 0.875rem; font-weight: 600; }
+.pg-input { width: 100%; min-height: 2.5rem; padding: 0.5rem 0.75rem; border: 1px solid var(--pg-control); border-radius: var(--pg-radius); background: var(--pg-surface); color: var(--pg-text); font: 0.9375rem/1.4 var(--pg-font); }
+.pg-input[aria-invalid='true'] { border-color: var(--pg-danger); }
+.pg-input:disabled { background: var(--pg-sunken); opacity: 0.55; cursor: not-allowed; }
+.pg-check { display: flex; gap: 0.5rem; align-items: center; }
+.pg-check input { width: 1.125rem; height: 1.125rem; margin: 0; accent-color: var(--pg-accent); }
+
+.pg-badge { display: inline-flex; gap: 0.25rem; align-items: center; padding: 0.125rem 0.625rem; border: 1px solid currentcolor; border-radius: 999px; background: var(--pg-sunken); color: var(--pg-text); font-size: 0.8125rem; font-weight: 600; }
+.pg-badge--info { background: var(--pg-accent-bg); color: var(--pg-accent); }
+.pg-badge--success { background: var(--pg-success-bg); color: var(--pg-success); }
+.pg-badge--warning { background: var(--pg-warning-bg); color: var(--pg-warning); }
+.pg-badge--danger { background: var(--pg-danger-bg); color: var(--pg-danger); }
+
+.pg-table { width: 100%; border-collapse: collapse; font-size: 0.9375rem; }
+.pg-table th, .pg-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--pg-border); text-align: left; vertical-align: top; }
+.pg-table th { color: var(--pg-muted); font-size: 0.8125rem; font-weight: 600; }
+.pg-table tbody tr:hover { background: var(--pg-sunken); }
+
+.pg-toast { border: 1px solid var(--pg-border); border-radius: var(--pg-radius); background: var(--pg-surface); box-shadow: var(--pg-shadow); }
+.pg-toast--danger { border-color: var(--pg-danger); }
+.pg-toast__close, .pg-bell, .pg-float__panel button { color: inherit; font: inherit; cursor: pointer; }
+.pg-bell, .pg-float__panel button { min-width: 2.5rem; min-height: 2.5rem; padding: 0.5rem 1rem; border: 1px solid var(--pg-control); border-radius: var(--pg-radius-sm); background: var(--pg-surface); }
+.pg-bell__badge { background: var(--pg-danger); color: var(--pg-surface); }
+.pg-notifications { padding: 0.5rem; border: 1px solid var(--pg-border); border-radius: var(--pg-radius); background: var(--pg-surface); }
+.pg-notifications__time { color: var(--pg-muted); }
+.pg-float__panel [data-pg-float-body] { padding: 0.75rem; border: 1px solid var(--pg-border); border-radius: var(--pg-radius); background: var(--pg-surface); box-shadow: var(--pg-shadow); }

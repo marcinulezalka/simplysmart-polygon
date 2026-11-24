@@ -1,0 +1,30 @@
+// Tryb WCAG duży kontrast: co najmniej 7:1, bez cieni; także `auto` przy `prefers-contrast: more`.
+@mixin wcag-contrast {
+    color-scheme: dark;
+    --pg-bg: #000;
+    --pg-surface: #000;
+    --pg-sunken: #141414;
+    --pg-text: #fff;
+    --pg-muted: #e0e0e0;
+    --pg-border: #fff;
+    --pg-control: #fff;
+    --pg-accent: #ffe100;
+    --pg-accent-hover: #fff;
+    --pg-accent-bg: #1a1a00;
+    --pg-on-accent: #000;
+    --pg-warning: #ffd24d;
+    --pg-warning-bg: #1a1400;
+    --pg-danger: #ffb3b3;
+    --pg-danger-bg: #1f0000;
+    --pg-success: #9df0c0;
+    --pg-success-bg: #001a0d;
+    --pg-shadow: none;
+    --pg-shadow-item: none;
+    --pg-shadow-button: none;
+}
+
+:root[data-theme='wcag-contrast'] { @include wcag-contrast; }
+
+@media (prefers-contrast: more) {
+    :root[data-theme='auto'] { @include wcag-contrast; }
+}

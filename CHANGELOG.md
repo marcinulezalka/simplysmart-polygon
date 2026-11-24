@@ -13,6 +13,14 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Added
 
+- Motyw Polygon (docs/assety.md → „Motyw Polygon”): tokeny `--pg-*` w czterech trybach i komponenty `.pg-*` (przyciski, karty,
+  pola, odznaki, tabele, kolory toastów, dzwonka i panelu akcji) jako opcjonalne wejścia `Theme\ThemeAssets::ENTRIES`, z podglądem
+  w Preview i testem kontrastu trybów WCAG.
+- Wiki, Docs i Preview — trzy systemy dokumentacji w konwencji docs Laravela i układzie trzech kolumn (spis bazowy, treść,
+  spis treści strony; docs/dokumentacja.md): Wiki (`wiki/`, biznesowa), Docs (`docs/`, techniczna) i Preview (`preview/`,
+  design system z żywymi przykładami), po zalogowaniu w każdej strefie z ekranami (`Http\DocumentationRoutes`). Paczki
+  dopisują swoje katalogi przez `Documentation\DocumentationSources`, a adresy stron daje `Documentation\DocumentationUrls`.
+  Strony Wiki i część Preview to szkice. Nowa jawna zależność `league/commonmark`.
 - Rezerwacja od ręki w kalendarzu (`Calendar\BookSlot::bookInstant()`): na podaną godzinę, długość i zasób, bez
   sprawdzania siatki slotów grafiku — np. wykonawca zapisujący pacjenta, który jest u niego teraz. Rezerwację odróżnia
   `ResourceBooking::INSTANT` (`isInstant()`); zajmuje swój czas jak zwykła rezerwacja, więc pokrywane sloty nie są wolne.

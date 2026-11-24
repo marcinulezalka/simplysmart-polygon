@@ -58,6 +58,7 @@ final class PolygonServiceProvider extends ServiceProvider
         InvoicingServiceProvider::class,
         MailServiceProvider::class,
         EventLogServiceProvider::class,
+        DocumentationServiceProvider::class,
     ];
 
     /**

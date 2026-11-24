@@ -1,0 +1,104 @@
+// Layout dokumentacji (Wiki, Docs, Preview): nagłówek i trzy kolumny — spis bazowy, treść, spis treści strony. Kolumny
+// boczne są przyklejone i przewijają się same, treść przewija stronę. Kolory tylko z tokenów `--pg-doc-*`.
+$toc-from: 72rem;
+$index-from: 56rem;
+$header: 3.5rem;
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-padding-top: $header + 1rem; }
+.pg-doc { margin: 0; background: var(--pg-bg); color: var(--pg-text); font: 1rem/1.65 var(--pg-font); }
+.pg-doc :focus-visible { outline: 0.1875rem solid var(--pg-accent); outline-offset: 0.125rem; }
+.pg-doc__main:focus { outline: none; }
+.pg-doc__hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.pg-doc__skip { position: fixed; z-index: 30; top: -5rem; left: 1rem; padding: 0.5rem 1rem; background: var(--pg-surface); color: var(--pg-accent); }
+.pg-doc__skip:focus { top: 0.5rem; }
+
+.pg-doc__header { position: sticky; z-index: 20; top: 0; display: flex; gap: 0.5rem 1.25rem; align-items: center; min-height: $header; padding: 0.5rem 1rem; border-bottom: 1px solid var(--pg-border); background: var(--pg-surface); }
+.pg-doc__brand { font-weight: 700; }
+.pg-doc__tabs { display: flex; gap: 0.25rem; }
+.pg-doc__tab { display: block; padding: 0.375rem 0.75rem; border-radius: var(--pg-radius-sm); color: var(--pg-muted); font-weight: 600; text-decoration: none; cursor: pointer; }
+.pg-doc__tab:hover { background: var(--pg-sunken); color: var(--pg-text); }
+.pg-doc__tab[aria-current] { background: var(--pg-accent-bg); color: var(--pg-accent); }
+.pg-doc__settings { display: flex; gap: 0.5rem; margin-left: auto; }
+.pg-doc__settings[hidden], .pg-doc__menu[hidden] { display: none; }
+.pg-doc__settings select, .pg-doc__menu { max-width: 9rem; padding: 0.375rem 0.5rem; border: 1px solid var(--pg-control); border-radius: var(--pg-radius-sm); background: var(--pg-surface); color: inherit; font: inherit; font-size: 0.875rem; }
+
+.pg-doc__columns { display: grid; grid-template-columns: 16rem minmax(0, 1fr) 15rem; max-width: 96rem; margin: 0 auto; }
+.pg-doc__index, .pg-doc__toc { position: sticky; top: $header; align-self: start; max-height: calc(100vh - #{$header}); max-height: calc(100dvh - #{$header}); padding: 1.5rem 1rem; overflow-y: auto; font-size: 0.9375rem; scrollbar-width: thin; }
+.pg-doc__group { margin: 1.25rem 0 0.375rem; font-size: 0.8125rem; font-weight: 700; }
+nav > .pg-doc__group:first-child { margin-top: 0; }
+.pg-doc__list { margin: 0; padding: 0; list-style: none; }
+.pg-doc__list a { display: block; padding: 0.25rem 0.625rem; border-radius: var(--pg-radius-sm); color: var(--pg-muted); line-height: 1.4; text-decoration: none; overflow-wrap: anywhere; }
+.pg-doc__list a:hover { background: var(--pg-sunken); color: var(--pg-text); }
+.pg-doc__list a[aria-current] { background: var(--pg-accent-bg); color: var(--pg-accent); font-weight: 600; }
+.pg-doc-toc__sub { padding-left: 0.75rem; }
+
+.pg-doc__main { min-width: 0; min-height: calc(100vh - #{$header}); padding: 2rem clamp(1rem, 4vw, 3.5rem) 4rem; border-left: 1px solid var(--pg-border); }
+.pg-doc-content, .pg-doc__pager, .pg-doc__toc-inline { max-width: 75ch; margin-inline: auto; }
+.pg-doc__toc-inline { display: none; margin-bottom: 1.5rem; padding: 0.5rem 0.875rem; border: 1px solid var(--pg-border); border-radius: var(--pg-radius); }
+.pg-doc__toc-inline summary { font-weight: 600; cursor: pointer; }
+.pg-doc__toc-inline .pg-doc__group { display: none; }
+.pg-doc__pager { display: flex; gap: 1rem; justify-content: space-between; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--pg-border); }
+.pg-doc__pager a { color: var(--pg-accent); font-weight: 600; text-decoration: none; }
+.pg-doc__pager a:hover { text-decoration: underline; }
+.pg-doc__pager span { display: block; color: var(--pg-muted); font-size: 0.8125rem; font-weight: 400; }
+.pg-doc__pager-next { margin-left: auto; text-align: right; }
+
+.pg-doc-content {
+    overflow-wrap: break-word;
+
+    h1 { margin: 0 0 1.25rem; font-size: 2.125rem; line-height: 1.2; text-wrap: balance; }
+    h2 { margin: 2.75rem 0 0.875rem; font-size: 1.5rem; line-height: 1.3; text-wrap: balance; }
+    h3 { margin: 2rem 0 0.625rem; font-size: 1.1875rem; line-height: 1.35; }
+    a { color: var(--pg-accent); }
+    li + li { margin-top: 0.25rem; }
+    code { padding: 0.1em 0.35em; border-radius: var(--pg-radius-sm); background: var(--pg-sunken); font: 0.875em/1.5 var(--pg-mono); }
+    pre { position: relative; margin: 1.25rem 0; padding: 1rem; border: 1px solid var(--pg-border); border-radius: var(--pg-radius); background: var(--pg-sunken); overflow-x: auto; scrollbar-width: thin; }
+    pre code { padding: 0; background: none; }
+    table { display: block; margin: 1.25rem 0; border-collapse: collapse; font-size: 0.9375rem; overflow-x: auto; }
+    th, td { padding: 0.5rem 0.75rem; border: 1px solid var(--pg-border); text-align: left; vertical-align: top; }
+    th { background: var(--pg-sunken); }
+    blockquote { margin: 1.25rem 0; padding: 0.125rem 1rem; border-left: 0.25rem solid var(--pg-border); color: var(--pg-muted); }
+    img { max-width: 100%; }
+    hr { border: 0; border-top: 1px solid var(--pg-border); }
+
+    .pg-doc-alert { padding: 0.75rem 1rem; border: 1px solid currentcolor; border-radius: var(--pg-radius); background: var(--pg-accent-bg); color: var(--pg-accent); }
+    .pg-doc-alert > * { margin: 0; color: var(--pg-text); }
+    .pg-doc-alert > * + * { margin-top: 0.375rem; }
+    .pg-doc-alert > .pg-doc-alert__title { color: inherit; font-weight: 700; }
+    .pg-doc-alert--tip { background: var(--pg-success-bg); color: var(--pg-success); }
+    .pg-doc-alert--warning, .pg-doc-alert--important { background: var(--pg-warning-bg); color: var(--pg-warning); }
+    .pg-doc-alert--caution { background: var(--pg-danger-bg); color: var(--pg-danger); }
+}
+
+.pg-doc__copy { position: absolute; top: 0.5rem; right: 0.5rem; padding: 0.125rem 0.5rem; border: 1px solid var(--pg-control); border-radius: var(--pg-radius-sm); background: var(--pg-surface); color: var(--pg-text); font: 0.75rem var(--pg-font); cursor: pointer; }
+.pg-doc-example { display: block; width: 100%; height: 12rem; margin: 1.25rem 0 0; border: 1px solid var(--pg-border); border-radius: var(--pg-radius); background: var(--pg-surface); }
+
+@media (max-width: #{$toc-from - 0.01rem}) {
+    .pg-doc__columns { grid-template-columns: 16rem minmax(0, 1fr); }
+    .pg-doc__toc { display: none; }
+    .pg-doc__toc-inline { display: block; }
+}
+
+// Wąski ekran: z JS spis jest wysuwanym panelem, bez niego stoi nad treścią.
+@media (max-width: #{$index-from - 0.01rem}) {
+    .pg-doc__header { flex-wrap: wrap; }
+    .pg-doc__columns { display: block; }
+    .pg-doc__main { border-left: 0; }
+    .pg-doc__index { position: static; max-height: none; border-bottom: 1px solid var(--pg-border); }
+    .pg-doc.has-menu .pg-doc__index { position: fixed; z-index: 15; top: var(--pg-doc-header, #{$header}); bottom: 0; left: 0; align-self: stretch; width: min(20rem, 88vw); max-height: none; border-right: 1px solid var(--pg-border); background: var(--pg-surface); visibility: hidden; transform: translateX(-100%); transition: transform 0.15s ease, visibility 0.15s; }
+    .pg-doc.has-menu.is-menu-open .pg-doc__index { visibility: visible; transform: none; }
+}
+
+@media (min-width: $index-from) {
+    .pg-doc__menu { display: none; }
+}
+
+@media (max-width: 30rem) {
+    .pg-doc__brand { display: none; }
+    .pg-doc__settings { width: 100%; margin: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pg-doc * { transition: none !important; }
+}

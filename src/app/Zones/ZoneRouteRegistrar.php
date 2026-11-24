@@ -17,6 +17,7 @@ use Illuminate\Routing\Router;
 use InvalidArgumentException;
 use LogicException;
 use Simplysmart\Polygon\Http\AccountRoutes;
+use Simplysmart\Polygon\Http\DocumentationRoutes;
 use Simplysmart\Polygon\Http\Middleware\RequireZoneUrlKey;
 use Simplysmart\Polygon\Http\SignInRoutes;
 use Simplysmart\Polygon\Localization\DictionaryLocales;
@@ -25,7 +26,7 @@ use Simplysmart\Polygon\Localization\DictionaryLocales;
  * Rejestruje trasy strefy: prefiks URL (slug), prefiks nazw `<strefa>.`, grupę middleware strefy oraz middleware
  * poziomu dostępu każdego pliku tras (public.php, account.php, zone.php; brakujący plik jest pomijany, pliki definiują
  * ścieżki względne i krótkie nazwy). Strefa z logowaniem i kompletem ekranów (ZoneDefinition::hasScreens()) dostaje
- * też trasy logowania (Http\SignInRoutes) i konta (Http\AccountRoutes). Strefa z `url_key` ma trasy po zalogowaniu (konto,
+ * też trasy logowania (Http\SignInRoutes), konta (Http\AccountRoutes) i dokumentacji (Http\DocumentationRoutes). Strefa z `url_key` ma trasy po zalogowaniu (konto,
  * account.php, zone.php) pod hashem sesji: `/<slug>/<hash>/…` (Zones\ZoneUrlKey, Http\Middleware\RequireZoneUrlKey),
  * a logowanie i public.php zostają pod `/<slug>/…`.
  */
@@ -45,6 +46,7 @@ final readonly class ZoneRouteRegistrar
         private DictionaryLocales $locales,
         private SignInRoutes $signIn,
         private AccountRoutes $account,
+        private DocumentationRoutes $documentation,
     ) {}
 
     /**
@@ -68,6 +70,7 @@ final readonly class ZoneRouteRegistrar
                 if ($zone->hasScreens()) {
                     $this->signIn->register($zone);
                     $this->account->register($zone);
+                    $this->documentation->register($zone);
                 }
 
                 foreach (self::ROUTE_FILES as $file => $tier) {
@@ -81,6 +84,7 @@ final readonly class ZoneRouteRegistrar
         $this->router->group($attributes, function () use ($zone): void {
             if ($zone->hasScreens()) {
                 $this->signIn->register($zone);
+                $this->documentation->registerEntries($zone);
             }
 
             $this->registerFiles($zone, false);
@@ -91,6 +95,7 @@ final readonly class ZoneRouteRegistrar
         $this->router->group($hashed, function () use ($zone): void {
             if ($zone->hasScreens()) {
                 $this->account->register($zone);
+                $this->documentation->register($zone);
             }
 
             $this->registerFiles($zone, true);

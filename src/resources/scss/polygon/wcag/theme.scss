@@ -1,0 +1,26 @@
+// Tryb WCAG: tekst co najmniej 4.5:1, obramowania kontrolek 3:1, bez cieni.
+@mixin wcag {
+    color-scheme: light;
+    --pg-bg: #fff;
+    --pg-surface: #fff;
+    --pg-sunken: #f2f2f2;
+    --pg-text: #1a1a1a;
+    --pg-muted: #4a4f57;
+    --pg-border: #767676;
+    --pg-control: #595959;
+    --pg-accent: #0b4f94;
+    --pg-accent-hover: #083a6e;
+    --pg-accent-bg: #e8f1fb;
+    --pg-on-accent: #fff;
+    --pg-warning: #6b4500;
+    --pg-warning-bg: #fff4d9;
+    --pg-danger: #8f1d1d;
+    --pg-danger-bg: #fdecec;
+    --pg-success: #14532d;
+    --pg-success-bg: #e8f5ed;
+    --pg-shadow: none;
+    --pg-shadow-item: none;
+    --pg-shadow-button: none;
+}
+
+:root[data-theme='wcag'] { @include wcag; }

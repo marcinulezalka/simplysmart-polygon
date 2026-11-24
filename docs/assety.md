@@ -49,6 +49,19 @@ Skrypty projektu wołają orkiestrator `node vendor/simplysmart/polygon/bin/asse
   `wcag` i `wcag-contrast`; `light` i `dark` nie muszą ich w pełni spełniać. W trybach WCAG stanów treści nie
   wyszarza się przezroczystością (obniża kontrast) — tylko elementy nieaktywne.
 
+## Motyw Polygon
+
+Strefa `polygon` ma własny motyw: tokeny `--pg-*` w `src/resources/scss/polygon/{theme,wcag/theme,wcag-contrast/theme}.scss`
+i komponenty `.pg-*` (przyciski, karty, pola, odznaki, tabele oraz kolory toastów, dzwonka i panelu akcji) w
+`polygon/components.scss`. Wejścia: `Theme\ThemeAssets::ENTRIES`; podgląd na żywo: Preview → „Motyw Polygon”.
+
+- Motyw jest opcjonalny. Używa go dokumentacja ([dokumentacja.md](dokumentacja.md)); strefa z własnym motywem go nie ładuje,
+  a mechanizmy polygonu (toasty, dzwonek, panel akcji) maluje sama.
+- Tokeny każdego trybu są w jednym mixinie o nazwie trybu (`light`, `dark`, `wcag`, `wcag-contrast`), wspólne — w `base`.
+  `Theme\ThemeTokens` czyta je z arkuszy, więc nowy token pojawia się w Preview sam. Każdy tryb ma komplet tokenów, a tryby WCAG
+  wymagany kontrast — pilnuje tego `tests/Theme/ThemeTokensTest`.
+- Nowy komponent: klasa w `components.scss` (tylko tokeny) i strona z przykładem w `preview/`.
+
 ## Rozmiar czcionki
 
 `Enums\FontSize`: `a` (standardowy), `aa` (powiększony) i `aaa` (znacznie powiększony) — ten sam mechanizm co tryb
