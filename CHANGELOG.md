@@ -19,6 +19,7 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Added
 
+- Logotyp „Polygon” z błyskawicą w `src/resources/brand/logo/` (`polygon.svg` w kolorze tekstu oraz wersje na jasne i ciemne tło).
 - Layout obszaru logowania w motywie Polygon (`polygon::layouts.sign-in`, docs/strefy.md → „Layout logowania”): tło gradientowe, hasło,
   karta na środku okna, `<x-polygon::sign-in>` z `.hero`, `.field` i `.submit`, przycisk `.pg-button--soft`, nowe tokeny `--pg-backdrop`,
   `--pg-on-backdrop`, `--pg-on-backdrop-fade`, `--pg-glass` i `--pg-glass-border`; podgląd w Preview.

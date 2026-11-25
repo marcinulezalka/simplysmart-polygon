@@ -10,6 +10,9 @@ maili i dokumentów trafiają ich kopie.
 | `logo/simplysmart.svg` | wzorzec logotypu (wektor, czarny). Z niego powstają wszystkie pozostałe wersje |
 | `logo/png/simplysmart-on-light-{800,1600,2400}.png` | logo czarne, na jasne tło: maile, dokumenty, prezentacje |
 | `logo/png/simplysmart-on-dark-{800,1600,2400}.png` | logo białe, na ciemne tło |
+| `logo/polygon.svg` | logotyp „Polygon” z błyskawicą zamiast „y”, w kolorze tekstu (`currentColor`) — do osadzenia inline |
+| `logo/polygon-on-light.svg` | logotyp „Polygon” czarny, na jasne tło (tryb jasny) |
+| `logo/polygon-on-dark.svg` | logotyp „Polygon” biały, na ciemne tło (tryb ciemny) |
 | `icon/simplysmart-mark-mole-on-dark.png` | sygnet „S”, biały, na ciemne tło; 1024×1024, przezroczyste tło |
 | `icon/simplysmart-mark-mole-on-light.png` | sygnet „S”, czarny, na jasne tło; 1024×1024, przezroczyste tło |
 
@@ -21,6 +24,11 @@ Litera „S” w stylu kroju Mole (Myles Hunt Design): dwie grube kreski z zaokr
 z gradientem wzdłuż kreski — górna ciemnieje na łuku i chowa się pod środkową belką, dolna belka
 zanika w lewo. Narysowana od nowa na podstawie plakatu kroju, nie wyjęta z pliku fontu. Przed
 użyciem jako znak towarowy sprawdź licencję kroju albo odróżnij literę od oryginalnego glifu.
+
+## Logotyp „Polygon”
+
+Litery krojem Red Hat Mono Medium (SIL OFL 1.1) zamienione na krzywe, więc plik nie potrzebuje fontu. W miejscu „y” kontur
+błyskawicy `lucide:zap` (licencja ISC), bez wypełnienia, od wysokości małych liter do dolnego wydłużenia „g”.
 
 ## Kolory
 
