@@ -73,6 +73,8 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Fixed
 
+- Po ponownym zalogowaniu (np. po wygaśnięciu sesji w roli innej niż domyślna) strona zapamiętana przed logowaniem, do której
+  konto nie ma uprawnień w bieżącym kontekście, jest pomijana i otwiera się strona startowa konta — zamiast 403.
 - Toast z paskiem odliczania zamyka się, gdy pasek dojdzie do końca — także po najechaniu, które wstrzymuje pasek, zamiast samego zegara.
 - Komunikaty walidacji logowania i zmiany PIN-u po polsku z czytelną nazwą pola („Pole PIN…”, „potwierdzenie PIN-u”,
   „kod”) zamiast technicznej (`current pin`); plakietka bieżącego urządzenia na liście zaufanych urządzeń wielką literą.

@@ -77,6 +77,25 @@ class SignInFlowTest extends SignInTestCase
         $this->assertNull(session('url.intended'));
     }
 
+    public function test_sign_in_returns_to_a_page_with_permissions_only_when_the_account_may_open_it(): void
+    {
+        $this->permission('desk.manage', 'alpha');
+        $account = $this->account(AlphaAccount::class, pin: self::PIN);
+
+        $this->get('/alpha/desk')->assertRedirect(route('alpha.auth.login'));
+        $this->requestCode();
+        $this->submitCode($this->sentCode());
+        $this->submitPin(self::PIN)->assertRedirect('/alpha/dashboard');
+        $this->assertNull(session('url.intended'));
+        $this->post(route('alpha.auth.logout'));
+
+        $account->givePermissionTo($this->permission('desk.admit', 'alpha'));
+        $this->get('/alpha/desk')->assertRedirect(route('alpha.auth.login'));
+        $this->requestCode();
+        $this->submitCode($this->sentCode());
+        $this->submitPin(self::PIN)->assertRedirect('/alpha/desk');
+    }
+
     public function test_sign_in_goes_to_the_home_the_zone_chooses_for_the_account(): void
     {
         $account = $this->account(AlphaAccount::class, pin: self::PIN);

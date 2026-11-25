@@ -37,8 +37,8 @@ use Simplysmart\Polygon\Zones\ZoneRedirects;
  * i powrót na zamierzoną stronę albo stronę startową konta (Zones\ZoneRedirects::homeFor(): Contracts\ZoneHome strefy,
  * np. pulpit roli, a bez niej dashboard strefy). Pierwsze logowanie (z ustawieniem PIN-u) zawsze kończy się na stronie
  * startowej: zamierzona strona sprzed logowania jest pomijana, bo nowe konto zaczyna od pulpitu swojej roli, a nie od
- * strony, którą ktoś otworzył przed nim. Zamierzoną stronę (hash bieżącej sesji, bez ogólnego pulpitu) przygotowuje
- * IntendedPage. Konto bez PIN-u w strefie, która definiuje go po zalogowaniu (Auth\MissingPin), trafia na definiowanie PIN-u,
+ * strony, którą ktoś otworzył przed nim. Zamierzoną stronę (hash bieżącej sesji, bez ogólnego pulpitu i stron bez
+ * uprawnień w bieżącym kontekście) przygotowuje IntendedPage. Konto bez PIN-u w strefie, która definiuje go po zalogowaniu (Auth\MissingPin), trafia na definiowanie PIN-u,
  * a o zapamiętaniu urządzenia decyduje dopiero DefinePin.
  */
 final readonly class CompleteSignIn
@@ -88,7 +88,8 @@ final readonly class CompleteSignIn
             return $this->redirect->to($this->missingPin->url($zone));
         }
 
-        $home = $this->redirects->homeFor($zone, $account instanceof ZoneAccount ? $account : null);
+        $zoneAccount = $account instanceof ZoneAccount ? $account : null;
+        $home = $this->redirects->homeFor($zone, $zoneAccount);
 
         if ($signIn->hasCompleted(PinSetupStep::KEY)) {
             $this->intended->forget($request->session());
@@ -96,7 +97,7 @@ final readonly class CompleteSignIn
             return $this->redirect->to($home);
         }
 
-        $this->intended->prepare($zone, $request->session());
+        $this->intended->prepare($zone, $request->session(), $zoneAccount);
 
         return $this->redirect->intended($home);
     }

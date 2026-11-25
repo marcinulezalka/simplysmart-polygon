@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Simplysmart\Polygon\Contracts\CurrentAccount;
 use Simplysmart\Polygon\Contracts\CurrentZone;
 use Simplysmart\Polygon\Models\ZoneAccount;
+use Simplysmart\Polygon\Permissions\RoutePermissions;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -43,7 +44,7 @@ final readonly class RequireZonePermission
         $account = $this->account->get();
         $guard = $this->zone->get()->guard;
 
-        if (! $account instanceof ZoneAccount || array_filter($permissions, static fn(string $permission): bool => $account->checkPermissionTo($permission, $guard)) === []) {
+        if (! $account instanceof ZoneAccount || ! RoutePermissions::grants($account, $guard, $permissions)) {
             throw new AccessDeniedHttpException();
         }
 

@@ -14,6 +14,8 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Auth\SignIn;
 
 use Illuminate\Contracts\Session\Session;
+use Simplysmart\Polygon\Models\ZoneAccount;
+use Simplysmart\Polygon\Permissions\RoutePermissions;
 use Simplysmart\Polygon\Zones\ZoneDefinition;
 use Simplysmart\Polygon\Zones\ZoneRedirects;
 use Simplysmart\Polygon\Zones\ZoneUrlKey;
@@ -22,7 +24,9 @@ use Simplysmart\Polygon\Zones\ZoneUrlKey;
  * Zamierzona strona sprzed logowania (`url.intended` Laravela, Redirector::intended()) przygotowana do powrotu po
  * zalogowaniu w strefie: w strefie z `url_key` dostaje hash bieżącej sesji (Zones\ZoneUrlKey::rewrite() — zapamiętana
  * z hashem poprzedniej sesji dawałaby 404), a ogólny pulpit strefy (Zones\ZoneRedirects::isDashboard()) jest pomijany,
- * żeby nie zastąpił strony startowej konta. forget() pomija ją całkiem (pierwsze logowanie).
+ * żeby nie zastąpił strony startowej konta. Pomijana jest też strona, do której konto nie ma uprawnień w kontekście po
+ * zalogowaniu (Permissions\RoutePermissions — np. otwarta przed wygaśnięciem sesji w innej roli), bo dawałaby 403.
+ * forget() pomija ją całkiem (pierwsze logowanie).
  */
 final readonly class IntendedPage
 {
@@ -32,9 +36,10 @@ final readonly class IntendedPage
     public function __construct(
         private ZoneUrlKey $urlKeys,
         private ZoneRedirects $redirects,
+        private RoutePermissions $permissions,
     ) {}
 
-    public function prepare(ZoneDefinition $zone, Session $session): void
+    public function prepare(ZoneDefinition $zone, Session $session, ?ZoneAccount $account = null): void
     {
         $intended = $session->get(self::SESSION_KEY);
 
@@ -44,7 +49,7 @@ final readonly class IntendedPage
 
         $intended = $zone->urlKey ? $this->urlKeys->rewrite($intended, $zone->slug, $session) : $intended;
 
-        if ($this->redirects->isDashboard($intended)) {
+        if ($this->redirects->isDashboard($intended) || ($account !== null && ! $this->permissions->canOpen($account, $zone->guard, $intended))) {
             $this->forget($session);
 
             return;
