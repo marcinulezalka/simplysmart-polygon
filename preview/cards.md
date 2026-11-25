@@ -3,7 +3,7 @@
 - [Karta](#card)
 - [Karta w karcie](#nested)
 
-Cień z tokenu; karta w karcie ma mniejszy promień i własny cień. Zasady: [Bazowe zasady UI stref](../docs/assety.md#bazowe-zasady-ui-stref).
+Cień z tokenu; karta w karcie ma mniejszy promień i własny cień.
 
 <a name="card"></a>
 ## Karta

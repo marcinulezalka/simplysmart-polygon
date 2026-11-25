@@ -24,14 +24,16 @@ use Simplysmart\Polygon\Theme\ThemeTokens;
  */
 final class ThemeTokensTest extends TestCase
 {
-    /** Kontrast obramowań kontrolek (WCAG 1.4.11). */
+    /** Kontrast obramowań kontrolek i obrysu fokusu (WCAG 1.4.11). */
     private const float CONTROL_RATIO = 3.0;
 
     /** Tekst => tła, na których stoi w komponentach motywu i layoucie dokumentacji. */
     private const array TEXT_PAIRS = [
-        '--pg-text' => ['--pg-bg', '--pg-surface', '--pg-sunken', '--pg-accent-bg', '--pg-success-bg', '--pg-warning-bg', '--pg-danger-bg'],
-        '--pg-muted' => ['--pg-bg', '--pg-surface', '--pg-sunken'],
+        '--pg-text' => ['--pg-bg', '--pg-bar', '--pg-surface', '--pg-sunken', '--pg-accent-bg', '--pg-info-bg', '--pg-success-bg', '--pg-warning-bg', '--pg-danger-bg'],
+        '--pg-title' => ['--pg-bg', '--pg-bar', '--pg-surface'],
+        '--pg-muted' => ['--pg-bg', '--pg-bar', '--pg-surface', '--pg-sunken'],
         '--pg-accent' => ['--pg-bg', '--pg-surface', '--pg-accent-bg'],
+        '--pg-info' => ['--pg-info-bg'],
         '--pg-success' => ['--pg-success-bg'],
         '--pg-warning' => ['--pg-warning-bg'],
         '--pg-danger' => ['--pg-surface', '--pg-danger-bg'],
@@ -78,6 +80,7 @@ final class ThemeTokensTest extends TestCase
 
         $this->assertSame([], $failed);
         $this->assertGreaterThanOrEqual(self::CONTROL_RATIO, $this->contrast($colors['--pg-control'], $colors['--pg-surface']));
+        $this->assertGreaterThanOrEqual(self::CONTROL_RATIO, $this->contrast($colors['--pg-focus'], $colors['--pg-bg']));
     }
 
     private function contrast(string $first, string $second): float

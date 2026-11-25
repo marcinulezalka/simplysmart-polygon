@@ -1,4 +1,4 @@
-# Trzy kolumny
+# Layout dokumentacji
 
 - [Kolumny](#columns)
 - [Wąskie ekrany](#narrow)

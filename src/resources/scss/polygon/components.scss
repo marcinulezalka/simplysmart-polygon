@@ -13,7 +13,7 @@
 
 // Promień elementu przy krawędzi karty = promień karty − padding, nie mniej niż `--pg-radius-sm`.
 .pg-card { padding: 1.25rem; border: 1px solid var(--pg-border); border-radius: var(--pg-radius-card); background: var(--pg-surface); box-shadow: var(--pg-shadow); color: var(--pg-text); }
-.pg-card__title { margin: 0 0 0.5rem; font-size: 1.125rem; line-height: 1.35; }
+.pg-card__title { margin: 0 0 0.5rem; color: var(--pg-title); font-size: 1.125rem; line-height: 1.35; }
 .pg-card__text { margin: 0; color: var(--pg-muted); }
 .pg-card__footer { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; }
 .pg-card__item { margin-top: 1rem; padding: 0.75rem 1rem; border: 1px solid var(--pg-border); border-radius: var(--pg-radius-sm); background: var(--pg-surface); box-shadow: var(--pg-shadow-item); }
@@ -30,7 +30,7 @@
 .pg-check input { width: 1.125rem; height: 1.125rem; margin: 0; accent-color: var(--pg-accent); }
 
 .pg-badge { display: inline-flex; gap: 0.25rem; align-items: center; padding: 0.125rem 0.625rem; border: 1px solid currentcolor; border-radius: 999px; background: var(--pg-sunken); color: var(--pg-text); font-size: 0.8125rem; font-weight: 600; }
-.pg-badge--info { background: var(--pg-accent-bg); color: var(--pg-accent); }
+.pg-badge--info { background: var(--pg-info-bg); color: var(--pg-info); }
 .pg-badge--success { background: var(--pg-success-bg); color: var(--pg-success); }
 .pg-badge--warning { background: var(--pg-warning-bg); color: var(--pg-warning); }
 .pg-badge--danger { background: var(--pg-danger-bg); color: var(--pg-danger); }

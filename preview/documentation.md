@@ -1,31 +1,27 @@
-# Preview
+# Motyw Polygon
 
-- ## Wprowadzenie
-    - [Design system](introduction.md)
-- ## Motyw Polygon
-    - [Motyw Polygon](theme.md)
-    - [Przyciski](buttons.md)
-    - [Karty](cards.md)
-    - [Formularze](forms.md)
-    - [Odznaki](badges.md)
-    - [Tabele](tables.md)
-- ## Fundamenty
-    - [Tryby kolorystyczne](color-modes.md)
+- ## Podstawy
+    - [Kolory](colors.md)
     - [Typografia](typography.md)
     - [Odstępy](spacing.md)
     - [Zaokrąglenia i cień](radius-and-shadow.md)
-    - [Warstwy tła](layers.md)
     - [Ikony](icons.md)
     - [Marka](brand.md)
-- ## Dostępność
-    - [WCAG](wcag.md)
-    - [Rozmiar tekstu](font-size.md)
-- ## Komponenty polygonu
+- ## Komponenty
+    - [Przyciski](buttons.md)
+    - [Formularze](forms.md)
+    - [Klawiatura numeryczna PIN-u](pinpad.md)
+    - [Karty](cards.md)
+    - [Tabele](tables.md)
+    - [Odznaki](badges.md)
+    - [Alerty](alerts.md)
+    - [Bloki kodu](code-blocks.md)
     - [Toasty](toasts.md)
     - [Dzwonek powiadomień](notification-bell.md)
     - [Pływający panel akcji](floating-panel.md)
-    - [Klawiatura numeryczna PIN-u](pinpad.md)
-- ## Layout dokumentacji
-    - [Trzy kolumny](documentation-layout.md)
-    - [Alerty](alerts.md)
-    - [Bloki kodu](code-blocks.md)
+- ## Cały motyw
+    - [Motyw w całości](theme.md)
+    - [Layout dokumentacji](documentation-layout.md)
+- ## Zasady globalne
+    - [Design system](introduction.md)
+    - [WCAG](wcag.md)

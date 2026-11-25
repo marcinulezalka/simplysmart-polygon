@@ -53,14 +53,17 @@ Skrypty projektu wołają orkiestrator `node vendor/simplysmart/polygon/bin/asse
 
 Strefa `polygon` ma własny motyw: tokeny `--pg-*` w `src/resources/scss/polygon/{theme,wcag/theme,wcag-contrast/theme}.scss`
 i komponenty `.pg-*` (przyciski, karty, pola, odznaki, tabele oraz kolory toastów, dzwonka i panelu akcji) w
-`polygon/components.scss`. Wejścia: `Theme\ThemeAssets::ENTRIES`; podgląd na żywo: Preview → „Motyw Polygon”.
+`polygon/components.scss`. Wejścia: `Theme\ThemeAssets::ENTRIES`; podgląd na żywo: całe Preview.
 
+- Kolory: ciepłe neutralne tła (`bg` — treść, `bar` — górny pasek, `surface` — karty, `sunken` — pola wyróżnione), turkusowy
+  akcent `accent`, osobny niebieski `info` podpowiedzi i informacji, `title` nagłówków i `focus` obrysu fokusu.
 - Motyw jest opcjonalny. Używa go dokumentacja ([dokumentacja.md](dokumentacja.md)); strefa z własnym motywem go nie ładuje,
   a mechanizmy polygonu (toasty, dzwonek, panel akcji) maluje sama.
 - Tokeny każdego trybu są w jednym mixinie o nazwie trybu (`light`, `dark`, `wcag`, `wcag-contrast`), wspólne — w `base`.
   `Theme\ThemeTokens` czyta je z arkuszy, więc nowy token pojawia się w Preview sam. Każdy tryb ma komplet tokenów, a tryby WCAG
   wymagany kontrast — pilnuje tego `tests/Theme/ThemeTokensTest`.
-- Nowy komponent: klasa w `components.scss` (tylko tokeny) i strona z przykładem w `preview/`.
+- Nowy komponent: klasa w `components.scss` (tylko tokeny) i strona z przykładem w `preview/`, w swojej grupie
+  spisu (podstawy, komponenty, cały motyw); opis wspólny dla wielu stron trafia do „Zasad globalnych” na jego końcu.
 
 ## Rozmiar czcionki
 
@@ -80,7 +83,7 @@ Wspólne dla każdej strefy z widokami (tokeny i nazwy — z prefiksem paczki; w
 
 1. **Zaokrąglenia zagnieżdżone:** kontener z zaokrąglonym elementem blisko krawędzi ma promień zewnętrzny = wewnętrzny
    + padding; skala promieni (elementy w kontenerach, kontrolki, karty) z tokenów motywu.
-2. **Cień kart** tylko z tokenu motywu: dwie warstwy (szeroka miękka i bliska, kolory marki w 8%); małe karty w kartach
+2. **Cień kart** tylko z tokenu motywu: dwie warstwy (szeroka miękka i bliska, kolory marki albo neutralne motywu w 8%); małe karty w kartach
    mają cień w tych samych kolorach w skali elementu, nie są płaskie; motywy WCAG — bez cienia.
 3. **Warstwy tła** (ciepłe neutralne): górny pasek i stopka jaśniejsze od treści, panele boczne płaskie w złamanej
    bieli, treść delikatnie szara, karty białe.

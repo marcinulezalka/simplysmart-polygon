@@ -4,7 +4,7 @@
 - [Nieaktywny](#disabled)
 - [Pełna szerokość](#block)
 
-Jeden rozmiar, zawsze z ikoną; najechanie zmienia tylko kolor. Zasady: [Bazowe zasady UI stref](../docs/assety.md#bazowe-zasady-ui-stref).
+Jeden rozmiar, zawsze z ikoną; najechanie zmienia tylko kolor.
 
 <a name="variants"></a>
 ## Warianty

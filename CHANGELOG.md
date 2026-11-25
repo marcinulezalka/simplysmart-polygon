@@ -11,6 +11,11 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 - Leniwe ładowanie relacji Eloquent jest zablokowane poza produkcją (`Model::preventLazyLoading()`): w testach przerywa żądanie wyjątkiem, na pozostałych środowiskach (lokalnie, przed-produkcja) trafia do logu jako ostrzeżenie — paczki ładują relacje z góry (`with()` / `load()`).
 - Orkiestrator assetów (`bin/assets.mjs`) uwzględnia `root` z `vite.config.js` paczki: wejścia i klucze manifestu liczą się od niego, a build trafia do `<root>/public/build/`; paczki bez `root` budują się jak dotąd.
 - Orkiestrator assetów rozumie `tailwind: true` w `vite.config.js` paczki: dokłada plugin `@tailwindcss/vite` z `node_modules` projektu (jak samo Vite), dla paczek chcących mieć niezależny od swojego zwykłego SCSS temat Tailwind na wybrane wejścia (docs/assety.md → „Tailwind w paczce”).
+- Nowa kolorystyka motywu Polygon we wszystkich trybach: ciepłe neutralne tła, turkusowy akcent, kolory stanów dobrane do
+  nich; nowe tokeny `--pg-bar` (górny pasek), `--pg-title` (nagłówki), `--pg-info` / `--pg-info-bg` (informacja, odznaka
+  `info` i alert NOTE zamiast koloru akcentu) i `--pg-focus` (obrys fokusu).
+- Preview to jeden motyw Polygon: podstawy, komponenty, cały motyw i na końcu zasady globalne, które dziedziczą strony
+  powyżej. „Kolory” zbierają warstwy, role i wartości tokenów, tryby i kontrast; rozmiar tekstu jest w „Typografii”.
 
 ### Added
 

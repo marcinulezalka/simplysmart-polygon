@@ -2,7 +2,7 @@
 
 - [Rodzaje](#kinds)
 
-Komunikat po akcji. Polygon daje układ (`.pg-toast`), kolory — [motyw Polygon](theme.md) albo motyw strefy.
+Komunikat po akcji. Polygon daje układ (`.pg-toast`), kolory — motyw Polygon albo motyw strefy.
 
 <a name="kinds"></a>
 ## Rodzaje
