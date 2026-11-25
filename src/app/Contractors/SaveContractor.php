@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Contractors;
 
+use Simplysmart\Polygon\Support\OptionalText;
 use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Identifiers\Nip;
 use Simplysmart\Polygon\Identifiers\Regon;
@@ -51,17 +52,17 @@ final readonly class SaveContractor
             Organization::FOREIGN_KEY => $contractor->exists ? $contractor->organization_id : $organization->id,
             ColumnNames::NAME => trim($data->name),
             ColumnNames::IS_ACTIVE => $data->active,
-            Contractor::SHORT_NAME => self::text($data->shortName),
+            Contractor::SHORT_NAME => OptionalText::of($data->shortName),
             Contractor::NIP => $nip,
             Contractor::REGON => $regon,
-            Contractor::KRS => self::text($data->krs),
-            Contractor::STREET => self::text($data->street),
-            Contractor::POSTAL_CODE => self::text($data->postalCode),
-            Contractor::CITY => self::text($data->city),
-            Contractor::COUNTRY_CODE => self::text($data->countryCode) === null ? null : strtoupper(trim((string) $data->countryCode)),
-            Contractor::EMAIL => self::text($data->email),
-            Contractor::PHONE => self::text($data->phone),
-            Contractor::NOTES => self::text($data->notes),
+            Contractor::KRS => OptionalText::of($data->krs),
+            Contractor::STREET => OptionalText::of($data->street),
+            Contractor::POSTAL_CODE => OptionalText::of($data->postalCode),
+            Contractor::CITY => OptionalText::of($data->city),
+            Contractor::COUNTRY_CODE => OptionalText::of($data->countryCode) === null ? null : strtoupper(trim((string) $data->countryCode)),
+            Contractor::EMAIL => OptionalText::of($data->email),
+            Contractor::PHONE => OptionalText::of($data->phone),
+            Contractor::NOTES => OptionalText::of($data->notes),
         ])->save();
 
         return $contractor;
@@ -78,12 +79,5 @@ final readonly class SaveContractor
         }
 
         return $query->exists();
-    }
-
-    private static function text(?string $value): ?string
-    {
-        $value = trim((string) $value);
-
-        return $value === '' ? null : $value;
     }
 }

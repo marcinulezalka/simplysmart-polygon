@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Models;
 
+use Simplysmart\Polygon\Localization\DateFormat;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -130,7 +131,7 @@ final class ResourceBooking extends DataModel
 
         $after = $this->jsonAttribute(self::OVERFLOW_AFTER);
 
-        return is_string($after) ? $after : $this->starts_at->format('H:i');
+        return is_string($after) ? $after : $this->starts_at->format(DateFormat::TIME);
     }
 
     /**
@@ -151,11 +152,32 @@ final class ResourceBooking extends DataModel
         $attributes = $this->getAttribute(ColumnNames::JSON_ATTRIBUTES);
 
         return $this->forceFill([
-            ColumnNames::NAME => $startsAt->format('Y-m-d H:i'),
+            ColumnNames::NAME => $startsAt->format(DateFormat::DATE_TIME),
             self::STARTS_AT => $startsAt,
             self::ENDS_AT => $startsAt->addMinutes((int) $schedule->slot_minutes),
             ColumnNames::JSON_ATTRIBUTES => [...(is_array($attributes) ? $attributes : []), self::OVERFLOW => true, self::OVERFLOW_AFTER => $schedule->to()],
         ]);
+    }
+
+    public function isPerformedBy(ZoneAccount $account): bool
+    {
+        return $this->performer_type === $account->getMorphClass() && $this->performer_id === $account->id;
+    }
+
+    /**
+     * Czy rezerwacja ma tego samego wykonawcę co blok grafiku.
+     */
+    public function sharesPerformer(ResourceSchedule $schedule): bool
+    {
+        return $this->performer_type === $schedule->performer_type && $this->performer_id === $schedule->performer_id;
+    }
+
+    /**
+     * Kolejka rezerwacji: ta sama jednostka, zasób, wykonawca i dzień.
+     */
+    public function queueKey(): string
+    {
+        return implode('|', [$this->organization_id, $this->resource_id, (string) $this->performer_type, (string) $this->performer_id, $this->starts_at->format(DateFormat::DATE)]);
     }
 
     /**

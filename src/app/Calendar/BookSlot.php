@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Calendar;
 
+use Simplysmart\Polygon\Localization\DateFormat;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\ConnectionInterface;
 use Simplysmart\Polygon\Database\ColumnNames;
@@ -50,7 +51,7 @@ final readonly class BookSlot
 
             $booking = new ResourceBooking();
             $booking->forceFill([
-                ColumnNames::NAME => $slot->startsAt->format('Y-m-d H:i'),
+                ColumnNames::NAME => $slot->startsAt->format(DateFormat::DATE_TIME),
                 ColumnNames::STATUS => BookingStatus::Booked,
                 Organization::FOREIGN_KEY => $unit->id,
                 OrganizationResource::FOREIGN_KEY => $slot->resourceId,
@@ -121,7 +122,7 @@ final readonly class BookSlot
 
             $booking = new ResourceBooking();
             $booking->forceFill([
-                ColumnNames::NAME => $startsAt->format('Y-m-d H:i'),
+                ColumnNames::NAME => $startsAt->format(DateFormat::DATE_TIME),
                 ColumnNames::STATUS => BookingStatus::Booked,
                 Organization::FOREIGN_KEY => $unit->id,
                 OrganizationResource::FOREIGN_KEY => $resourceId,

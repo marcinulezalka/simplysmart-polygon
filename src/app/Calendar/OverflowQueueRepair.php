@@ -89,7 +89,7 @@ final readonly class OverflowQueueRepair
 
         foreach ($query->get() as $booking) {
             if ($booking->isOverflow()) {
-                $queues[implode('|', [$booking->organization_id, $booking->resource_id, (string) $booking->performer_type, (string) $booking->performer_id, $booking->starts_at->format('Y-m-d'), (string) $booking->overflowAfter()])][] = $booking;
+                $queues[$booking->queueKey() . '|' . $booking->overflowAfter()][] = $booking;
             }
         }
 

@@ -62,7 +62,7 @@ final readonly class Wallboard
 
             if ($schedule->fills_gaps) {
                 foreach ($bookings as $booking) {
-                    if ($booking->performer_type === $schedule->performer_type && $booking->performer_id === $schedule->performer_id && $booking->starts_at->greaterThanOrEqualTo($start) && $booking->starts_at->lessThan($end)) {
+                    if ($booking->sharesPerformer($schedule) && $booking->starts_at->greaterThanOrEqualTo($start) && $booking->starts_at->lessThan($end)) {
                         $entries[] = new WallboardEntry($booking->starts_at, $booking->ends_at, $performer, $schedule->resource?->label() ?? '', 1);
                     }
                 }
@@ -75,8 +75,7 @@ final readonly class Wallboard
                 $end,
                 $performer,
                 $schedule->resource?->label() ?? '',
-                count(array_filter($bookings, static fn(ResourceBooking $booking): bool => $booking->performer_type === $schedule->performer_type
-                    && $booking->performer_id === $schedule->performer_id
+                count(array_filter($bookings, static fn(ResourceBooking $booking): bool => $booking->sharesPerformer($schedule)
                     && $booking->starts_at->greaterThanOrEqualTo($start)
                     && $booking->starts_at->lessThan($end))),
             );

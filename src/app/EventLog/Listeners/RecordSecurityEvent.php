@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\EventLog\Listeners;
 
+use Simplysmart\Polygon\Localization\DateFormat;
 use Simplysmart\Polygon\Auth\Events\AccountAccessRevoked;
 use Simplysmart\Polygon\Auth\Events\AccountLocked;
 use Simplysmart\Polygon\Auth\Events\PinChanged;
@@ -56,7 +57,7 @@ final readonly class RecordSecurityEvent
             $event instanceof SignInSucceeded => [$event->zone, $event->account->getAuthIdentifier(), 'sign_in', [], $event->ip],
             $event instanceof SignInRejected => [$event->zone, $event->account->getAuthIdentifier(), 'sign_in_rejected', ['attempts' => $event->failedAttempts], $event->ip],
             $event instanceof SignedOut => [$event->zone, $event->accountId, 'signed_out', [], null],
-            $event instanceof AccountLocked => [$event->zone, $event->account->getAuthIdentifier(), 'account_locked', ['until' => local_date($event->until) . ' ' . $event->until->format('H:i')], null],
+            $event instanceof AccountLocked => [$event->zone, $event->account->getAuthIdentifier(), 'account_locked', ['until' => local_date($event->until) . ' ' . $event->until->format(DateFormat::TIME)], null],
             $event instanceof AccountAccessRevoked => [$event->zone, $event->account->getAuthIdentifier(), 'access_revoked', ['reason' => $event->reason->value], null],
             $event instanceof PinChanged => [$event->zone, $event->account->getAuthIdentifier(), 'pin_changed', [], $event->ip],
             $event instanceof PinReset => [$event->zone, $event->account->getAuthIdentifier(), 'pin_reset', [], $event->ip],

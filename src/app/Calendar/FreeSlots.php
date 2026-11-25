@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Calendar;
 
+use Simplysmart\Polygon\Localization\DateFormat;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -190,7 +191,7 @@ final readonly class FreeSlots
             return null;
         }
 
-        $time = $at->format('H:i');
+        $time = $at->format(DateFormat::TIME);
 
         return $this->schedules($unit, $performer, $at)->first(static fn(ResourceSchedule $schedule): bool => ! $schedule->fills_gaps && $schedule->slot_minutes !== null && $schedule->slot_minutes > 0 && $schedule->to() === $time);
     }
@@ -361,7 +362,7 @@ final readonly class FreeSlots
     private function overlaps(Collection $taken, ZoneAccount $performer, int $resourceId, CarbonImmutable $start, CarbonImmutable $end): bool
     {
         return $taken->contains(static fn(ResourceBooking $booking): bool => ! $booking->isOverflow()
-            && (($booking->performer_type === $performer->getMorphClass() && $booking->performer_id === $performer->id) || $booking->resource_id === $resourceId)
+            && ($booking->isPerformedBy($performer) || $booking->resource_id === $resourceId)
             && $booking->starts_at->lessThan($end)
             && $booking->ends_at->greaterThan($start));
     }

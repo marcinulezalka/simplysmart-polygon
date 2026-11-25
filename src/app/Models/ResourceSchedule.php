@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Models;
 
+use Simplysmart\Polygon\Localization\DateFormat;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -166,7 +167,7 @@ final class ResourceSchedule extends DataModel
             return $after === $this->to();
         }
 
-        $time = $booking->starts_at->format('H:i');
+        $time = $booking->starts_at->format(DateFormat::TIME);
 
         return $time >= $this->from() && $time < $this->to();
     }
@@ -185,11 +186,11 @@ final class ResourceSchedule extends DataModel
 
         foreach ($bookings as $booking) {
             if ($this->queuesOverflow($booking) && $booking->starts_at->isSameDay($at)) {
-                $taken[$booking->starts_at->format('H:i')] = true;
+                $taken[$booking->starts_at->format(DateFormat::TIME)] = true;
             }
         }
 
-        while (isset($taken[$at->format('H:i')])) {
+        while (isset($taken[$at->format(DateFormat::TIME)])) {
             $at = $at->addMinutes(max(1, (int) $this->slot_minutes));
         }
 
@@ -205,8 +206,7 @@ final class ResourceSchedule extends DataModel
             && in_array($booking->status, BookingStatus::occupying(), true)
             && $booking->organization_id === $this->organization_id
             && $booking->resource_id === $this->resource_id
-            && $booking->performer_type === $this->performer_type
-            && $booking->performer_id === $this->performer_id
+            && $booking->sharesPerformer($this)
             && $this->holds($booking);
     }
 

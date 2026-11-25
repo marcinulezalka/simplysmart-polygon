@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Contractors;
 
+use Simplysmart\Polygon\Support\OptionalText;
 use Illuminate\Database\ConnectionInterface;
 use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Models\Contractor;
@@ -47,20 +48,13 @@ final readonly class SaveContact
             $contact->forceFill([
                 Contractor::FOREIGN_KEY => $contractor->id,
                 ColumnNames::NAME => trim($name),
-                ContractorContact::ROLE => self::text($role),
-                ContractorContact::PHONE => self::text($phone),
-                ContractorContact::EMAIL => self::text($email),
+                ContractorContact::ROLE => OptionalText::of($role),
+                ContractorContact::PHONE => OptionalText::of($phone),
+                ContractorContact::EMAIL => OptionalText::of($email),
                 ContractorContact::IS_PRIMARY => $primary,
             ])->save();
 
             return $contact;
         });
-    }
-
-    private static function text(?string $value): ?string
-    {
-        $value = trim((string) $value);
-
-        return $value === '' ? null : $value;
     }
 }
