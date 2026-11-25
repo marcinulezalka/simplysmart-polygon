@@ -21,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Redirector;
 use Simplysmart\Polygon\Auth\DefinePin;
 use Simplysmart\Polygon\Auth\MissingPin;
+use Simplysmart\Polygon\Auth\SessionEpoch;
 use Simplysmart\Polygon\Auth\Devices\RegisterTrustedDevice;
 use Simplysmart\Polygon\Auth\Events\SignInSucceeded;
 use Simplysmart\Polygon\Auth\SignIn\Steps\EmailCodeStep;
@@ -42,8 +43,6 @@ use Simplysmart\Polygon\Zones\ZoneRedirects;
  */
 final readonly class CompleteSignIn
 {
-    public const string EPOCH_SESSION_KEY = 'auth_epoch';
-
     public function __construct(
         private AuthManager $auth,
         private AccountStore $store,
@@ -70,8 +69,7 @@ final readonly class CompleteSignIn
         }
 
         $guard->login($account);
-        $request->session()->regenerate();
-        $request->session()->put(self::EPOCH_SESSION_KEY, $account->authEpoch());
+        SessionEpoch::renew($request->session(), $account);
         $this->store->recordSignIn($account, $request->ip());
 
         $missingPin = $this->missingPin->of($zone, $account);

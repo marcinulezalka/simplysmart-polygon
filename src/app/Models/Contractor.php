@@ -104,9 +104,9 @@ final class Contractor extends DataModel
      */
     public function isInvoicingLocalOnly(): bool
     {
-        $attributes = $this->json_attributes;
+        $invoicing = $this->jsonAttribute(self::INVOICING_ATTRIBUTE);
 
-        return is_array($attributes) && is_array($attributes[self::INVOICING_ATTRIBUTE] ?? null) && ($attributes[self::INVOICING_ATTRIBUTE][self::LOCAL_ONLY] ?? false) === true;
+        return is_array($invoicing) && ($invoicing[self::LOCAL_ONLY] ?? false) === true;
     }
 
     /**

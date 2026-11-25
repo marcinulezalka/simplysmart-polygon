@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\ViewErrorBag;
 use Simplysmart\Polygon\Auth\AccountColumns;
-use Simplysmart\Polygon\Auth\SignIn\CompleteSignIn;
+use Simplysmart\Polygon\Auth\SessionEpoch;
 use Simplysmart\Polygon\Contracts\ZoneRegistry;
 use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Database\ZoneTables;
@@ -100,7 +100,7 @@ abstract class ZoneTestCase extends TestCase
         $sessions->apply($this->app->make(ZoneRegistry::class)->get($zone));
         $manager = $this->app->make('session');
         $this->assertInstanceOf(ZoneSessionManager::class, $manager);
-        $manager->driver()->put(CompleteSignIn::EPOCH_SESSION_KEY, $account->authEpoch());
+        $manager->driver()->put(SessionEpoch::KEY, $account->authEpoch());
         $sessions->restore();
 
         return $this->actingAs($account, $zone);

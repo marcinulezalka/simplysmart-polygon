@@ -14,11 +14,9 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Console\Commands;
 
 use Illuminate\Console\Command;
-use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Enums\InvoicingSyncTrigger;
 use Simplysmart\Polygon\Invoicing\InvoicingAccounts;
 use Simplysmart\Polygon\Invoicing\SyncInvoicing as Synchronization;
-use Simplysmart\Polygon\Models\Organization;
 
 /**
  * Automatyczna synchronizacja z systemem fakturowym (Invoicing\SyncInvoicing — kontrahenci, faktury i pro formy,
@@ -38,19 +36,12 @@ final class SyncInvoicing extends Command
     public function handle(InvoicingAccounts $accounts, Synchronization $sync): int
     {
         $token = $this->argument('organization');
-        $list = $accounts->active();
+        $list = $accounts->activeFor(is_string($token) ? $token : null);
 
-        if (is_string($token) && $token !== '') {
-            $organization = Organization::query()->where(ColumnNames::TOKEN, $token)->first();
-            $account = $organization === null ? null : $accounts->of($organization);
+        if ($list === null) {
+            $this->error('Organizacja nie ma aktywnego konta systemu fakturowego.');
 
-            if ($account === null) {
-                $this->error('Organizacja nie ma aktywnego konta systemu fakturowego.');
-
-                return self::FAILURE;
-            }
-
-            $list = $list->where(ColumnNames::ID, $account->id);
+            return self::FAILURE;
         }
 
         $failed = false;

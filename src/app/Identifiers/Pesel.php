@@ -45,7 +45,7 @@ final readonly class Pesel
             return null;
         }
 
-        $birthDate = self::birthDateOf($number);
+        $birthDate = self::birthDateFrom($number);
 
         return $birthDate === null ? null : new self($number, $birthDate);
     }
@@ -72,8 +72,16 @@ final readonly class Pesel
         return (10 - $sum % 10) % 10;
     }
 
-    private static function birthDateOf(string $number): ?CarbonImmutable
+    /**
+     * Data urodzenia z pierwszych 6 cyfr (ze stuleciem w miesiącu), także numeru z błędną resztą; null przy niemożliwej
+     * dacie albo mniejszej liczbie cyfr.
+     */
+    public static function birthDateFrom(string $number): ?CarbonImmutable
     {
+        if (preg_match('/^\d{6}/', $number) !== 1) {
+            return null;
+        }
+
         $year = (int) substr($number, 0, 2);
         $month = (int) substr($number, 2, 2);
         $day = (int) substr($number, 4, 2);

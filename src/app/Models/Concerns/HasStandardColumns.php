@@ -64,6 +64,30 @@ trait HasStandardColumns
     }
 
     /**
+     * Wartość klucza pierwszego poziomu `json_attributes` albo null.
+     */
+    public function jsonAttribute(string $key): mixed
+    {
+        $attributes = $this->getAttribute(ColumnNames::JSON_ATTRIBUTES);
+
+        return is_array($attributes) ? ($attributes[$key] ?? null) : null;
+    }
+
+    /**
+     * Zapisuje klucze pierwszego poziomu `json_attributes` (wartość null usuwa klucz); pozostałe atrybuty rekordu zostają.
+     *
+     * @param array<string, mixed> $attributes
+     */
+    public function putJsonAttributes(array $attributes): void
+    {
+        $current = $this->getAttribute(ColumnNames::JSON_ATTRIBUTES);
+        $merged = [...(is_array($current) ? $current : []), ...$attributes];
+        $removed = array_filter($attributes, static fn(mixed $value): bool => $value === null);
+
+        $this->forceFill([ColumnNames::JSON_ATTRIBUTES => array_diff_key($merged, $removed)])->save();
+    }
+
+    /**
      * Wartość domyślna dla procesów aplikacji z `json_default_settings` (klucz z kropkami, np. `invoice.due_days`);
      * `$default`, gdy rekord jej nie ma.
      */

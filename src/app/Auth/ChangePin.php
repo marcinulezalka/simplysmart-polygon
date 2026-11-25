@@ -20,7 +20,6 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Simplysmart\Polygon\Auth\Events\PinChanged;
 use Simplysmart\Polygon\Auth\SignIn\CodeCheckResult;
-use Simplysmart\Polygon\Auth\SignIn\CompleteSignIn;
 use Simplysmart\Polygon\Auth\SignIn\LoginAttemptLimiter;
 use Simplysmart\Polygon\Auth\SignIn\LoginChallengeService;
 use Simplysmart\Polygon\Auth\SignIn\PinCheckResult;
@@ -72,8 +71,7 @@ final readonly class ChangePin
         $this->store->setPinHash($account, $this->hasher->make($newPin));
         $this->revoke->handle($zone, $account, AccessRevocationReason::PinChanged);
 
-        $request->session()->regenerate();
-        $request->session()->put(CompleteSignIn::EPOCH_SESSION_KEY, $account->authEpoch());
+        SessionEpoch::renew($request->session(), $account);
 
         $this->events->dispatch(new PinChanged($zone->name, $account, $request->ip()));
     }

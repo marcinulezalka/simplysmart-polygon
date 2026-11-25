@@ -76,6 +76,25 @@ final readonly class InvoicingAccounts
     }
 
     /**
+     * Aktywne konta, a z tokenem organizacji tylko jej konto; null, gdy organizacja o tym tokenie nie ma aktywnego konta.
+     *
+     * @return Collection<int, InvoicingAccount>|null
+     */
+    public function activeFor(?string $organizationToken): ?Collection
+    {
+        $active = $this->active();
+
+        if ($organizationToken === null || $organizationToken === '') {
+            return $active;
+        }
+
+        $organization = Organization::query()->where(ColumnNames::TOKEN, $organizationToken)->first();
+        $account = $organization === null ? null : $this->of($organization);
+
+        return $account === null ? null : $active->where(ColumnNames::ID, $account->id);
+    }
+
+    /**
      * Id organizacji objętych kontem: organizacja główna i jej aktywne jednostki podrzędne.
      *
      * @return list<int>

@@ -108,6 +108,17 @@ class DataModelTest extends DatabaseTestCase
         $this->assertSame(['eu', 'b2b'], $item->json_tags);
     }
 
+    public function test_json_attributes_are_merged_and_null_removes_only_its_own_key(): void
+    {
+        $item = $this->item(['json_attributes' => ['kept' => null, 'icon' => 'lucide:eye', 'color' => 'red']])->refresh();
+
+        $item->putJsonAttributes(['color' => null, 'ticket' => 'MP']);
+
+        $this->assertSame(['kept' => null, 'icon' => 'lucide:eye', 'ticket' => 'MP'], $item->refresh()->json_attributes);
+        $this->assertSame('MP', $item->jsonAttribute('ticket'));
+        $this->assertNull($item->jsonAttribute('color'));
+    }
+
     public function test_translated_name_has_no_fallback_language(): void
     {
         $this->app->setLocale('pl');

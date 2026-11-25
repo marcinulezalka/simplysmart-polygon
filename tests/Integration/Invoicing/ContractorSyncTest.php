@@ -209,6 +209,8 @@ class ContractorSyncTest extends TestCase
             ->expectsOutputToContain('NZOZ Test: nowi 0, zaktualizowani 0, wysłani 0, bez zmian 3, pominięci 1.')
             ->assertSuccessful();
 
+        $this->command('polygon:invoicing:contractors-sync', ['organization' => 'nieznany'])->assertFailed();
+
         $this->fakeResponses(['*' => FakturowniaStubs::response('error.401')]);
         try {
             $this->sync()->pull($account);

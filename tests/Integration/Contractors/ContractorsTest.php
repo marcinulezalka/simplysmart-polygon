@@ -65,6 +65,9 @@ class ContractorsTest extends TestCase
         $this->assertSame(['1944-05-14', 'M'], [$pesel->birthDate->toDateString(), $pesel->sex()]);
         $this->assertNull(Pesel::tryFrom('44051401358'));
         $this->assertNull(Pesel::tryFrom('44133101354'), 'Miesiąc 13 bez przesunięcia stulecia nie istnieje.');
+        $this->assertSame('2002-02-28', Pesel::birthDateFrom('02222800000')?->toDateString(), 'Data nie zależy od sumy kontrolnej.');
+        $this->assertNull(Pesel::birthDateFrom('022230'));
+        $this->assertNull(Pesel::birthDateFrom('02222'));
 
         $this->assertTrue(Validator::make(['nip' => self::NIP, 'regon' => self::REGON, 'pesel' => '44051401359'], ['nip' => [new NipRule()], 'regon' => [new RegonRule()], 'pesel' => [new PeselRule()]])->passes());
         $this->assertSame(['nip', 'regon', 'pesel'], Validator::make(['nip' => '1234567890', 'regon' => '1', 'pesel' => '1'], ['nip' => [new NipRule()], 'regon' => [new RegonRule()], 'pesel' => [new PeselRule()]])->errors()->keys());

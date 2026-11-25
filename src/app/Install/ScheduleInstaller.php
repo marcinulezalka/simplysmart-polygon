@@ -18,7 +18,6 @@ use Simplysmart\Polygon\Calendar\SaveSchedule;
 use Simplysmart\Polygon\Calendar\ScheduleInput;
 use Simplysmart\Polygon\Calendar\ScheduleRejected;
 use Simplysmart\Polygon\Contracts\ZoneRegistry;
-use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Models\Organization;
 use Simplysmart\Polygon\Models\OrganizationResource;
 use Simplysmart\Polygon\Models\ResourceSchedule;
@@ -96,9 +95,7 @@ final readonly class ScheduleInstaller
     private function resource(Organization $unit, string $key): ?OrganizationResource
     {
         foreach ($this->resources->available($unit) as $resource) {
-            $attributes = $resource->getAttribute(ColumnNames::JSON_ATTRIBUTES);
-
-            if (is_array($attributes) && ($attributes[OrganizationInstaller::INSTALL_KEY] ?? null) === $key) {
+            if ($resource->jsonAttribute(OrganizationInstaller::INSTALL_KEY) === $key) {
                 return $resource;
             }
         }

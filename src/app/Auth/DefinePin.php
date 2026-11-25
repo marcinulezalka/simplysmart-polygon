@@ -17,7 +17,6 @@ use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Simplysmart\Polygon\Auth\Devices\RegisterTrustedDevice;
-use Simplysmart\Polygon\Auth\SignIn\CompleteSignIn;
 use Simplysmart\Polygon\Contracts\AccountStore;
 use Simplysmart\Polygon\Contracts\CodeAndPinAccount;
 use Simplysmart\Polygon\Contracts\CurrentZone;
@@ -57,8 +56,7 @@ final readonly class DefinePin
         $this->store->setPinHash($account, $this->hasher->make($pin));
         $this->revoke->handle($zone, $account, AccessRevocationReason::PinChanged);
 
-        $request->session()->regenerate();
-        $request->session()->put(CompleteSignIn::EPOCH_SESSION_KEY, $account->authEpoch());
+        SessionEpoch::renew($request->session(), $account);
 
         if ($request->session()->pull(self::REMEMBER_DEVICE_SESSION_KEY) === true && $zone->auth()->trustedDevicesEnabled) {
             $this->devices->handle($account, $request);

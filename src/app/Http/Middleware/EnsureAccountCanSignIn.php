@@ -17,7 +17,7 @@ use Simplysmart\Polygon\Contracts\CurrentAccount;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Redirector;
-use Simplysmart\Polygon\Auth\SignIn\CompleteSignIn;
+use Simplysmart\Polygon\Auth\SessionEpoch;
 use Simplysmart\Polygon\Auth\SignIn\SignOut;
 use Simplysmart\Polygon\Contracts\CurrentZone;
 use Simplysmart\Polygon\Contracts\RevocableAccess;
@@ -57,8 +57,7 @@ final readonly class EnsureAccountCanSignIn
 
     private function isValid(SignInAccount $account, Request $request): bool
     {
-        $epochMatches = ! $account instanceof RevocableAccess
-            || $request->session()->get(CompleteSignIn::EPOCH_SESSION_KEY) === $account->authEpoch();
+        $epochMatches = ! $account instanceof RevocableAccess || SessionEpoch::matches($request->session(), $account);
 
         return $account->canSignIn() && $epochMatches;
     }

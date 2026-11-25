@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Tests\Integration\Zones;
 
-use Simplysmart\Polygon\Auth\SignIn\CompleteSignIn;
+use Simplysmart\Polygon\Auth\SessionEpoch;
 use Simplysmart\Polygon\Contracts\CurrentZone;
 use Simplysmart\Polygon\Contracts\ZoneRegistry;
 use Simplysmart\Polygon\Zones\ZoneSessionConfigurator;
@@ -85,7 +85,7 @@ class ZoneIsolationTest extends ZoneTestCase
         $sessions = $this->app->make(ZoneSessionConfigurator::class);
         $sessions->apply($this->app->make(ZoneRegistry::class)->get('alpha'));
         $store = $this->app->make('session')->driver();
-        $store->put(CompleteSignIn::EPOCH_SESSION_KEY, $account->authEpoch());
+        $store->put(SessionEpoch::KEY, $account->authEpoch());
         $store->put($this->app->make('auth')->guard('alpha')->getName(), $account->getKey());
         $sessions->restore();
         $this->app->make('auth')->forgetGuards();

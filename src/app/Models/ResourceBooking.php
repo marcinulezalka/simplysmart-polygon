@@ -159,16 +159,6 @@ final class ResourceBooking extends DataModel
     }
 
     /**
-     * Wartość klucza $key `json_attributes` albo null.
-     */
-    private function jsonAttribute(string $key): mixed
-    {
-        $attributes = $this->getAttribute(ColumnNames::JSON_ATTRIBUTES);
-
-        return is_array($attributes) ? ($attributes[$key] ?? null) : null;
-    }
-
-    /**
      * @return BelongsTo<OrganizationResource, $this>
      */
     public function resource(): BelongsTo

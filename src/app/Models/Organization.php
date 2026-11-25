@@ -16,7 +16,6 @@ namespace Simplysmart\Polygon\Models;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Simplysmart\Polygon\Icons\IconifyIcon;
-use Simplysmart\Polygon\Database\ColumnNames;
 use Simplysmart\Polygon\Models\Dictionaries\Country;
 use Simplysmart\Polygon\Models\Relations\BelongsToParentOrganization;
 use Simplysmart\Polygon\Models\Relations\BelongsToUnitType;
@@ -201,8 +200,7 @@ final class Organization extends DataModel
      */
     public function icon(string $fallback = self::ICONS[0]): string
     {
-        $attributes = $this->getAttribute(ColumnNames::JSON_ATTRIBUTES);
-        $icon = is_array($attributes) ? ($attributes[self::ICON_ATTRIBUTE] ?? null) : null;
+        $icon = $this->jsonAttribute(self::ICON_ATTRIBUTE);
 
         return is_string($icon) && (in_array($icon, self::ICONS, true) || IconifyIcon::tryFrom($icon) !== null) ? $icon : $fallback;
     }

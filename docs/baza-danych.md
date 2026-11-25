@@ -148,7 +148,8 @@ Illuminate\Foundation\Auth\User
   `Database\Factories\UserFactory` (wymaga fakerphp/faker, czyli zależności deweloperskich).
 
 - `DataModel`: `SoftDeletes`, casty i wartości domyślne kolumn standardowych (`HasStandardColumns`), checksum
-  (`HasChecksum`), scope'y `active()`, `default()`, `usable()`, odczyt `defaultSetting('klucz.z.kropkami')`.
+  (`HasChecksum`), scope'y `active()`, `default()`, `usable()`, odczyt `defaultSetting('klucz.z.kropkami')`, atrybuty
+  `jsonAttribute('klucz')` i `putJsonAttributes([...])` (null usuwa klucz).
 - **Model jest czysty:** tabela, typy i relacje; bez logiki biznesowej, zapytań wieloetapowych i `Auth`.
 - **Typy:** każda kolumna ma cast; kolumna z wartością domyślną w migracji ma ją też w `$attributes`. Test projektu
   sprawdza casty każdego modelu paczki.
@@ -203,7 +204,7 @@ liczy go `DataModel` przy zapisie.
 
 | Kolumna | Przeznaczenie |
 | --- | --- |
-| `json_attributes` | dodatkowe atrybuty bez własnej kolumny |
+| `json_attributes` | dodatkowe atrybuty bez własnej kolumny; czyta je `jsonAttribute()`, zapisuje `putJsonAttributes()` |
 | `json_default_settings` | wartości domyślne dla procesów aplikacji (`defaultSetting()`), nie stałe w kodzie; w kontach stref — ustawienia osoby (np. `organization`, domyślny kontekst: docs/strefy.md) |
 | `json_tags` | lista tagów rekordu (wyszukiwanie `JSON_CONTAINS`) |
 | `json_i18n` | tłumaczenia krótkich słowników (§7) |
