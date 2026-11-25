@@ -21,7 +21,7 @@ use Simplysmart\Polygon\Enums\MailEncryption;
 
 /**
  * Wysyłanie przez prawdziwy serwer SMTP skonfigurowany jako nadawca „noreply” organizacji (MailManager::build() —
- * mailer złożony z podanej konfiguracji, bez rejestrowania w config('mail.mailers'), jak Ulmed\Mailbox\SmtpMailboxMailer).
+ * mailer złożony z podanej konfiguracji, bez rejestrowania w config('mail.mailers')).
  */
 final readonly class SmtpNoreplyMailer implements NoreplyMailer
 {

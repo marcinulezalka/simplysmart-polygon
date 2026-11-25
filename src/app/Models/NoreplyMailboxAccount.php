@@ -20,7 +20,7 @@ use Simplysmart\Polygon\Models\Relations\BelongsToOrganization;
  * ustawienia SMTP z `.env` dla poczty wysyłanej w imieniu tej organizacji, gdy skonfigurowany — host, port,
  * szyfrowanie, login, hasło (szyfrowane, cast `encrypted`; nigdy nie trafia do widoków ani logów) i adres nadawcy
  * (`from_address`, np. `noreply@klinika.pl`). Puste `host` — nadpisanie wyłączone, mimo istniejącego wiersza
- * (overridesMail(), jak MailboxAccount::sendsMail() w ulmed); czyszczenie `host` jest jedynym sposobem wyłączenia —
+ * (overridesMail()); czyszczenie `host` jest jedynym sposobem wyłączenia —
  * nie ma osobnej akcji rozłączenia. `name` — etykieta konta. Zapisywane przez Mail\SaveNoreplyMailboxAccount,
  * wysyła Mail\NoreplyMailer, rozwiązuje Mail\OrganizationMailer.
  *

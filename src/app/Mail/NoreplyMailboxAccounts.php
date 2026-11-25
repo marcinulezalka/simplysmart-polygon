@@ -21,7 +21,7 @@ use Simplysmart\Polygon\Queries\Organizations\OrganizationUnits;
  * Konta nadawcy „noreply” (docs/baza-danych.md §22). Konto należy do organizacji głównej klienta — najwyższej nad
  * daną organizacją, bez organizacji hero (root()) — tak jak konto Fakturowni (Invoicing\InvoicingAccounts): of()
  * daje aktywne nadpisanie (host podany) dla dowolnej organizacji drzewa, configured() — wiersz nawet z pustym
- * `host` (ekran ustawień, jak Mailbox\MailboxAccounts::configured() w ulmed).
+ * `host` (ekran ustawień).
  */
 final readonly class NoreplyMailboxAccounts
 {

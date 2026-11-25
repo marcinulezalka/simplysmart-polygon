@@ -18,8 +18,7 @@ use Simplysmart\Polygon\Mail\NoreplyMailer;
 use Simplysmart\Polygon\Mail\SmtpNoreplyMailer;
 
 /**
- * Nadawca „noreply” organizacji (docs/baza-danych.md §22): wiązanie interfejsu wysyłki z prawdziwym serwerem SMTP,
- * jak Ulmed\Providers\UlmedServiceProvider wiąże Mailbox\MailboxMailer.
+ * Nadawca „noreply” organizacji (docs/baza-danych.md §22): wiązanie interfejsu wysyłki z prawdziwym serwerem SMTP.
  */
 final class MailServiceProvider extends ServiceProvider
 {

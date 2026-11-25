@@ -17,8 +17,7 @@ use Simplysmart\Polygon\Models\NoreplyMailboxAccount;
 
 /**
  * Wysyłanie przez nadawcę „noreply” organizacji: prawdziwy serwer SMTP — Mail\SmtpNoreplyMailer (bound w
- * Providers\MailServiceProvider); w testach podmieniane na dowolną implementację (bez prawdziwego serwera SMTP),
- * jak Ulmed\Mailbox\MailboxMailer.
+ * Providers\MailServiceProvider); w testach podmieniane na dowolną implementację (bez prawdziwego serwera SMTP).
  */
 interface NoreplyMailer
 {

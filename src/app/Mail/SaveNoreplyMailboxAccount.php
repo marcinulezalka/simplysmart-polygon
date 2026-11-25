@@ -20,7 +20,7 @@ use Simplysmart\Polygon\Models\Organization;
 /**
  * Zapis nadawcy „noreply” organizacji głównej (NoreplyMailboxAccounts::root()): jeden wiersz na organizację,
  * kolejny zapis aktualizuje istniejący. Hasło nadpisywane tylko gdy podane — formularz nie pokazuje zapisanego
- * hasła ponownie, puste pole zachowuje poprzednie (jak Mailbox\SaveMailboxAccount w ulmed). Bez wiersza, czyszczenie
+ * hasła ponownie, puste pole zachowuje poprzednie. Bez wiersza, czyszczenie
  * `host` wyłącza nadpisanie (NoreplyMailboxAccount::overridesMail()) — bez eager-check połączenia przy zapisie, w
  * przeciwieństwie do Invoicing\SaveInvoicingAccount: weryfikacja jest osobną akcją (test wysyłki).
  */
@@ -60,7 +60,7 @@ final readonly class SaveNoreplyMailboxAccount
     }
 
     /**
-     * Zapisuje błąd testowej wysyłki (ekran ustawień — Ulmed\Http\Controllers\NoreplyMailboxController).
+     * Zapisuje błąd testowej wysyłki (ekran ustawień paczki strefy).
      */
     public function recordError(NoreplyMailboxAccount $account, ?string $error): void
     {

@@ -547,5 +547,4 @@ z `.env` (`config('mail.default')`).
   `config('mail.mailers')`); `Mail\OrganizationMailer::mailerFor()` — mailer organizacji dla innego kodu (`null` —
   wywołujący wraca do mailera domyślnego). Poczta systemowa konta strefy (reset PIN, zablokowane konto —
   `Mail\PinResetMail` i pokrewne) nie przechodzi przez ten resolver — nie jest związana z żadną organizacją.
-- **Uprawnienie i interfejs**: ekran ustawień żyje w ulmed (`Http\Controllers\NoreplyMailboxController`,
-  uprawnienie `communication.configure` — właściciel), jak integracja Fakturowni.
+- **Uprawnienie i interfejs**: ekran ustawień i jego uprawnienie daje paczka strefy, jak integracja Fakturowni.
