@@ -23,3 +23,5 @@ Zmiana kontekstu nie wymaga ponownego logowania.
 ## Kontekst domyślny
 
 Kontekst, od którego zaczyna się następne logowanie.
+
+Po wygaśnięciu sesji (bez wylogowania) wracasz do kontekstu, ostatnio wybranego w przełączniku. Po wylogowaniu następne logowanie zaczyna od kontekstu domyślnego.

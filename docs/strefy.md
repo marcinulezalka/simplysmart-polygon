@@ -173,7 +173,7 @@ własny kontekst):
 
 | Metoda | Wynik |
 | --- | --- |
-| `get()`, `id()` | bieżąca organizacja; bez wyboru (albo gdy wybrana przestała być dostępna) domyślna, zapisana w sesji: domyślna organizacja konta (`json_default_settings.organization`), o ile nadal jest jego kontekstem, inaczej hero — organizacja hero, pozostali — najstarsze członkostwo; gość i konto bez organizacji — null |
+| `get()`, `id()` | bieżąca organizacja; bez wyboru (albo gdy wybrana przestała być dostępna) ostatnio wybrana (`Organizations\LastContext`), a bez niej domyślna, zapisana w sesji: domyślna organizacja konta (`json_default_settings.organization`), o ile nadal jest jego kontekstem, inaczej hero — organizacja hero, pozostali — najstarsze członkostwo; gość i konto bez organizacji — null |
 | `visible()` | bieżąca organizacja do pokazania we frontendzie (organizacja hero → null) |
 | `role()` | aktywna rola w bieżącej organizacji (tylko strefa z `role_contexts`; inaczej, dla hero i bez ról — null) |
 | `contexts()` | `list<Organizations\OrganizationContext>` (organizacja, `current`, `default`, `role`; `label($zone)` — „organizacja — rola”) do przełącznika, bez organizacji hero |
@@ -195,6 +195,9 @@ własny kontekst):
   `account.organization.default_saved`, bieżący kontekst się nie zmienia) — albo plik instalacji
   (`accounts[].defaults.organization`, docs/instalacja.md). Działa od następnej sesji; organizacja, która przestała być
   kontekstem konta, jest pomijana.
+- **Ostatni kontekst** (`Organizations\LastContext`): każde przełączenie (`choose()`) zapisuje organizację i rolę
+  w `json_default_settings.last_context` konta; po wygaśnięciu sesji nowa zaczyna od niego, więc strona otwarta przed
+  logowaniem jest dostępna w tej samej roli. Wylogowanie (`SignOut`) go usuwa — wtedy obowiązuje kontekst domyślny.
 - Kontekst wybiera też uprawnienia: role i uprawnienia konta liczą się w bieżącej organizacji (zespół spatie =
   organizacja, `Http\Middleware\UseOrganizationPermissions`; docs/baza-danych.md §15). Hero i konto bez organizacji
   mają role globalne.
@@ -206,7 +209,7 @@ w organizacji (np. lekarz i rejestracja w poradni) pracuje w jednej naraz — up
 `getRoleNames()` liczą tylko ją — i przełącza się między parami bez ponownego logowania.
 
 - **Aktywna rola** (`CurrentOrganization::role()`): wybrana w sesji strefy dla tej organizacji
-  (`polygon.role.<id organizacji>`), o ile konto nadal ją ma; inaczej rola zapisanego domyślnego kontekstu (gdy
+  (`polygon.role.<id organizacji>`), o ile konto nadal ją ma; inaczej rola ostatniego kontekstu, a po niej zapisanego domyślnego (gdy
   dotyczy tej organizacji); inaczej najszersza (`Permissions\OrganizationRoles::broadest()` — najwięcej uprawnień,
   przy remisie pierwsza po nazwie). Hero i organizacja bez ról konta — bez aktywnej roli.
 - **Zawężenie:** `UseOrganizationPermissions` ustawia `Permissions\ActiveRole` (stan żądania, `scoped`), a

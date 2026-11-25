@@ -19,6 +19,7 @@ use Simplysmart\Polygon\Http\StatusMessage;
 use Simplysmart\Polygon\Models\Organization;
 use Simplysmart\Polygon\Models\ZoneAccount;
 use Simplysmart\Polygon\Organizations\DefaultOrganization;
+use Simplysmart\Polygon\Organizations\LastContext;
 use Simplysmart\Polygon\Organizations\OrganizationContext;
 use Simplysmart\Polygon\Organizations\OrganizationMembership;
 use Simplysmart\Polygon\Permissions\OrganizationRoles;
@@ -86,6 +87,29 @@ class RoleContextTest extends ZoneTestCase
         $this->post(route('beta.auth.logout'));
         $this->signedIn($account->refresh(), 'beta')->get('/beta/context')->assertJsonPath('id', $head->id)->assertJsonPath('role', 'manager')->assertJsonPath('roles', ['manager']);
         $this->get('/beta/desk')->assertForbidden();
+    }
+
+    public function test_expired_session_returns_to_the_last_context_and_signing_out_to_the_default_one(): void
+    {
+        [$account, $clinic, $head] = $this->staff();
+        $this->signedIn($account, 'beta')->post('/beta/account/organization', ['organization' => $head->token, 'role' => 'manager']);
+
+        $this->app->make('session.store')->flush();
+        $this->signedIn($account->refresh(), 'beta')->get('/beta/context')->assertJsonPath('id', $head->id)->assertJsonPath('role', 'manager');
+
+        $this->post(route('beta.auth.logout'));
+        $this->assertNull($account->refresh()->defaultSetting(LastContext::SETTING));
+        $this->signedIn($account, 'beta')->get('/beta/context')->assertJsonPath('id', $clinic->id)->assertJsonPath('role', 'registration');
+    }
+
+    public function test_last_context_that_the_account_lost_falls_back_to_the_default_one(): void
+    {
+        [$account, $clinic, $head] = $this->staff();
+        $this->signedIn($account, 'beta')->post('/beta/account/organization', ['organization' => $head->token, 'role' => 'manager']);
+        $head->forceFill([ColumnNames::IS_ACTIVE => false])->save();
+
+        $this->app->make('session.store')->flush();
+        $this->signedIn($account->refresh(), 'beta')->get('/beta/context')->assertJsonPath('id', $clinic->id)->assertJsonPath('role', 'registration');
     }
 
     public function test_zone_without_role_contexts_counts_the_sum_of_roles(): void

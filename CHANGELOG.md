@@ -19,6 +19,8 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Added
 
+- Po wygaśnięciu sesji konto wraca do kontekstu (organizacja i rola) ostatnio wybranego w przełączniku, a po wylogowaniu
+  zaczyna od domyślnego (`Organizations\LastContext`, `json_default_settings.last_context`).
 - Modele danych i konta mają `jsonAttribute()` i `putJsonAttributes()` — odczyt i zapis kluczy `json_attributes` bez zmiany
   pozostałych; `Identifiers\Pesel::birthDateFrom()` daje datę urodzenia z pierwszych cyfr numeru także przy błędnej reszcie.
 - Logotyp „Polygon” z błyskawicą w `src/resources/brand/logo/` (`polygon.svg` w kolorze tekstu oraz wersje na jasne i ciemne tło).

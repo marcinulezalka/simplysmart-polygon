@@ -25,7 +25,8 @@ use Simplysmart\Polygon\Queries\Organizations\ActiveMemberships;
 
 /**
  * Bieżąca organizacja zapamiętana w sesji strefy żądania (każda strefa ma osobną sesję, więc i osobny kontekst):
- * wybór konta, o ile nadal jest jego kontekstem (ActiveMemberships), inaczej domyślny — organizacja zapisana jako
+ * wybór konta, o ile nadal jest jego kontekstem (ActiveMemberships), inaczej ostatnio wybrana (LastContext — sesja
+ * wygasła bez wylogowania), a bez niej domyślny — organizacja zapisana jako
  * domyślna konta (DefaultOrganization, `json_default_settings.organization`), gdy nadal jest jego kontekstem, albo
  * pierwszy kontekst konta (hero: organizacja hero; pozostali: najstarsze członkostwo) — zapisany w sesji, więc nowe
  * członkostwo nadane w trakcie sesji nie zmienia go samo.
@@ -44,6 +45,7 @@ final readonly class SessionCurrentOrganization implements CurrentOrganization
         private DefaultOrganization $default,
         private CurrentZone $zone,
         private OrganizationRoles $roles,
+        private LastContext $last,
     ) {}
 
     public function get(): ?Organization
@@ -69,8 +71,8 @@ final readonly class SessionCurrentOrganization implements CurrentOrganization
             return $chosen;
         }
 
-        $saved = $this->default->id($account);
-        $default = $saved !== null && in_array($saved, $ids, true) ? $saved : $ids[0] ?? null;
+        $saved = array_intersect([$this->last->organizationId($account), $this->default->id($account)], $ids);
+        $default = array_values($saved)[0] ?? $ids[0] ?? null;
         $default === null ? $session->forget(self::SESSION_KEY) : $session->put(self::SESSION_KEY, $default);
 
         return $default;
@@ -107,7 +109,8 @@ final readonly class SessionCurrentOrganization implements CurrentOrganization
             return $chosen;
         }
 
-        $role = $this->defaultRole($account, $id, $roles);
+        $last = $this->last->role($account, $id);
+        $role = $last !== null && in_array($last, $roles, true) ? $last : $this->defaultRole($account, $id, $roles);
         $role === null ? $session->forget(self::roleKey($id)) : $session->put(self::roleKey($id), $role);
 
         return $role;
@@ -163,6 +166,12 @@ final readonly class SessionCurrentOrganization implements CurrentOrganization
 
         if ($role !== null) {
             $session->put(self::roleKey($id), $role);
+        }
+
+        $account = $this->zoneAccount();
+
+        if ($account !== null) {
+            $this->last->save($account, $id, $role);
         }
 
         return true;
