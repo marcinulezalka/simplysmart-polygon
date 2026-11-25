@@ -1,6 +1,6 @@
 {
   "resources/js/documentation-example.js": {
-    "file": "assets/documentation-example-Cix64Ppn.js",
+    "file": "assets/documentation-example-YrXhTvGc.js",
     "name": "documentation-example",
     "src": "resources/js/documentation-example.js",
     "isEntry": true
@@ -21,7 +21,7 @@
     "isEntry": true
   },
   "resources/scss/documentation/example.scss": {
-    "file": "assets/example-BXsWfijZ.css",
+    "file": "assets/example-B5GTRNcP.css",
     "name": "example",
     "names": [
       "example.css"
@@ -57,7 +57,7 @@
     "isEntry": true
   },
   "resources/scss/polygon/components.scss": {
-    "file": "assets/components-CeymqIWi.css",
+    "file": "assets/components-DMAnnJRq.css",
     "name": "components",
     "names": [
       "components.css"
@@ -65,8 +65,17 @@
     "src": "resources/scss/polygon/components.scss",
     "isEntry": true
   },
+  "resources/scss/polygon/sign-in.scss": {
+    "file": "assets/sign-in-C-NhosSU.css",
+    "name": "sign-in",
+    "names": [
+      "sign-in.css"
+    ],
+    "src": "resources/scss/polygon/sign-in.scss",
+    "isEntry": true
+  },
   "resources/scss/polygon/theme.scss": {
-    "file": "assets/theme-NxCz2kzz.css",
+    "file": "assets/theme-DSkxRaBD.css",
     "name": "theme",
     "names": [
       "theme.css"
@@ -75,7 +84,7 @@
     "isEntry": true
   },
   "resources/scss/polygon/wcag-contrast/theme.scss": {
-    "file": "assets/theme-DgR52coJ.css",
+    "file": "assets/theme-BKJA_LCs.css",
     "name": "theme",
     "names": [
       "theme.css"
@@ -84,7 +93,7 @@
     "isEntry": true
   },
   "resources/scss/polygon/wcag/theme.scss": {
-    "file": "assets/theme-D1bxc7El.css",
+    "file": "assets/theme-DMqb4VEH.css",
     "name": "theme",
     "names": [
       "theme.css"

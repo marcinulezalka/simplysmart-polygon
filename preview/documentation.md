@@ -12,6 +12,9 @@
     - [Formularze](forms.md)
     - [Klawiatura numeryczna PIN-u](pinpad.md)
     - [Karty](cards.md)
+    - [Nawigacja z ikon](sidebar-nav-icon.md)
+    - [Użytkownik w nawigacji](sidebar-nav-user.md)
+    - [Avatar](avatar.md)
     - [Tabele](tables.md)
     - [Odznaki](badges.md)
     - [Alerty](alerts.md)
@@ -21,6 +24,7 @@
     - [Pływający panel akcji](floating-panel.md)
 - ## Cały motyw
     - [Motyw w całości](theme.md)
+    - [Layout logowania](sign-in-layout.md)
     - [Layout dokumentacji](documentation-layout.md)
 - ## Zasady globalne
     - [Design system](introduction.md)

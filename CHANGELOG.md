@@ -19,6 +19,14 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Added
 
+- Layout obszaru logowania w motywie Polygon (`polygon::layouts.sign-in`, docs/strefy.md → „Layout logowania”): tło gradientowe, hasło,
+  karta na środku okna, `<x-polygon::sign-in>` z `.hero`, `.field` i `.submit`, przycisk `.pg-button--soft`, nowe tokeny `--pg-backdrop`,
+  `--pg-on-backdrop`, `--pg-on-backdrop-fade`, `--pg-glass` i `--pg-glass-border`; podgląd w Preview.
+- Nawigacja z samych ikon w motywie Polygon: `<x-polygon::sidebar-nav-icon>` z `.group` i `.item`, domyślnie w połowie wysokości
+  ekranu (`:centered="false"` — w układzie strony), `action-slide` — zaznaczenie przesuwa się do klikniętej ikony (`initSidebarNavIcon()`), nowe tokeny `--pg-ring` (pierścień kafelka ikony) i `--pg-border-fade`, podgląd w Preview („Nawigacja z ikon”).
+- Avatar użytkownika `<x-polygon::avatar>` (zdjęcie albo inicjały, rozmiary `size-{wartość}`) o kształcie kafelka ikony nawigacji, z ramką grubości pierścienia ikony
+  w kolorze użytkownika (krycie — nowy token `--pg-ring-opacity`), i pozycja użytkownika w nawigacji z ikon
+  `<x-polygon::sidebar-nav-user>`; `.item` ma slot `tile` na własny kafelek.
 - Definiowanie PIN-u po zalogowaniu: strefa z `PinStep` bez `PinSetupStep` w `auth.steps` wpuszcza konto bez PIN-u samym kodem wyłącznie na stronę ustawienia PIN-u (`Auth\MissingPin`, `Auth\DefinePin`, `account.pin.define`; docs/strefy.md). Zaufane urządzenie nie zwalnia konta bez PIN-u z kodu z e-maila.
 - Klawiatura numeryczna PIN-u jako komponent bazowy: `<x-polygon::pinpad>`, układ `Pinpad\PinpadAssets`, zachowanie `initPinpad()` (docs/strefy.md → „Klawiatura numeryczna PIN-u”, podgląd w Preview).
 - Własne strony sekcji bezpieczeństwa strefy (`zone.auth.security_pages`: `pin`, `recovery`, `devices`; docs/strefy.md): wracają na nie akcje sekcji, dawne adresy i link z maila o nowym urządzeniu (`Http\SecurityPage`), więc strefa nie powtarza kontrolerów konta.

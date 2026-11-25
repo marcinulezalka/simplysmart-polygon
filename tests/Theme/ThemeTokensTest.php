@@ -33,6 +33,8 @@ final class ThemeTokensTest extends TestCase
         '--pg-title' => ['--pg-bg', '--pg-bar', '--pg-surface'],
         '--pg-muted' => ['--pg-bg', '--pg-bar', '--pg-surface', '--pg-sunken'],
         '--pg-accent' => ['--pg-bg', '--pg-surface', '--pg-accent-bg'],
+        '--pg-on-backdrop' => ['--pg-bg'],
+        '--pg-on-backdrop-fade' => ['--pg-bg'],
         '--pg-info' => ['--pg-info-bg'],
         '--pg-success' => ['--pg-success-bg'],
         '--pg-warning' => ['--pg-warning-bg'],

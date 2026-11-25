@@ -37,6 +37,7 @@ final class DocumentationAssets
         ...PinpadAssets::ENTRIES,
         'resources/scss/documentation/example.scss',
         ...ThemeAssets::ENTRIES,
+        'resources/scss/polygon/sign-in.scss',
         'resources/js/documentation-example.js',
     ];
 }

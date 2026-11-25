@@ -3,7 +3,7 @@
 - [Zaokrąglenia](#radius)
 - [Cień](#shadow)
 - [Tokeny zaokrągleń](#radius-tokens)
-- [Tokeny cienia](#shadow-tokens)
+- [Tokeny cienia i pierścienia](#shadow-tokens)
 
 Promienie i cienie tylko z tokenów; w trybach WCAG cieni nie ma.
 
@@ -47,7 +47,9 @@ Promienie i cienie tylko z tokenów; w trybach WCAG cieni nie ma.
 ```
 
 <a name="shadow-tokens"></a>
-## Tokeny cienia
+## Tokeny cienia i pierścienia
+
+`--pg-ring` to pierścień kafelka ikony, `--pg-ring-opacity` — krycie jego koloru, gdy wybiera go użytkownik.
 
 ```blade preview
 @inject('tokens', \Simplysmart\Polygon\Theme\ThemeTokens::class)
@@ -56,7 +58,7 @@ Promienie i cienie tylko z tokenów; w trybach WCAG cieni nie ma.
         <thead><tr><th>Token</th>@foreach ($tokens->modes() as $mode)<th>{{ $mode->label() }}</th>@endforeach</tr></thead>
         <tbody>
             @foreach ($tokens->of(\Simplysmart\Polygon\Enums\ColorTheme::Light) as $token => $value)
-                @continue(! str_contains($token, 'shadow'))
+                @continue(! \Illuminate\Support\Str::contains($token, ['shadow', 'ring']))
                 <tr>
                     <td class="pg-demo__mono">{{ $token }}</td>
                     @foreach ($tokens->modes() as $mode)<td class="pg-demo__mono">{{ $tokens->of($mode)[$token] }}</td>@endforeach

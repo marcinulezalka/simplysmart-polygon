@@ -8,7 +8,8 @@ wdrożeń. Opis: `README.md`, tematy: `docs/README.md`.
 - **Tylko mechanizmy ogólne:** polygon nie zna paczek, które go używają; strefa dokłada swoje przez punkty rozszerzeń
   (`InstallFiles`, `PackageSeeders`, `PackageAssets`, `ZoneServiceProvider`, kontrakty w `Contracts\`).
 - **Bez widoków stref:** ekrany i szablony maili dostarcza paczka strefy; polygon ma własne assety (powiadomienia, opcjonalny motyw Polygon),
-  widoki dokumentacji i bazowe komponenty Blade bez palety (`resources/views/components/`, np. `<x-polygon::pinpad>`).
+  widoki dokumentacji, opcjonalny layout logowania w motywie Polygon (`polygon::layouts.sign-in`) i bazowe komponenty Blade
+  (`resources/views/components/`, np. `<x-polygon::pinpad>` bez palety).
 - **Dokumentacja** (`docs/dokumentacja.md`): `wiki/` (biznesowa, użytkownik), `docs/` (techniczna, programista), `preview/`
   (design system). Nowa strona trafia do spisu `documentation.md`. Wszystkie trzy
   są w strefie po zalogowaniu.

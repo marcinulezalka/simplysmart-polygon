@@ -52,11 +52,14 @@ Znaczenie zawsze także w tekście albo ikonie, nie samym kolorem.
 | `--pg-title` | nagłówki i tytuły kart |
 | `--pg-muted` | tekst pomocniczy |
 | `--pg-border` | linie i ramki kart |
+| `--pg-border-fade` | dół ramki karty nawigacji z ikon |
 | `--pg-control` | ramki pól i przycisków |
 | `--pg-accent`, `--pg-accent-hover` | główna akcja, linki, bieżąca pozycja i ich najechanie |
 | `--pg-accent-bg` | tło bieżącej pozycji |
 | `--pg-on-accent` | tekst na akcencie i na przycisku usuwania |
 | `--pg-focus` | obrys fokusu |
+| `--pg-on-backdrop`, `--pg-on-backdrop-fade` | napisy na tle obszaru logowania |
+| `--pg-glass`, `--pg-glass-border` | karta logowania na tle i jej ramka |
 | `--pg-info`, `--pg-info-bg` | informacja i jej tło |
 | `--pg-success`, `--pg-success-bg` | powodzenie i jego tło |
 | `--pg-warning`, `--pg-warning-bg` | ostrzeżenie i jego tło |
@@ -72,7 +75,7 @@ Znaczenie zawsze także w tekście albo ikonie, nie samym kolorem.
         <thead><tr><th>Token</th><th>Teraz</th>@foreach ($tokens->modes() as $mode)<th>{{ $mode->label() }}</th>@endforeach</tr></thead>
         <tbody>
             @foreach ($tokens->of(\Simplysmart\Polygon\Enums\ColorTheme::Light) as $token => $value)
-                @continue(str_contains($token, 'shadow'))
+                @continue(\Illuminate\Support\Str::contains($token, ['shadow', 'ring', '--pg-backdrop']))
                 <tr>
                     <td class="pg-demo__mono">{{ $token }}</td>
                     <td><span class="pg-demo__token" style="background: var({{ $token }})"></span></td>

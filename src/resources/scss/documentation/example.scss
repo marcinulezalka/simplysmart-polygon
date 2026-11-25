@@ -25,6 +25,7 @@ body { margin: 0; padding: 1.25rem; background: var(--pg-surface); color: var(--
 .pg-demo__mono { font-family: var(--pg-mono); }
 .pg-demo__muted { color: var(--pg-muted); }
 .pg-demo__stage { height: 12rem; }
+.pg-demo__stage--tall { height: 19rem; }
 .pg-demo__token { display: inline-block; width: 2.5rem; height: 1.25rem; border: 1px solid var(--pg-control); border-radius: var(--pg-radius-sm); vertical-align: middle; }
 .pg-demo__scroll { overflow-x: auto; }
 .pg-demo .pg-toasts, .pg-toasts--static { position: static; }

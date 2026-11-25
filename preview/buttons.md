@@ -13,6 +13,7 @@ Jeden rozmiar, zawsze z ikoną; najechanie zmienia tylko kolor.
 <div class="pg-demo">
     <button class="pg-button" type="button">{!! \Simplysmart\Polygon\Icons\LocalIconSets::get('lucide')?->svg('save', ['class' => 'pg-icon', 'aria-hidden' => 'true']) !!}Zapisz</button>
     <button class="pg-button pg-button--secondary" type="button">{!! \Simplysmart\Polygon\Icons\LocalIconSets::get('lucide')?->svg('x', ['class' => 'pg-icon', 'aria-hidden' => 'true']) !!}Anuluj</button>
+    <button class="pg-button pg-button--soft" type="button">{!! \Simplysmart\Polygon\Icons\LocalIconSets::get('lucide')?->svg('arrow-right', ['class' => 'pg-icon', 'aria-hidden' => 'true']) !!}Dalej</button>
     <button class="pg-button pg-button--danger" type="button">{!! \Simplysmart\Polygon\Icons\LocalIconSets::get('lucide')?->svg('trash-2', ['class' => 'pg-icon', 'aria-hidden' => 'true']) !!}Usuń</button>
 </div>
 ```

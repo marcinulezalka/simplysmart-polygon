@@ -7,9 +7,11 @@
  * See the LICENSE file distributed with this source code.
  */
 
-/** Przykłady Preview polygonu (dokument ramki): zachowanie pływającego panelu i klawiatury PIN-u. */
+/** Przykłady Preview polygonu (dokument ramki): zachowanie pływającego panelu, klawiatury PIN-u i nawigacji z ikon. */
 import { initFloatingPanel } from './floating-panel.js';
 import { initPinpad } from './pinpad.js';
+import { initSidebarNavIcon } from './sidebar-nav-icon.js';
 
 initFloatingPanel();
 initPinpad();
+initSidebarNavIcon();

@@ -14,6 +14,7 @@
 - ## Bezpieczeństwo
     - [Logowanie](strefy.md#logowanie-strefaauth-slugsignin)
     - [Widoki strefy](strefy.md#widoki-strefy-views)
+    - [Layout logowania](strefy.md#layout-logowania)
     - [Maile](strefy.md#maile-mailviews)
     - [Kontekst organizacji](strefy.md#kontekst-organizacji)
     - [Kontekst roli](strefy.md#kontekst-roli-role_contexts)

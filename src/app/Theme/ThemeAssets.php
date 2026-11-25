@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Theme;
 
+use Simplysmart\Polygon\Pinpad\PinpadAssets;
+
 /**
  * Wejścia Vite motywu Polygon (`@packageAssets('polygon', ThemeAssets::ENTRIES)`, docs/assety.md → „Motyw Polygon”). Motyw
  * jest opcjonalny: używa go dokumentacja, a strefa z własnym motywem go nie ładuje.
@@ -29,6 +31,14 @@ final class ThemeAssets
     /** @var list<string> Komponenty i tokeny. */
     public const array ENTRIES = [
         'resources/scss/polygon/components.scss',
+        ...self::THEMES,
+    ];
+
+    /** @var list<string> Layout obszaru logowania (layouts/sign-in.blade.php) z klawiaturą PIN-u. */
+    public const array SIGN_IN = [
+        ...PinpadAssets::ENTRIES,
+        'resources/scss/polygon/components.scss',
+        'resources/scss/polygon/sign-in.scss',
         ...self::THEMES,
     ];
 }

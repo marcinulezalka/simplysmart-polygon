@@ -52,7 +52,7 @@ Skrypty projektu wołają orkiestrator `node vendor/simplysmart/polygon/bin/asse
 ## Motyw Polygon
 
 Strefa `polygon` ma własny motyw: tokeny `--pg-*` w `src/resources/scss/polygon/{theme,wcag/theme,wcag-contrast/theme}.scss`
-i komponenty `.pg-*` (przyciski, karty, pola, odznaki, tabele oraz kolory toastów, dzwonka i panelu akcji) w
+i komponenty `.pg-*` (przyciski, karty, pola, odznaki, tabele, nawigacja z ikon, avatar oraz kolory toastów, dzwonka i panelu akcji) w
 `polygon/components.scss`. Wejścia: `Theme\ThemeAssets::ENTRIES`; podgląd na żywo: całe Preview.
 
 - Kolory: ciepłe neutralne tła (`bg` — treść, `bar` — górny pasek, `surface` — karty, `sunken` — pola wyróżnione), turkusowy
@@ -62,6 +62,8 @@ i komponenty `.pg-*` (przyciski, karty, pola, odznaki, tabele oraz kolory toast�
 - Tokeny każdego trybu są w jednym mixinie o nazwie trybu (`light`, `dark`, `wcag`, `wcag-contrast`), wspólne — w `base`.
   `Theme\ThemeTokens` czyta je z arkuszy, więc nowy token pojawia się w Preview sam. Każdy tryb ma komplet tokenów, a tryby WCAG
   wymagany kontrast — pilnuje tego `tests/Theme/ThemeTokensTest`.
+- Layout obszaru logowania (`polygon::layouts.sign-in`) ma osobny arkusz `polygon/sign-in.scss` (`Theme\ThemeAssets::SIGN_IN`); opis:
+  [Layout logowania](strefy.md#layout-logowania).
 - Nowy komponent: klasa w `components.scss` (tylko tokeny) i strona z przykładem w `preview/`, w swojej grupie
   spisu (podstawy, komponenty, cały motyw); opis wspólny dla wielu stron trafia do „Zasad globalnych” na jego końcu.
 

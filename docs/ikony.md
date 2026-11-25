@@ -44,6 +44,9 @@ Aktualizacja (ręczna, gdy trzeba dociągnąć nowsze ikony — bez trwałej aut
 3. `php artisan polygon:assets` (odświeża symlink/kopię `public/vendor/polygon`).
 4. Zaktualizować wersje w opisowym `package.json` paczki, żeby nie rozjechały się z tym, co faktycznie skopiowane.
 
+Pojedyncze ikony komponentów polygonu są w `src/resources/icons/` (dziś `line-md:arrow-small-right` przycisku logowania, licencja MIT
+obok).
+
 ## Komendy deweloperskie
 
 - `php artisan polygon:icons:subset <katalog> <zestaw:ikona>…` — zapisuje `<katalog>/<zestaw>.json` z podanymi ikonami

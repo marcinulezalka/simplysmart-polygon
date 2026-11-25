@@ -9,6 +9,7 @@
     --pg-title: #111827;
     --pg-muted: #374151;
     --pg-border: #6b7280;
+    --pg-border-fade: #6b7280;
     --pg-control: #6b7280;
     --pg-accent: #0f5f58;
     --pg-accent-hover: #0b4a45;
@@ -23,6 +24,13 @@
     --pg-danger-bg: #fff1f2;
     --pg-success: #166534;
     --pg-success-bg: #f0fdf4;
+    --pg-ring: 0.0625rem solid #6b7280;
+    --pg-ring-opacity: 100%;
+    --pg-backdrop: none;
+    --pg-on-backdrop: #111827;
+    --pg-on-backdrop-fade: #111827;
+    --pg-glass: #f3f4f6;
+    --pg-glass-border: #6b7280;
     --pg-shadow: none;
     --pg-shadow-item: none;
     --pg-shadow-button: none;

@@ -1,4 +1,4 @@
-// Komponenty motywu Polygon (docs/assety.md → „Motyw Polygon”): przyciski, karty, formularze, odznaki, tabele i malowanie
+// Komponenty motywu Polygon (docs/assety.md → „Motyw Polygon”): przyciski, karty, formularze, odznaki, tabele, nawigacja z ikon, avatar i malowanie
 // klas, które w polygonie mają tylko układ (`.pg-toast*`, `.pg-bell*`, `.pg-notifications*`, `.pg-float*`,
 // `.pg-pinpad*`). Tylko tokeny
 // `--pg-*` z theme.scss. Arkusz jest opcjonalny — strefa z własnym motywem go nie ładuje.
@@ -8,6 +8,9 @@
 .pg-button--secondary:hover, .pg-button--secondary:active { background: var(--pg-sunken); }
 .pg-button--danger { background: var(--pg-danger); box-shadow: none; }
 .pg-button--danger:hover, .pg-button--danger:active { background: color-mix(in srgb, var(--pg-danger) 85%, var(--pg-text)); }
+// Przytłumiony przycisk (formularze logowania); ramka widoczna także w dużym kontraście.
+.pg-button--soft { border-color: color-mix(in srgb, var(--pg-accent) var(--pg-ring-opacity), transparent); background: var(--pg-accent-bg); box-shadow: none; color: var(--pg-accent); }
+.pg-button--soft:hover, .pg-button--soft:active { background: color-mix(in srgb, var(--pg-accent-bg) 85%, var(--pg-accent)); }
 .pg-button--block { width: 100%; }
 .pg-button:disabled { opacity: 0.55; cursor: not-allowed; }
 
@@ -53,3 +56,48 @@
 .pg-pinpad__key:hover, .pg-pinpad__key:active { box-shadow: var(--pg-shadow-item); }
 .pg-pinpad__key--submit { border-color: transparent; background: var(--pg-accent); color: var(--pg-on-accent); }
 .pg-pinpad__key--submit:hover, .pg-pinpad__key--submit:active { background: var(--pg-accent-hover); }
+
+// Nawigacja z samych ikon (components/sidebar-nav-icon.blade.php). Zaokrąglenia zagnieżdżone: pozycja — `--pg-radius-card`, kafelek ikony —
+// mniej o padding pozycji, panel i karta — więcej o padding karty. Nagłówek i stopka karty to sam jej padding (równe), między
+// grupami ten sam odstęp. Ramka karty na dwóch warstwach tła (pełny kolor u góry, słabszy u dołu) — `border-image` nie zna zaokrągleń.
+.pg-sidebar-nav-icon { --pg-sidebar-nav-icon-gap: 0.5rem; --pg-sidebar-nav-icon-padding: 0.25rem; --pg-sidebar-nav-icon-radius: calc(var(--pg-radius-card) + var(--pg-sidebar-nav-icon-gap)); flex: none; width: 3.375rem; min-height: 0; }
+.pg-sidebar-nav-icon__card { display: flex; flex-direction: column; gap: var(--pg-sidebar-nav-icon-gap); box-sizing: border-box; width: 3.375rem; max-height: 100%; padding-block: var(--pg-sidebar-nav-icon-gap); overflow-y: auto; border: 0.15rem solid transparent; border-radius: var(--pg-sidebar-nav-icon-radius); background: linear-gradient(var(--pg-sunken), var(--pg-sunken)) padding-box, linear-gradient(to bottom, var(--pg-border), var(--pg-border-fade)) border-box; box-shadow: var(--pg-shadow-item); }
+
+// Domyślnie karta w połowie wysokości ekranu: `fixed` bez `left`/`right` zostaje w poziomie tam, gdzie stoi `<nav>`; za wysoka przewija się sama.
+.pg-sidebar-nav-icon--centered .pg-sidebar-nav-icon__card { position: fixed; top: 50%; max-height: calc(100dvh - 2rem); transform: translateY(-50%); }
+// Najmniejsza wysokość: grupa z jedną ikoną zostaje panelem, a nie kołem.
+.pg-sidebar-nav-icon__group { display: flex; flex: none; flex-direction: column; gap: 0.375rem; justify-content: center; box-sizing: border-box; min-height: 3.5rem; padding: var(--pg-sidebar-nav-icon-padding); border-block: 0.13rem solid var(--pg-border); border-radius: var(--pg-sidebar-nav-icon-radius); background: var(--pg-surface); }
+.pg-sidebar-nav-icon__item { position: relative; display: flex; justify-content: center; padding: var(--pg-sidebar-nav-icon-padding); border-radius: var(--pg-radius-card); color: var(--pg-text); text-decoration: none; }
+.pg-sidebar-nav-icon__item:hover { background: var(--pg-sunken); }
+.pg-sidebar-nav-icon__item:focus-visible { outline-offset: 0; }
+.pg-sidebar-nav-icon__item[aria-current] { color: var(--pg-accent); }
+.pg-sidebar-nav-icon__icon { display: inline-flex; flex: none; align-items: center; justify-content: center; box-sizing: border-box; width: 2rem; height: 2rem; border: 0.25rem solid transparent; border-radius: calc(var(--pg-radius-card) - var(--pg-sidebar-nav-icon-padding)); background-clip: padding-box; }
+.pg-sidebar-nav-icon__icon > * { width: 1rem; height: 1rem; font-size: 1rem; }
+.pg-sidebar-nav-icon__item:hover .pg-sidebar-nav-icon__icon { border: var(--pg-ring); background-color: var(--pg-surface); }
+.pg-sidebar-nav-icon__item[aria-current] .pg-sidebar-nav-icon__icon { border: var(--pg-ring); background-color: var(--pg-accent-bg); }
+
+// Przesunięcie zaznaczenia (resources/js/sidebar-nav-icon.js): suwak nad tłem pozycji, pod ikonami; kafelki grupy są wtedy bez tła.
+.pg-sidebar-nav-icon--action-slide .pg-sidebar-nav-icon__group { position: relative; isolation: isolate; }
+.pg-sidebar-nav-icon--action-slide .pg-sidebar-nav-icon__item { transition: color 0.25s; }
+.pg-sidebar-nav-icon--action-slide .pg-sidebar-nav-icon__icon { position: relative; z-index: 1; }
+.pg-sidebar-nav-icon--action-slide .is-sliding .pg-sidebar-nav-icon__item .pg-sidebar-nav-icon__icon { border: 0.25rem solid transparent; background-color: transparent; }
+.pg-sidebar-nav-icon__thumb { position: absolute; z-index: 0; box-sizing: border-box; width: 2rem; height: 2rem; border: var(--pg-ring); border-radius: calc(var(--pg-radius-card) - var(--pg-sidebar-nav-icon-padding)); background-color: var(--pg-accent-bg); background-clip: padding-box; pointer-events: none; }
+.pg-sidebar-nav-icon__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+// Avatar (components/avatar.blade.php): kształt kafelka ikony nawigacji (zaokrąglenie 0.375 rozmiaru), ramka grubości
+// `--pg-ring` w kolorze użytkownika z przezroczystością `--pg-ring-opacity` (w trybach WCAG pełny kolor); inicjały w kolorze tytułu,
+// więc czytelne przy każdym kolorze. `.pg-avatar-name` obejmuje avatar i nazwę obok.
+.pg-avatar { --pg-avatar-size: 2rem; --pg-avatar-ring: color-mix(in srgb, var(--pg-avatar-color, var(--pg-accent)) var(--pg-ring-opacity), transparent); display: inline-flex; flex: none; align-items: center; justify-content: center; box-sizing: border-box; width: var(--pg-avatar-size); height: var(--pg-avatar-size); overflow: hidden; border: var(--pg-ring); border-color: var(--pg-avatar-ring); border-radius: calc(var(--pg-avatar-size) * 0.375); background: color-mix(in srgb, var(--pg-avatar-color, var(--pg-accent)) 14%, var(--pg-surface)) padding-box; color: var(--pg-title); font: 700 calc(var(--pg-avatar-size) * 0.34375)/1 var(--pg-font); text-transform: uppercase; vertical-align: middle; }
+
+// Rozmiary `size-{wartość}` (wartość × 0.25rem); zaokrąglenie i inicjały rosną proporcjonalnie, ramka ma stałą grubość.
+@each $size in 6, 8, 10, 12, 14, 16, 20, 24 {
+    .pg-avatar.size-#{$size} { --pg-avatar-size: #{$size * 0.25rem}; }
+}
+
+.pg-avatar-name { display: inline-flex; gap: 0.5rem; align-items: center; }
+.pg-table tr:has(.pg-avatar) > * { vertical-align: middle; }
+.pg-avatar__photo { width: 100%; height: 100%; object-fit: cover; }
+
+// Pozycja użytkownika (components/sidebar-nav-user.blade.php): avatar zamiast kafelka ikony, bieżąca z drugą ramką.
+.pg-sidebar-nav-user[aria-current] .pg-avatar { box-shadow: 0 0 0 0.125rem var(--pg-surface), 0 0 0 0.25rem var(--pg-avatar-ring); }
+.pg-sidebar-nav-icon--action-slide .pg-avatar { position: relative; z-index: 1; }

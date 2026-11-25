@@ -136,6 +136,22 @@ Komunikaty: `session(\Simplysmart\Polygon\Http\StatusMessage::KEY)` (kontrolery 
 i błędy walidacji (`$errors`). Teksty domyślne: `src/lang/<locale>/sign_in.php`,
 `account.php`, `emails.php` (strefa nadpisuje we własnym namespace; `ZoneDefinition::signInText()`).
 
+## Layout logowania
+
+Opcjonalny layout ekranów logowania w motywie Polygon; strefa z własnym motywem go nie używa. Ekrany (formularze, teksty, trasy) dalej
+daje paczka strefy — `@extends('polygon::layouts.sign-in')`:
+
+| Sekcja | Treść |
+| --- | --- |
+| `title` | nazwa ekranu: zakładka i nagłówek h1; z `heading-hidden` nagłówek tylko dla czytnika ekranu |
+| `intro` | opis pod nazwą |
+| `hero` | hasło nad kartą, np. `<x-polygon::sign-in.hero lead link accent>` |
+| `brand` | znak w karcie; domyślnie nazwa aplikacji |
+| `panel` | formularze: `<x-polygon::sign-in.field>`, `<x-polygon::sign-in.submit>`, linki `.pg-sign-in__link` w `.pg-sign-in__links` |
+| `error-fields` | pola z błędem przy sobie (`email,code`); pozostałe błędy i `StatusMessage::KEY` stoją nad formularzem |
+
+Favicon i skrypty (np. `initPinpad()`) strefa dokłada przez `@push('head')`. Podgląd: Preview → „Layout logowania”.
+
 ## Maile (`mail.views`)
 
 Szablony `<prefiks>.<szablon>` (HTML, wymagany) i opcjonalnie `<prefiks>.text.<szablon>`; zawsze `$mailZone`:
