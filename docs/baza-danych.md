@@ -432,7 +432,8 @@ organizacji i jest dostępny także w jej jednostkach podrzędnych. Paczki stref
   (`Validation\FieldRejected`: `toValidationException()` daje błąd przy tym polu).
   `SaveContact` — jeden kontakt główny na kontrahenta; `SaveContract` — umowa nie kończy się przed początkiem.
 - **Odczyt** (`Queries\Contractors\ContractorSearch`): kontrahenci organizacji i jej przodków po nazwie, wyszukiwanie po
-  początku NIP-u (co najmniej 3 cyfry) albo fragmencie nazwy; `findByToken()`, `includes()` w tym samym zakresie.
+  początku NIP-u (co najmniej 3 cyfry) albo fragmencie nazwy; własna kolejność wyniku — domknięcie `$order` w `in()`
+  (np. sortowanie po kolumnach listy w paczce strefy); `findByToken()`, `includes()` w tym samym zakresie.
 - **Identyfikatory** (`Identifiers\Nip`, `Regon`, `Pesel` — z datą urodzenia i płcią) i reguły walidacji
   `Rules\Nip`, `Rules\Regon`, `Rules\Pesel` (komunikaty `identifiers.*`).
 

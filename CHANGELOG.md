@@ -19,6 +19,9 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Added
 
+- `Queries\Contractors\ContractorSearch::in()` przyjmuje opcjonalne domknięcie `$order` z własną kolejnością wyniku
+  zamiast nazwy (np. sortowanie listy po kolumnach w paczce strefy).
+
 - Po wygaśnięciu sesji konto wraca do kontekstu (organizacja i rola) ostatnio wybranego w przełączniku, a po wylogowaniu
   zaczyna od domyślnego (`Organizations\LastContext`, `json_default_settings.last_context`).
 - Modele danych i konta mają `jsonAttribute()` i `putJsonAttributes()` — odczyt i zapis kluczy `json_attributes` bez zmiany

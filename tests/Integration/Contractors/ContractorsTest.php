@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Simplysmart\Polygon\Tests\Integration\Contractors;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
@@ -125,6 +126,21 @@ class ContractorsTest extends TestCase
         $this->assertSame(['Gamma', 'Beta', 'Alfa'], $search->in($clinic, descending: true)->pluck('name')->all());
         $this->assertSame(['Alfa', 'Beta'], $search->in($clinic, limit: 2)->pluck('name')->all());
         $this->assertSame(['Gamma'], $search->in($clinic, limit: 2, offset: 2)->pluck('name')->all());
+    }
+
+    public function test_search_orders_results_by_the_given_order_instead_of_the_name(): void
+    {
+        $clinic = $this->organization('Poradnia');
+        $save = $this->app->make(SaveContractor::class);
+        $save->save($clinic, new ContractorData('Alfa', city: 'Kraków'));
+        $save->save($clinic, new ContractorData('Beta', city: 'Gdańsk'));
+        $save->save($clinic, new ContractorData('Gamma', city: 'Opole'));
+
+        $byCity = $this->app->make(ContractorSearch::class)->in($clinic, limit: 2, order: static function (Builder $query): void {
+            $query->orderBy(Contractor::CITY);
+        });
+
+        $this->assertSame(['Beta', 'Alfa'], $byCity->pluck('name')->all());
     }
 
     public function test_one_primary_contact_and_contract_status(): void

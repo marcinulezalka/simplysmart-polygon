@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Simplysmart\Polygon\Queries\Contractors;
 
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Simplysmart\Polygon\Database\ColumnNames;
@@ -25,7 +26,8 @@ use Simplysmart\Polygon\Queries\Organizations\OrganizationUnits;
 /**
  * Kontrahenci dostępni w organizacji: jej i jej przodków (kontrahent siedziby jest kontrahentem poradni), po nazwie.
  * Wyszukiwanie: same cyfry (co najmniej 3) — początek NIP-u, inaczej fragment nazwy albo nazwy skróconej. Wynik
- * domyślnie bez ucinania (pickery); $limit i $offset dociągają strony przy przewijaniu ekranu listy.
+ * domyślnie bez ucinania (pickery); $limit i $offset dociągają strony przy przewijaniu ekranu listy. Kolejność — po nazwie
+ * (albo malejąco), a z $order — według niej (np. sortowanie po kolumnach listy paczki strefy).
  */
 final readonly class ContractorSearch
 {
@@ -37,9 +39,11 @@ final readonly class ContractorSearch
     ) {}
 
     /**
+     * @param (Closure(Builder<Contractor>): void)|null $order kolejność wyniku zamiast nazwy (wtedy $descending pomijane)
+     *
      * @return Collection<int, Contractor>
      */
-    public function in(Organization $organization, ?string $term = null, bool $withInactive = false, bool $descending = false, ?int $limit = null, int $offset = 0): Collection
+    public function in(Organization $organization, ?string $term = null, bool $withInactive = false, bool $descending = false, ?int $limit = null, int $offset = 0, ?Closure $order = null): Collection
     {
         $query = $this->query($organization);
 
@@ -58,7 +62,12 @@ final readonly class ContractorSearch
             });
         }
 
-        $query->orderBy(ColumnNames::NAME, $descending ? 'desc' : 'asc');
+        if ($order !== null) {
+            $order($query);
+        } else {
+            $query->orderBy(ColumnNames::NAME, $descending ? 'desc' : 'asc');
+        }
+
         $query->orderBy(ColumnNames::ID, $descending ? 'desc' : 'asc');
 
         if ($limit !== null) {
