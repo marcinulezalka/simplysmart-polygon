@@ -21,8 +21,10 @@ use Simplysmart\Polygon\Models\Relations\BelongsToOrganization;
 /**
  * Kontrahent organizacji (`contractors`, docs/baza-danych.md §19): firma, z którą organizacja pracuje — np. pracodawca
  * kierujący pracowników na badania. Dane firmy: `name`, `short_name`, `nip` (10 cyfr, unikalny w organizacji),
- * `regon`, `krs`, adres, `country_code`, `email`, `phone`, `notes`. Kontrahent organizacji jest dostępny także
- * w jej jednostkach podrzędnych (Queries\Contractors\ContractorSearch). Zapisywany przez Contractors\SaveContractor.
+ * `regon`, `krs`, adres, `country_code`, `email`, `phone`, `notes`; dane do faktury (`billing_*` — pełna nazwa nabywcy,
+ * NIP, adres, kraj, osoba kontaktowa i e-mail do wysyłki faktur, Contractors\SaveBillingData). Kontrahent organizacji
+ * jest dostępny także w jej jednostkach podrzędnych (Queries\Contractors\ContractorSearch). Zapisywany przez
+ * Contractors\SaveContractor.
  *
  * @property int $organization_id
  * @property string|null $short_name
@@ -36,6 +38,14 @@ use Simplysmart\Polygon\Models\Relations\BelongsToOrganization;
  * @property string|null $email
  * @property string|null $phone
  * @property string|null $notes
+ * @property string|null $billing_name
+ * @property string|null $billing_nip
+ * @property string|null $billing_street
+ * @property string|null $billing_postal_code
+ * @property string|null $billing_city
+ * @property string|null $billing_country_code
+ * @property string|null $billing_contact_name
+ * @property string|null $billing_email
  * @property-read Organization|null $organization
  */
 final class Contractor extends DataModel
@@ -74,6 +84,34 @@ final class Contractor extends DataModel
     public const string PHONE = 'phone';
 
     public const string NOTES = 'notes';
+
+    public const string BILLING_NAME = 'billing_name';
+
+    public const string BILLING_NIP = 'billing_nip';
+
+    public const string BILLING_STREET = 'billing_street';
+
+    public const string BILLING_POSTAL_CODE = 'billing_postal_code';
+
+    public const string BILLING_CITY = 'billing_city';
+
+    public const string BILLING_COUNTRY_CODE = 'billing_country_code';
+
+    public const string BILLING_CONTACT_NAME = 'billing_contact_name';
+
+    public const string BILLING_EMAIL = 'billing_email';
+
+    /** Kolumny danych do faktury (Contractors\SaveBillingData). */
+    public const array BILLING_COLUMNS = [
+        self::BILLING_NAME,
+        self::BILLING_NIP,
+        self::BILLING_STREET,
+        self::BILLING_POSTAL_CODE,
+        self::BILLING_CITY,
+        self::BILLING_COUNTRY_CODE,
+        self::BILLING_CONTACT_NAME,
+        self::BILLING_EMAIL,
+    ];
 
     protected $table = self::TABLE;
 
@@ -145,6 +183,30 @@ final class Contractor extends DataModel
     }
 
     /**
+     * Czy kontrahent ma choć jedno pole danych do faktury.
+     */
+    public function hasBillingData(): bool
+    {
+        foreach (self::BILLING_COLUMNS as $column) {
+            $value = $this->getAttribute($column);
+
+            if (is_string($value) && $value !== '') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * NIP danych do faktury w postaci „XXX-XXX-XX-XX” albo null.
+     */
+    public function formattedBillingNip(): ?string
+    {
+        return $this->billing_nip === null ? null : Nip::format($this->billing_nip);
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
@@ -162,6 +224,7 @@ final class Contractor extends DataModel
             self::EMAIL => 'string',
             self::PHONE => 'string',
             self::NOTES => 'string',
+            ...array_fill_keys(self::BILLING_COLUMNS, 'string'),
         ];
     }
 }

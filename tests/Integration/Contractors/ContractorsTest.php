@@ -18,8 +18,10 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
+use Simplysmart\Polygon\Contractors\BillingData;
 use Simplysmart\Polygon\Contractors\ContractorData;
 use Simplysmart\Polygon\Contractors\ContractorRejected;
+use Simplysmart\Polygon\Contractors\SaveBillingData;
 use Simplysmart\Polygon\Contractors\SaveContact;
 use Simplysmart\Polygon\Contractors\SaveContract;
 use Simplysmart\Polygon\Contractors\SaveContractor;
@@ -41,7 +43,7 @@ use Tests\TestCase;
  * Kontrahenci organizacji z polygonu (`contractors`, `contractor_contacts`, `contractor_contracts`) i polskie
  * identyfikatory: sumy kontrolne NIP, REGON i PESEL (z datą urodzenia i płcią) oraz reguły walidacji; zapis kontrahenta
  * z normalizacją NIP/REGON i NIP-em unikalnym w organizacji; wyszukiwanie po nazwie i początku NIP-u w organizacji
- * i jej przodkach; jeden kontakt główny; stan umowy z okresu obowiązywania.
+ * i jej przodkach; dane do faktury z normalizacją NIP-u; jeden kontakt główny; stan umowy z okresu obowiązywania.
  */
 class ContractorsTest extends TestCase
 {
@@ -141,6 +143,24 @@ class ContractorsTest extends TestCase
         });
 
         $this->assertSame(['Beta', 'Alfa'], $byCity->pluck('name')->all());
+    }
+
+    public function test_billing_data_normalises_the_nip_and_keeps_the_company_data(): void
+    {
+        $contractor = $this->app->make(SaveContractor::class)->save($this->organization('Siedziba'), new ContractorData('Firma', nip: self::NIP, city: 'Łódź'));
+        $save = $this->app->make(SaveBillingData::class);
+
+        $this->assertFalse($contractor->hasBillingData());
+
+        $save->save($contractor, new BillingData('Firma Matka S.A.', 'PL 525-234-40-78', 'Prosta 1', '00-001', 'Warszawa', 'pl', 'Anna Księgowa', ' faktury@example.com '));
+        $contractor->refresh();
+
+        $this->assertSame(['Firma Matka S.A.', self::NIP, '525-234-40-78', 'PL', 'faktury@example.com', 'Łódź'], [$contractor->billing_name, $contractor->billing_nip, $contractor->formattedBillingNip(), $contractor->billing_country_code, $contractor->billing_email, $contractor->city]);
+        $this->assertTrue($contractor->hasBillingData());
+        $this->assertContractorRejected('billing_nip', fn() => $save->save($contractor, new BillingData(nip: '5252344079')));
+
+        $save->save($contractor, new BillingData(name: ''));
+        $this->assertFalse($contractor->refresh()->hasBillingData(), 'Puste pola czyszczą dane do faktury.');
     }
 
     public function test_one_primary_contact_and_contract_status(): void

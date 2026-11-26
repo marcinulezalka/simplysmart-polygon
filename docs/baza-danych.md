@@ -423,7 +423,7 @@ organizacji i jest dostępny także w jej jednostkach podrzędnych. Paczki stref
 
 | Tabela | Model | Kolumny domenowe |
 | --- | --- | --- |
-| `contractors` | `Models\Contractor` | `organization_id`, `short_name`, `nip` (10 cyfr, unikalny w organizacji), `regon`, `krs`, `street`, `postal_code`, `city`, `country_code`, `email`, `phone`, `notes` |
+| `contractors` | `Models\Contractor` | `organization_id`, `short_name`, `nip` (10 cyfr, unikalny w organizacji), `regon`, `krs`, `street`, `postal_code`, `city`, `country_code`, `email`, `phone`, `notes`; dane do faktury: `billing_name`, `billing_nip`, `billing_street`, `billing_postal_code`, `billing_city`, `billing_country_code`, `billing_contact_name`, `billing_email` |
 | `contractor_contacts` | `Models\ContractorContact` | `contractor_id`, `name` (imię i nazwisko), `role`, `phone`, `email`, `is_primary` |
 | `contractor_contracts` | `Models\ContractorContract` | `contractor_id`, `name` (numer), `signed_on`, `valid_from`, `valid_to`, `notes`; `status()` — `Enums\ContractStatus` (przyszła, obowiązuje, wygasła) |
 
@@ -431,6 +431,8 @@ organizacji i jest dostępny także w jej jednostkach podrzędnych. Paczki stref
   unikalny w organizacji (także wśród usuniętych); odmowa — `Contractors\ContractorRejected` z polem formularza
   (`Validation\FieldRejected`: `toValidationException()` daje błąd przy tym polu).
   `SaveContact` — jeden kontakt główny na kontrahenta; `SaveContract` — umowa nie kończy się przed początkiem.
+  `SaveBillingData` (`BillingData`) — dane do faktury (pełna nazwa nabywcy, NIP, adres, osoba kontaktowa, e-mail do
+  wysyłki faktur) osobno od danych firmy: NIP sprawdzany (pole `billing_nip`), ale nie unikalny; `hasBillingData()`.
 - **Odczyt** (`Queries\Contractors\ContractorSearch`): kontrahenci organizacji i jej przodków po nazwie, wyszukiwanie po
   początku NIP-u (co najmniej 3 cyfry) albo fragmencie nazwy; własna kolejność wyniku — domknięcie `$order` w `in()`
   (np. sortowanie po kolumnach listy w paczce strefy); `findByToken()`, `includes()` w tym samym zakresie.

@@ -19,6 +19,9 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Added
 
+- Dane do faktury kontrahenta osobno od danych firmy: kolumny `billing_*` w `contractors` (pełna nazwa nabywcy, NIP,
+  adres, kraj, osoba kontaktowa i e-mail do wysyłki faktur — migracja `add_billing_columns_to_contractors`), zapis
+  `Contractors\SaveBillingData` (`BillingData`; NIP sprawdzany, ale nie unikalny) i `Contractor::hasBillingData()`.
 - `Queries\Contractors\ContractorSearch::in()` przyjmuje opcjonalne domknięcie `$order` z własną kolejnością wyniku
   zamiast nazwy (np. sortowanie listy po kolumnach w paczce strefy).
 
