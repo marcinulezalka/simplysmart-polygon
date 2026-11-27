@@ -27,7 +27,9 @@ use Simplysmart\Polygon\Database\History\SqliteHistoryTriggers;
  * więc ślad zostaje także po zmianach z konsoli SQL.
  *
  * Migracja: `app(History::class)->create('locale_units')` po utworzeniu tabeli; każda migracja
- * zmieniająca kolumny kończy się `->sync('locale_units')`, a `down()` wywołuje `->drop(...)`.
+ * zmieniająca kolumny kończy się `->sync('locale_units')`, a `down()` wywołuje `->drop(...)`. Migracja, która
+ * usuwa kolumnę (`Schema::table()` + `dropColumn()`), wywołuje najpierw `->dropTriggers(...)` — inaczej SQLite
+ * odmawia usunięcia kolumny, do której odwołuje się trigger.
  */
 final readonly class History
 {
@@ -87,6 +89,19 @@ final readonly class History
         $this->execute($connection, $table, $this->triggers($connection)->dropStatements($table));
 
         $connection->getSchemaBuilder()->dropIfExists(self::tableFor($table));
+    }
+
+    /**
+     * Zdejmuje triggery bez usuwania tabeli historii — przed ALTER TABLE DROP COLUMN w migracji (SQLite odmawia
+     * usunięcia kolumny, do której odwołuje się trigger: „error in trigger … after drop column”; MySQL tego nie
+     * sprawdza, ale wywołanie jest bezpieczne na obu silnikach). Migracja wywołuje ->sync($table) po zmianie
+     * kolumn, żeby odtworzyć triggery według nowego schematu.
+     */
+    public function dropTriggers(string $table): void
+    {
+        $connection = $this->connection();
+
+        $this->execute($connection, $table, $this->triggers($connection)->dropStatements($table));
     }
 
     /**
